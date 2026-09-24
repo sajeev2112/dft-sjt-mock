@@ -150,7 +150,7 @@ h1{font:600 clamp(28px,4.2vw,38px)/1.08 var(--serif); margin:8px 0 8px; text-wra
 .xhead{font:500 11.5px var(--mono); letter-spacing:.07em; text-transform:uppercase; color:var(--ink-3); margin:0 0 8px}
 .xlist{display:grid; gap:8px}
 .xitem{display:grid; grid-template-columns:28px minmax(0,1fr); gap:12px; padding:12px 14px; border:1px solid var(--line); border-radius:10px; background:var(--surface)}
-.xwhy{display:block; font-size:13.5px; color:var(--bad); margin-top:6px; line-height:1.45}
+.xwhy{display:block; font-size:13.5px; color:var(--ink-2); margin-top:6px; line-height:1.45}
 .xwhy b{font-weight:600}
 .compare{display:grid; grid-template-columns:1fr 1fr; gap:12px}
 .ccol{border:1px solid var(--line); border-radius:10px; padding:12px; background:var(--surface); min-width:0}
@@ -322,3 +322,14 @@ textarea:focus{border-color:var(--accent)}
 /* saved indicator */
 .saved{font-size:12.5px; color:var(--good); margin:0}
 .saved.warn{color:var(--bad)}
+
+/* answer comparison: the correct answer is green; your answer stays neutral, with lost marks flagged */
+.ccol:not(.key) .crow{background:var(--surface-2)}
+.ccol:not(.key) .crow .pos,.ccol:not(.key) .crow.b4 .pts,.ccol:not(.key) .crow.b3 .pts{color:var(--ink-2)}
+.ccol:not(.key) .crow.b2 .pts{color:var(--near)}
+.ccol:not(.key) .crow.b1 .pts,.ccol:not(.key) .crow.b0 .pts{color:var(--bad)}
+.ccol.key{border-color:var(--good)}
+.ccol.key h4{color:var(--good)}
+.ccol.key .crow{background:var(--good-soft)}
+.ccol.key .crow .pos{color:var(--good)}
+.ccol.key .crow .letter{background:var(--good); color:var(--surface)}
