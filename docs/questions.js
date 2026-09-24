@@ -1,235 +1,8 @@
-<!doctype html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="description" content="64 original, unofficial Dental Foundation Training SJT practice questions with drag-to-rank and near-miss scoring.">
-<title>DFT SJT Mock Paper</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap">
-<style>
-:root{
-  --ground:#F2F5F4; --surface:#FFFFFF; --surface-2:#E8EEEC; --ink:#15211F; --ink-2:#4A5A57; --ink-3:#6F7E7B; --line:#D4DDDA;
-  --accent:#0E6A62; --accent-ink:#FFFFFF; --accent-soft:#D4E9E5;
-  --good:#23704A; --good-soft:#DDEFE3; --near:#94590B; --near-soft:#F5E8D0; --bad:#A6382D; --bad-soft:#F6DFDA;
-  --shadow:0 1px 2px rgba(16,40,36,.06);
-  --serif:"Source Serif 4", Georgia, "Times New Roman", serif;
-  --sans:"IBM Plex Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  --mono:"IBM Plex Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
-}
-@media (prefers-color-scheme: dark){
-  :root:not([data-theme="light"]){
-    color-scheme:dark;
-    --ground:#0E1413; --surface:#151D1C; --surface-2:#1E2927; --ink:#E2EBE9; --ink-2:#A2B3AF; --ink-3:#7F918D; --line:#2A3735;
-    --accent:#4DB3A5; --accent-ink:#06201C; --accent-soft:#173A36;
-    --good:#62C290; --good-soft:#15342A; --near:#E2A94E; --near-soft:#392B14; --bad:#EF7E70; --bad-soft:#3B1D19;
-    --shadow:0 1px 2px rgba(0,0,0,.3);
-  }
-}
-:root[data-theme="dark"]{
-  color-scheme:dark;
-  --ground:#0E1413; --surface:#151D1C; --surface-2:#1E2927; --ink:#E2EBE9; --ink-2:#A2B3AF; --ink-3:#7F918D; --line:#2A3735;
-  --accent:#4DB3A5; --accent-ink:#06201C; --accent-soft:#173A36;
-  --good:#62C290; --good-soft:#15342A; --near:#E2A94E; --near-soft:#392B14; --bad:#EF7E70; --bad-soft:#3B1D19;
-  --shadow:0 1px 2px rgba(0,0,0,.3);
-}
-*{box-sizing:border-box}
-body{background:var(--ground); color:var(--ink); font:15px/1.5 var(--sans)}
-.wrap{max-width:1120px; margin:0 auto; padding-inline:20px; padding-block:28px 72px}
-.eyebrow{font:500 11.5px/1.2 var(--mono); letter-spacing:.09em; text-transform:uppercase; color:var(--accent); margin:0}
-h1{font:600 clamp(28px,4.2vw,38px)/1.08 var(--serif); margin:8px 0 8px; text-wrap:balance; letter-spacing:-.01em}
-.sub{color:var(--ink-2); margin:0; max-width:68ch}
-.sub b{font-weight:600; color:var(--ink)}
-
-/* charting-grid navigator */
-.chart{margin:22px 0 22px; padding:14px 16px 12px; background:var(--surface); border:1px solid var(--line); border-radius:12px; box-shadow:var(--shadow)}
-.chart-top{display:flex; flex-wrap:wrap; gap:6px 16px; justify-content:space-between; align-items:baseline; margin-bottom:10px}
-.chart-title{font:500 12px var(--mono); color:var(--ink-2); letter-spacing:.04em}
-.legend{display:flex; flex-wrap:wrap; gap:4px 12px; font-size:12px; color:var(--ink-3)}
-.legend span{display:inline-flex; align-items:center; gap:5px}
-.legend i{width:10px; height:10px; border-radius:3px; display:inline-block; border:1px solid var(--line)}
-.arch{display:grid; grid-template-columns:repeat(8,minmax(0,1fr)) 9px repeat(8,minmax(0,1fr)); gap:6px}
-.occl{height:1px; background:var(--line); margin:7px 0}
-.mid{width:1px; background:var(--line); justify-self:center; align-self:stretch}
-.cell{min-width:0; height:36px; border:1px solid var(--line); background:var(--surface-2); color:var(--ink-2); font:500 12px var(--mono); border-radius:6px 6px 11px 11px; cursor:pointer; padding:0}
-.cell.lo{border-radius:11px 11px 6px 6px}
-.cell.done{background:var(--accent-soft); color:var(--accent); border-color:transparent}
-.cell.good{background:var(--good-soft); color:var(--good); border-color:transparent}
-.cell.near{background:var(--near-soft); color:var(--near); border-color:transparent}
-.cell.bad{background:var(--bad-soft); color:var(--bad); border-color:transparent}
-.cell.cur{outline:2px solid var(--accent); outline-offset:2px; color:var(--ink)}
-
-.layout{display:grid; grid-template-columns:minmax(0,1fr) 300px; gap:22px; align-items:start}
-.card{background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:24px; box-shadow:var(--shadow); min-width:0}
-.qhead{display:flex; flex-wrap:wrap; gap:8px 12px; align-items:center; justify-content:space-between}
-.qnum{font:600 13px var(--mono); color:var(--ink-2)}
-.chips{display:flex; gap:6px; flex-wrap:wrap}
-.chip{font:500 12px/1 var(--sans); padding:6px 9px; border-radius:999px; background:var(--surface-2); color:var(--ink-2)}
-.chip.type{background:var(--accent-soft); color:var(--accent)}
-.scenario{font:400 18.5px/1.55 var(--serif); margin:18px 0 12px; max-width:66ch; text-wrap:pretty}
-.instr{font-size:14px; color:var(--ink-2); font-style:italic; margin:0 0 12px; max-width:66ch}
-.scale{display:flex; justify-content:space-between; gap:12px; font:500 12px var(--mono); color:var(--ink-3); margin:0 0 10px}
-.scale.warn{color:var(--bad)}
-.opts{display:grid; gap:10px}
-.opt{display:grid; grid-template-columns:28px minmax(0,1fr); gap:12px; padding:14px; border:1px solid var(--line); border-radius:10px; background:var(--surface); text-align:left; width:100%; font:inherit; color:inherit}
-.letter{font:600 13px var(--mono); width:28px; height:28px; display:grid; place-items:center; border-radius:6px; background:var(--surface-2); color:var(--ink-2)}
-.otext{font-size:15px; line-height:1.5; display:block}
-.ranks{display:flex; gap:6px; margin-top:10px; flex-wrap:wrap}
-.rk{width:38px; height:34px; border-radius:7px; border:1px solid var(--line); background:var(--surface-2); color:var(--ink-2); font:500 14px var(--mono); cursor:pointer}
-.rk:hover{border-color:var(--accent)}
-.rk[aria-pressed="true"]{background:var(--accent); border-color:var(--accent); color:var(--accent-ink)}
-.opt.ranked .letter{background:var(--accent); color:var(--accent-ink)}
-.pick{cursor:pointer; transition:border-color .12s, background-color .12s}
-.pick:hover{border-color:var(--accent)}
-.pick[aria-pressed="true"]{border-color:var(--accent); background:var(--accent-soft)}
-.pick[aria-pressed="true"] .letter{background:var(--accent); color:var(--accent-ink)}
-.opt.was-picked{border-color:var(--ink-3)}
-.fb{margin-top:10px; padding:10px 12px; border-radius:8px; font-size:13.5px; line-height:1.45; border-left:3px solid var(--line); background:var(--surface-2); color:var(--ink)}
-.fb.b4,.fb.b3{background:var(--good-soft); border-color:var(--good)}
-.fb.b2{background:var(--near-soft); border-color:var(--near)}
-.fb.b1,.fb.b0{background:var(--bad-soft); border-color:var(--bad)}
-.fbmeta{font:500 12px var(--mono); display:block; margin-bottom:3px; color:var(--ink-2)}
-.result{margin-top:18px; padding-top:16px; border-top:1px solid var(--line); display:grid; gap:10px}
-.scoreline{font:600 16px var(--mono)}
-.keyline{font:500 13px var(--mono); color:var(--ink-2)}
-.takeaway{background:var(--surface-2); border-radius:10px; padding:12px 14px; font-size:14.5px; max-width:66ch}
-.tlabel{display:block; font:500 11.5px var(--mono); letter-spacing:.06em; text-transform:uppercase; color:var(--accent); margin-bottom:4px}
-.actions{display:flex; flex-wrap:wrap; gap:10px; justify-content:space-between; align-items:center; margin-top:20px}
-.act-r{display:flex; gap:10px; flex-wrap:wrap}
-.hint{font-size:13px; color:var(--ink-3); margin:10px 0 0}
-.btn{font:500 14px var(--sans); padding:10px 16px; border-radius:8px; border:1px solid var(--line); background:var(--surface); color:var(--ink); cursor:pointer}
-.btn:hover:not(:disabled){border-color:var(--accent)}
-.btn.primary{background:var(--accent); border-color:var(--accent); color:var(--accent-ink)}
-.btn:disabled{opacity:.45; cursor:not-allowed}
-.btn.small{padding:7px 12px; font-size:13px}
-.btn.danger{color:var(--bad)}
-:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
-
-.panel{background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:18px; display:grid; gap:18px; box-shadow:var(--shadow); position:sticky; top:calc(env(safe-area-inset-top,0px) + 16px)}
-.plabel{font:500 11.5px var(--mono); letter-spacing:.07em; text-transform:uppercase; color:var(--ink-3); margin:0 0 6px}
-.big{font:600 30px/1.1 var(--mono); font-variant-numeric:tabular-nums}
-.big small{font-size:14px; color:var(--ink-2); font-weight:500}
-.muted{font-size:13px; color:var(--ink-2); margin:4px 0 0}
-.seg{display:grid; grid-template-columns:1fr 1fr; background:var(--surface-2); padding:3px; border-radius:9px; gap:3px}
-.seg button{font:500 13px var(--sans); border:0; background:transparent; color:var(--ink-2); padding:8px 6px; border-radius:7px; cursor:pointer}
-.seg button[aria-pressed="true"]{background:var(--surface); color:var(--ink); box-shadow:var(--shadow)}
-.doms{display:grid; gap:10px}
-.dom{display:grid; grid-template-columns:1fr auto; gap:5px 8px; font-size:13px}
-.dom span:last-of-type{font-family:var(--mono); font-variant-numeric:tabular-nums; color:var(--ink-2)}
-.bar{grid-column:1/-1; height:6px; background:var(--surface-2); border-radius:3px; overflow:hidden}
-.bar i{display:block; height:100%; background:var(--accent); border-radius:3px}
-.clock{display:flex; align-items:center; justify-content:space-between; gap:10px}
-.clock .t{font:600 20px var(--mono); font-variant-numeric:tabular-nums}
-.confirm{display:grid; gap:8px; font-size:13px; color:var(--ink-2)}
-.confirm .row{display:flex; gap:8px; flex-wrap:wrap}
-.note{font-size:12.5px; color:var(--ink-3); line-height:1.5; margin:0}
-.note a{color:var(--accent)}
-.divider{height:1px; background:var(--line)}
-
-/* paper tabs */
-.ptabs{display:flex; flex-wrap:wrap; gap:6px; margin-bottom:12px}
-.ptab{display:inline-flex; align-items:baseline; gap:8px; font:500 13.5px var(--sans); padding:8px 12px; border-radius:8px; border:1px solid var(--line); background:var(--surface-2); color:var(--ink-2); cursor:pointer}
-.ptab small{font:500 11.5px var(--mono); color:inherit; opacity:.85}
-.ptab[aria-selected="true"]{background:var(--accent); border-color:var(--accent); color:var(--accent-ink)}
-.chip.hard{background:var(--near-soft); color:var(--near)}
-
-/* drag-to-rank */
-.rend{font:500 11.5px var(--mono); letter-spacing:.07em; text-transform:uppercase; color:var(--ink-3); margin:0 0 8px}
-.rend.bottom{margin:8px 0 0}
-.rlist{list-style:none; margin:0; padding:0; display:grid; gap:8px; counter-reset:rk}
-.ritem{display:grid; grid-template-columns:34px 12px 28px minmax(0,1fr) auto; gap:10px; align-items:center; padding:10px 10px 10px 12px; border:1px solid var(--line); border-radius:10px; background:var(--surface); color:var(--ink); cursor:grab; user-select:none; -webkit-user-select:none}
-.ritem::before{counter-increment:rk; content:counter(rk); display:grid; place-items:center; width:34px; height:34px; border-radius:8px; background:var(--accent); color:var(--accent-ink); font:600 16px var(--mono)}
-.rlist.unset .ritem::before{background:var(--surface-2); color:var(--ink-3)}
-.ritem:hover{border-color:var(--accent)}
-.grip{display:grid; place-items:center; color:var(--ink-3)}
-.mv{display:flex; flex-direction:column; gap:4px}
-.mvb{width:34px; height:26px; border-radius:6px; border:1px solid var(--line); background:var(--surface-2); color:var(--ink-2); font:600 13px var(--mono); cursor:pointer; padding:0}
-.mvb:hover:not(:disabled){border-color:var(--accent); color:var(--accent)}
-.mvb:disabled{opacity:.35; cursor:default}
-.ghost{opacity:.45; border-style:dashed; border-color:var(--accent); background:var(--accent-soft)}
-.chosen{border-color:var(--accent)}
-.dragging{box-shadow:0 10px 28px rgba(10,30,28,.22); cursor:grabbing; border-color:var(--accent); opacity:1 !important}
-.dragging::before{content:"↕"; background:var(--accent-soft); color:var(--accent)}
-.setrow{display:flex; flex-wrap:wrap; gap:8px 12px; align-items:center; justify-content:space-between; margin-top:12px; padding:10px 12px; border-radius:8px; background:var(--surface-2); font-size:13px; color:var(--ink-2)}
-
-/* explanations + answer comparison */
-.xhead{font:500 11.5px var(--mono); letter-spacing:.07em; text-transform:uppercase; color:var(--ink-3); margin:0 0 8px}
-.xlist{display:grid; gap:8px}
-.xitem{display:grid; grid-template-columns:28px minmax(0,1fr); gap:12px; padding:12px 14px; border:1px solid var(--line); border-radius:10px; background:var(--surface)}
-.xwhy{display:block; font-size:13.5px; color:var(--bad); margin-top:6px; line-height:1.45}
-.xwhy b{font-weight:600}
-.compare{display:grid; grid-template-columns:1fr 1fr; gap:12px}
-.ccol{border:1px solid var(--line); border-radius:10px; padding:12px; background:var(--surface); min-width:0}
-.ccol h4{margin:0 0 8px; font:600 12px var(--mono); letter-spacing:.07em; text-transform:uppercase; color:var(--ink-2)}
-.ccol.key h4{color:var(--accent)}
-.crows{display:grid; gap:5px}
-.crow{display:grid; grid-template-columns:20px 24px minmax(0,1fr) auto; gap:8px; align-items:start; padding:8px; border-radius:8px; background:var(--surface-2); font-size:13.5px; line-height:1.4}
-.crow .pos{font:600 13px/24px var(--mono); color:var(--ink-2)}
-.crow .letter{width:24px; height:24px; font-size:12px}
-.crow .pts{font:600 12px/24px var(--mono); white-space:nowrap}
-.crow.b4,.crow.b3{background:var(--good-soft)}
-.crow.b4 .pts,.crow.b3 .pts,.crow.b4 .pos,.crow.b3 .pos{color:var(--good)}
-.crow.b2{background:var(--near-soft)}
-.crow.b2 .pts,.crow.b2 .pos{color:var(--near)}
-.crow.b1,.crow.b0{background:var(--bad-soft)}
-.crow.b1 .pts,.crow.b0 .pts,.crow.b1 .pos,.crow.b0 .pos{color:var(--bad)}
-.cempty{font-size:13px; color:var(--ink-3); padding:8px}
-@media (max-width:640px){
-  .compare{grid-template-columns:1fr}
-  .ritem{grid-template-columns:30px 28px minmax(0,1fr) auto; gap:8px; padding:10px}
-  .ritem::before{width:30px; height:30px; font-size:15px}
-  .grip{display:none}
-}
-
-@media (max-width:900px){
-  .layout{grid-template-columns:1fr}
-  .panel{position:static}
-}
-@media (max-width:640px){
-  .wrap{padding-inline:16px}
-  .card{padding:18px 16px}
-  .arch{grid-template-columns:repeat(8,minmax(0,1fr))}
-  .mid{display:none}
-  .scenario{font-size:17px}
-}
-@media (prefers-reduced-motion:reduce){ *{transition:none!important} }
-</style>
-<style>html,body{margin:0}[hidden]{display:none!important}img{max-width:100%}</style>
-</head>
-<body>
-<div class="wrap">
-  <header>
-    <p class="eyebrow">Unofficial practice · Dental Foundation Training SJT</p>
-    <h1>DFT SJT Mock Paper</h1>
-    <p class="sub"><b>64 original practice items in two papers.</b> Paper 1 (Q1–32) is standard. <b>Paper 2 (Q33–64) is harder</b>: every option is plausible, and the key turns on timing, proportionality and who should act. You drag the ranking items into order, and everything is marked with the live test’s near-miss scoring. At 1 min 52 s per item, each paper takes 60 minutes.</p>
-  </header>
-
-  <nav class="chart" aria-label="Question map">
-    <div class="ptabs" id="ptabs" role="tablist" aria-label="Papers"></div>
-    <div class="chart-top">
-      <span class="chart-title" id="chart-title"></span>
-      <span class="legend">
-        <span><i style="background:var(--surface-2)"></i>Not started</span>
-        <span><i style="background:var(--accent-soft)"></i>Answered</span>
-        <span><i style="background:var(--good-soft)"></i>80%+</span>
-        <span><i style="background:var(--near-soft)"></i>55–79%</span>
-        <span><i style="background:var(--bad-soft)"></i>Under 55%</span>
-      </span>
-    </div>
-    <div class="arch" id="upper"></div>
-    <div class="occl" aria-hidden="true"></div>
-    <div class="arch" id="lower"></div>
-  </nav>
-
-  <div class="layout">
-    <section class="card" id="card" aria-live="polite"></section>
-    <aside class="panel" id="panel"></aside>
-  </div>
-</div>
-
-<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
-<script>
+// Question bank for the DFT SJT Mock Paper.
+// Paper 1 = Q1–32 (standard), Paper 2 = Q33–64 (harder), Paper 3 = Q65–96 (harder).
+// Each item: t = type, d = domain, g = theme, a = archetype, k = key (in authoring order),
+// s = scenario, o = [option, justification] pairs, tk = takeaway.
+// Options are shown in a fixed shuffled order (see the end of this file), and each key is remapped to match.
 const L = "ABCDEFGH";
 const DOMAINS = {I:"Professional integrity", P:"Coping with pressure", E:"Empathy & communication", T:"Working in a team"};
 const TYPES = {rank:"Ranking · actions", consider:"Ranking · considerations", best3:"Best three of eight"};
@@ -238,7 +11,12 @@ const PROMPTS = {
   consider:"Rank in order the importance of the following considerations in deciding how to respond (1 = Most important; 5 = Least important).",
   best3:"Choose the THREE most appropriate actions to take in this situation."
 };
-const DOC = "https://claude.ai/code/artifact/7af023ab-2f52-4ab9-9135-27c9c3bfb629";
+const THEMES = {
+  C:"Candour & your own errors", R:"Raising concerns about colleagues", K:"Consent & capacity",
+  F:"Confidentiality & information", S:"Safeguarding & vulnerable patients", W:"Working within competence & safe conditions",
+  M:"Communication & complaints", P:"Prioritising & workload", T:"Team relationships & feedback",
+  H:"Health & wellbeing", I:"Probity: honesty, records & rules", N:"Money, NHS & private care"
+};
 
 const Q = [
 {t:"rank", d:"I", a:"Colleague dishonesty", k:"ACDEB",
@@ -901,295 +679,392 @@ Q.push(...[
     ["Say nothing to the parent unless the child shows signs of a reaction.","Dishonest. It sits just above ignoring the risk altogether."]],
  tk:"Serious-error items: safety first, candour second, records third. When both dishonesty and ignoring the risk are on offer, ignoring the risk can rank lower."}
 ]);
-Q.forEach((q, qi) => { q.p = qi < 32 ? 1 : 2; });
 
-// Authoring order often puts the strongest option first, so a fixed per-question shuffle sets the displayed order and remaps each key.
-function rng(seed){ let x = (seed >>> 0) || 1; return () => { x ^= x << 13; x >>>= 0; x ^= x >>> 17; x ^= x << 5; x >>>= 0; return x / 4294967296; }; }
-Q.forEach((q, qi) => {
-  const rnd = rng(((qi + 11) * 2654435761) >>> 0);
-  for (let w = 0; w < 5; w++) rnd();
-  const order = q.o.map((_, j) => j);
-  for (let j = order.length - 1; j > 0; j--) { const r = Math.floor(rnd() * (j + 1)); [order[j], order[r]] = [order[r], order[j]]; }
-  const toNew = {}; order.forEach((old, pos) => toNew[old] = pos);
-  let k = q.k.split("").map(ch => L[toNew[L.indexOf(ch)]]);
-  if (q.t === "best3") k.sort();
-  q.k = k.join("");
-  q.o = order.map(old => q.o[old]);
-});
+// ---- Paper 3: harder items ----
+// Paper 3: 32 original hard practice items (unofficial). 15 rank, 3 consider, 14 best3.
+const P3 = [
+// 1
+{t:"consider", d:"I", g:"C", a:"Missed lesion found at review", k:"DBEAC",
+ s:"At a check-up you compare today’s bitewings with ones you took eight months ago. You realise that a lesion on the patient’s lower left first molar was visible on the earlier radiograph, but you did not record or treat it, and it now looks close to the pulp. She has no symptoms and does not know. Rank these considerations in order of importance.",
+ o:[["Whether the lesion was realistically detectable on the earlier radiograph, or is only obvious with hindsight.","Fourth. It matters for your own learning, but candour does not depend on whether the miss was blameworthy, so it must not decide whether she is told."],
+    ["Her right to be told honestly that the lesion was visible earlier and was not acted on.","Second. The duty of candour means she must be told. It sits just below prompt treatment only because protecting the tooth comes first, and both should happen today."],
+    ["The chance that she will complain or make a claim against you once she knows.","Last. Fear of a complaint is self-interest and must never shape whether, or how, you are open with a patient."],
+    ["The need to treat the tooth promptly to reduce the risk of pain, infection or losing it.","Most important. The lesion now threatens the pulp, so preventing further harm is the priority."],
+    ["Discussing the missed lesion with your ES so you can learn from it and check how you report radiographs.","Third. Reflecting with your ES improves safety for future patients, but it comes after this patient’s treatment and her right to know."]],
+ tk:"Own-error consideration items: the clinical risk leads, candour follows close behind, learning comes next, and whether you might be blamed sits at the bottom."},
 
-const PAPERS = {1:{from:0, to:32, name:"Paper 1", sub:"Standard"}, 2:{from:32, to:64, name:"Paper 2", sub:"Harder"}};
-const paperOf = i => i < 32 ? 1 : 2;
-const isRank = q => q.t !== "best3";
-const GRIP = '<svg width="10" height="16" viewBox="0 0 10 16" aria-hidden="true"><g fill="currentColor"><circle cx="2" cy="2" r="1.5"/><circle cx="8" cy="2" r="1.5"/><circle cx="2" cy="8" r="1.5"/><circle cx="8" cy="8" r="1.5"/><circle cx="2" cy="14" r="1.5"/><circle cx="8" cy="14" r="1.5"/></g></svg>';
+// 2
+{t:"rank", d:"E", g:"C", a:"Numb lip after extraction", k:"CBEDA",
+ s:"Three days after you surgically removed her lower left third molar, a patient phones. Her lower lip and chin on that side are still numb, and she asks you directly whether you have damaged a nerve. You warned her of this risk when she consented, and you are not yet sure whether the change is temporary.",
+ o:[["Remind her that the consent form she signed listed nerve damage as a risk.","Last. It is defensive and does nothing for her. Warning someone about a risk does not remove your duty to be open and supportive when it happens."],
+    ["Discuss the case with your ES the same day, including whether she needs an early referral to oral surgery.","Second. A possible nerve injury is beyond routine FD management, and senior advice on early review or referral can affect the outcome."],
+    ["Tell her honestly that the nerve may have been affected, explain that many cases recover but some do not, and arrange to see her within the next few days.","Best. It answers her question honestly without claiming more certainty than you have, and it arranges a prompt review. Candour covers news that is uncertain but serious."],
+    ["Reassure her that numbness nearly always settles, and ask her to call back if it has not improved in six weeks.","Fourth. It sounds kind, but it gives false reassurance and delays assessment by weeks when early review may matter."],
+    ["Say you cannot comment until you have examined her, and book her into your next routine slot next week.","Third. Seeing her is right, but dodging a direct question is evasive and next week is slower than ideal. It is still better than falsely reassuring her."]],
+ tk:"Uncertain complications: say honestly what may have happened, review promptly and involve a senior; never hide behind the consent form or offer false reassurance."},
 
-const STORE = "dft-sjt-mock-v3", OLD = "dft-sjt-mock-v2";
-function fresh(){ return {mode:"practice", cur:0, ans:{}, chk:{}, marked:{1:false, 2:false}, el:{1:0, 2:0}, on:false, last:{1:0, 2:32}}; }
-let S = fresh();
-try {
-  const raw = localStorage.getItem(STORE);
-  if (raw) S = Object.assign(fresh(), JSON.parse(raw));
-  else {
-    const old = localStorage.getItem(OLD);
-    if (old) {
-      const o = JSON.parse(old);
-      S.mode = o.mode === "exam" ? "exam" : "practice";
-      S.cur = +o.cur || 0; S.chk = o.chk || {};
-      S.marked = {1:!!o.marked, 2:false}; S.el = {1:+o.el || 0, 2:0};
-      Object.keys(o.ans || {}).forEach(key => {
-        const a = o.ans[key], i = +key; if (!Q[i]) return;
-        if (isRank(Q[i]) && a.r) S.ans[i] = {ord:[0,1,2,3,4].sort((x, y) => (a.r[x] || 9) - (a.r[y] || 9)), set:a.r.every(x => x > 0)};
-        else if (a.p) S.ans[i] = {p:a.p};
-      });
-    }
-  }
-} catch(e) {}
-S.marked = Object.assign({1:false, 2:false}, S.marked);
-S.el = Object.assign({1:0, 2:0}, S.el);
-S.last = Object.assign({1:0, 2:32}, S.last);
-if (!(S.cur >= 0 && S.cur < Q.length)) S.cur = 0;
-S.on = false;
-let ui = {warn:false, confirmReset:false, confirmMark:false};
-function save(){ try { localStorage.setItem(STORE, JSON.stringify(S)); } catch(e) {} }
+// 3
+{t:"best3", d:"P", g:"C", a:"Wrong analgesic advice given", k:"ADG",
+ s:"Twenty minutes after a patient leaves following an extraction, your nurse points out that you told him to take ibuprofen for pain. His medical history, which you only skimmed, records asthma that NSAIDs make worse. Your next patient is already in the chair and you are running ten minutes late.",
+ o:[["Excuse yourself briefly and phone him now, explaining that your advice was wrong, apologising and telling him what to take instead.","Keyed. He could take ibuprofen within the hour, so a short pause to correct the advice yourself is safe, honest and proportionate."],
+    ["Ask the receptionist to phone him and tell him not to take ibuprofen.","Not keyed. It is quicker, but the mistake is yours to explain, and a receptionist cannot answer his clinical questions."],
+    ["Finish treating your current patient, then phone him at the end of the session.","Not keyed. A few minutes’ delay for the next patient is acceptable. Waiting longer risks him taking a dose before you call."],
+    ["Add a dated entry to his record describing the error, the corrected advice and what he said.","Keyed. An accurate, contemporaneous addendum records what happened without altering the original entry."],
+    ["Correct the advice without mentioning that it was a mistake, provided he has not taken any ibuprofen yet.","Not keyed. It feels tactful, but it hides the fact that an error happened, which breaches the duty of candour."],
+    ["Call your defence organisation for advice before you contact him.","Not keyed. You can get advice later. Nothing should delay a call that prevents harm."],
+    ["Report it through the practice’s incident system and discuss with your ES why the history was missed.","Keyed. Reporting the incident and reflecting on it with your ES reduces the chance of a repeat, for example by making sure you read medical histories properly before giving advice."],
+    ["Amend today’s entry so that it shows paracetamol was advised.","Not keyed. Changing the original record is dishonest and could itself become a probity matter."]],
+ tk:"Own errors with ongoing risk: correct them yourself straight away and say it was your mistake, then add to the record without altering it and report the incident for learning."},
 
-const revealed = i => S.mode === "practice" ? !!S.chk[i] : !!S.marked[paperOf(i)];
-function ans(i){ if (!S.ans[i]) S.ans[i] = isRank(Q[i]) ? {ord:[0,1,2,3,4], set:false} : {p:[]}; return S.ans[i]; }
-function complete(i){ const a = S.ans[i]; if (!a) return false; return isRank(Q[i]) ? !!a.set : a.p.length === 3; }
-function started(i){ const a = S.ans[i]; if (!a) return false; return isRank(Q[i]) ? !!a.set : a.p.length > 0; }
-const keyRank = (q, idx) => q.k.indexOf(L[idx]) + 1;
-function userRank(i, idx){ const a = S.ans[i]; return a && a.set ? a.ord.indexOf(idx) + 1 : 0; }
-function optPts(i, idx){
-  const q = Q[i];
-  if (isRank(q)) { const r = userRank(i, idx); return r ? Math.max(0, 4 - Math.abs(r - keyRank(q, idx))) : 0; }
-  const a = S.ans[i]; return (a && a.p.includes(idx) && q.k.includes(L[idx])) ? 4 : 0;
-}
-function qScore(i){ let got = 0; Q[i].o.forEach((_, idx) => got += optPts(i, idx)); return {got, max:isRank(Q[i]) ? 20 : 12}; }
-function band(got, max){ const p = got / max; return p >= 0.8 ? "good" : p >= 0.55 ? "near" : "bad"; }
-const fmt = s => String(Math.floor(s / 60)).padStart(2, "0") + ":" + String(s % 60).padStart(2, "0");
+// 4
+{t:"rank", d:"P", g:"C", a:"Dropped file, possibly inhaled", k:"CEBDA",
+ s:"A patient who cannot tolerate rubber dam is having root canal treatment on an upper molar with cotton-roll isolation. A small hand file slips from your fingers towards the back of his mouth; he coughs, then says he feels fine. You cannot find the file in his mouth, on the bib or in the suction, and he is keen to carry on so he can get back to work.",
+ o:[["Search the floor, suction and surrounding area thoroughly, and carry on if he still has no symptoms.","Last. A careful search is sensible, but carrying on without imaging when the file is still missing risks overlooking an inhaled instrument, which can be serious."],
+    ["Record the incident in his notes and complete an incident report.","Third. Accurate records and an incident report are required, but they come after he is safe and your ES is involved."],
+    ["Stop, explain honestly that the file may have been swallowed or inhaled, apologise, and arrange for him to go to A&amp;E urgently for a chest radiograph.","Best. You cannot account for the instrument, so it may be in his airway. Stopping, telling him and getting him imaged urgently puts his safety first."],
+    ["Finish the canal preparation quickly with a new file, then send him to A&amp;E afterwards.","Fourth. He does get referred, but finishing the treatment first delays assessment of a possible airway problem for no clinical reason."],
+    ["Tell your ES straight away so they can help you manage the situation.","Second. Your ES should know at once and can help with the referral. This supports stopping and arranging assessment rather than replacing it."]],
+ tk:"Missing instrument: stop, tell the patient, arrange urgent imaging and involve your supervisor. The paperwork comes afterwards."},
 
-function renderNav(){
-  const p = paperOf(S.cur), P = PAPERS[p];
-  document.getElementById("ptabs").innerHTML = [1, 2].map(n => {
-    const R = PAPERS[n]; let done = 0;
-    for (let i = R.from; i < R.to; i++) if (complete(i)) done++;
-    return `<button type="button" class="ptab" role="tab" id="tab-${n}" data-p="${n}" aria-selected="${n === p}">${R.name} · ${R.sub}<small>${done}/32</small></button>`;
-  }).join("");
-  document.getElementById("chart-title").textContent = `${P.name} map · upper arch Q${P.from + 1}–${P.from + 16} · lower arch Q${P.from + 17}–${P.to}`;
-  const build = (from, lower) => {
-    let h = "";
-    for (let i = from; i < from + 16; i++) {
-      if (i === from + 8) h += '<span class="mid" aria-hidden="true"></span>';
-      let cls = "cell" + (lower ? " lo" : ""), status = "not started";
-      if (revealed(i)) { const s = qScore(i); cls += " " + band(s.got, s.max); status = s.got + " of " + s.max + " marks"; }
-      else if (started(i)) { cls += " done"; status = complete(i) ? "answered" : "in progress"; }
-      if (i === S.cur) cls += " cur";
-      h += `<button type="button" class="${cls}" id="nav-${i}" data-q="${i}" aria-label="Question ${i + 1}, ${status}"${i === S.cur ? ' aria-current="step"' : ""}>${i + 1}</button>`;
-    }
-    return h;
-  };
-  document.getElementById("upper").innerHTML = build(P.from, false);
-  document.getElementById("lower").innerHTML = build(P.from + 16, true);
-}
+// 5
+{t:"best3", d:"E", g:"S", a:"Carer using patient’s bank card", k:"ACD",
+ s:"An 84-year-old widower with mild dementia attends with his paid carer. The carer asks you to quote for private veneers for him and says she will pay with his bank card ‘as she always does’. When she steps out, he seems unsure about the cost and says he only wants his denture to stop rubbing.",
+ o:[["Focus on his own concerns, explaining the options simply and assessing whether he can make decisions about his treatment and its cost.","Keyed. It puts his wishes at the centre and checks his capacity for this particular decision, rather than assuming it either way."],
+    ["Refuse to provide any private treatment until his family confirms it is appropriate.","Not keyed. It is paternalistic and may breach his confidentiality. It also does nothing to address the possible abuse."],
+    ["Discuss your concern about possible financial abuse with the practice safeguarding lead the same day, and follow the adult safeguarding procedure.","Keyed. Using his card for treatment he has not asked for is a warning sign, and the safeguarding lead can decide on a referral."],
+    ["Record accurately in his notes what he and the carer said, and what concerns you.","Keyed. Factual notes support any safeguarding referral and later decisions."],
+    ["Tell the carer you suspect she is taking advantage of him and that you will be reporting her.","Not keyed. Confronting her could put him at greater risk and is not your role. Concerns go through the safeguarding procedure."],
+    ["Provide the quote as requested, since he may have capacity and it is his money.","Not keyed. His autonomy matters, but he has not asked for veneers, and ignoring the warning signs fails your safeguarding duty."],
+    ["Ask the carer for his family’s contact details so you can check with them.","Not keyed. Deciding to involve his family is not yours alone to make, and asking the carer could alert her."],
+    ["Call the police straight away to report financial abuse.","Not keyed. Nothing suggests immediate danger, so this skips the safeguarding process and is disproportionate at this stage."]],
+ tk:"Suspected financial abuse: centre the patient’s own wishes and capacity, record the facts, and go through the safeguarding lead rather than confronting anyone or jumping to the police."},
 
-function crow(pos, o, text, cls, pts){
-  return `<div class="crow ${cls}"><span class="pos">${pos}</span><span class="letter">${L[o]}</span><span class="ctext">${text}</span><span class="pts">${pts}</span></div>`;
-}
+// 6
+{t:"rank", d:"E", g:"S", a:"Teenager discloses self-harm", k:"BDAEC",
+ s:"While giving local anaesthetic to a 16-year-old, you notice several healing cuts on her forearm. When you ask gently, she says she has been cutting herself for a few months and feels ‘fine now’, and she begs you not to tell her mother, who is in the waiting room. She says she has no thoughts of ending her life.",
+ o:[["Give her details of support services, such as a young people’s helpline, and offer to contact her GP with her agreement.","Third. Signposting her and involving her GP with her consent really do help, but they do not replace a safeguarding discussion."],
+    ["Thank her for telling you, stay calm, and explain honestly that you cannot promise to keep it secret but will talk with her about who needs to know.","Best. It keeps her trust while being honest about the limits of confidentiality, and it is what you must do in the moment, before anything else."],
+    ["Respect her wishes because she is competent, and record the disclosure in her notes without taking it further.","Last. Recording it alone leaves a self-harming young person with no route to support. Her competence does not remove your safeguarding duty."],
+    ["Discuss your concerns with the practice safeguarding lead today and follow the practice’s safeguarding procedure.","Second. Self-harm in a 16-year-old is a safeguarding concern, and the lead can help decide what needs to be shared, and with whom."],
+    ["Tell her mother privately at the end of the appointment so she can keep an eye on her.","Fourth. It does tell a responsible adult, which beats doing nothing. But doing it against her wishes and outside the procedure may damage her trust, and home may be part of the problem."]],
+ tk:"A young person’s disclosure: never promise secrecy, keep them engaged and involve the safeguarding lead. Don’t act alone, and don’t do nothing."},
 
-function renderCard(){
-  const i = S.cur, q = Q[i], a = S.ans[i], rev = revealed(i), rank = isRank(q);
-  const word = q.t === "consider" ? "important" : "appropriate";
-  let h = `<div class="qhead"><span class="qnum">Question ${i + 1} of ${Q.length}</span><div class="chips">${q.p === 2 ? '<span class="chip hard">Paper 2 · Harder</span>' : ""}<span class="chip type">${TYPES[q.t]}</span><span class="chip">${DOMAINS[q.d]}</span></div></div>`;
-  h += `<p class="scenario">${q.s}</p><p class="instr">${PROMPTS[q.t]}</p>`;
+// 7
+{t:"rank", d:"P", g:"S", a:"Intoxicated parent about to drive", k:"BEACD",
+ s:"A mother brings her 6-year-old son for a 9am check-up. She smells strongly of alcohol, is slurring slightly and unsteady on her feet, and mentions that she will drive him to school afterwards. Your nurse has noticed the same.",
+ o:[["Discuss the situation with the practice safeguarding lead and make a referral to children’s social care in line with local procedures.","Third. A referral is right given what you have seen, but it does not deal with the immediate danger of her driving the child now."],
+    ["Tell her sensitively that you are worried, ask her not to drive, and offer to help her arrange another way to get them both home or to school.","Best. Speaking to her directly and offering a safe alternative deals with the immediate risk to both of them while treating her with respect."],
+    ["Record your observations factually in the child’s notes.","Fourth. Factual notes support any referral but do nothing for his safety this morning."],
+    ["Complete the check-up quickly and calmly so as not to embarrass her.","Last. Wanting to spare her embarrassment is understandable, but it ignores a clear, immediate risk to a child."],
+    ["Tell her that if she insists on driving him you will have to call the police, and do so if she leaves in the car.","Second. It feels drastic, but a child being driven by an apparently intoxicated adult is at immediate risk. Warning her first is honest and may change her mind."]],
+ tk:"Immediate risk to a child: act now and directly to prevent harm, and be prepared to call the police if the risk continues. The referral and records follow."},
 
-  if (!rev) {
-    if (rank) {
-      const ord = a ? a.ord : [0,1,2,3,4], set = !!(a && a.set);
-      h += `<p class="rend">Most ${word}</p><ol class="rlist${set ? "" : " unset"}" id="rlist" aria-label="Your ranking, most ${word} first">`;
-      ord.forEach((o, pos) => {
-        h += `<li class="ritem" data-o="${o}"><span class="grip">${GRIP}</span><span class="letter">${L[o]}</span><span class="otext">${q.o[o][0]}</span><span class="mv">` +
-          `<button type="button" class="mvb" id="mv-${i}-${o}-up" data-o="${o}" data-d="-1" aria-label="Move option ${L[o]} up"${pos === 0 ? " disabled" : ""}>↑</button>` +
-          `<button type="button" class="mvb" id="mv-${i}-${o}-down" data-o="${o}" data-d="1" aria-label="Move option ${L[o]} down"${pos === 4 ? " disabled" : ""}>↓</button></span></li>`;
-      });
-      h += `</ol><p class="rend bottom">Least ${word}</p>`;
-      if (!set) h += `<div class="setrow"><span>Drag the options into order, or use the arrows. If you agree with the order shown, keep it as it is.</span><button type="button" class="btn small" id="useorder">Keep this order</button></div>`;
-    } else {
-      const n = a ? a.p.length : 0;
-      h += `<p class="scale${ui.warn ? " warn" : ""}"><span>${n} of 3 chosen</span><span>${ui.warn ? "Untick one first: only three can be chosen" : ""}</span></p><div class="opts">`;
-      q.o.forEach(([text], idx) => {
-        const picked = !!(a && a.p.includes(idx));
-        h += `<button type="button" class="opt pick" id="pk-${i}-${idx}" data-o="${idx}" aria-pressed="${picked}"><span class="letter">${L[idx]}</span><span class="otext">${text}</span></button>`;
-      });
-      h += "</div>";
-    }
-  } else {
-    h += `<p class="xhead">${rank ? "Why each option sits where it does" : "Why each option is or isn’t one of the best three"}</p><div class="xlist">`;
-    q.o.forEach(([text, why], idx) => { h += `<div class="xitem"><span class="letter">${L[idx]}</span><div><span class="otext">${text}</span><span class="xwhy"><b>Justification:</b> ${why}</span></div></div>`; });
-    h += "</div>";
-    const sc = qScore(i);
-    h += `<div class="result"><div class="scoreline">${sc.got} / ${sc.max} marks</div><div class="compare">`;
-    h += `<div class="ccol"><h4>Your answer</h4><div class="crows">`;
-    if (rank) {
-      if (a && a.set) a.ord.forEach((o, pos) => { const pts = optPts(i, o); h += crow(pos + 1, o, q.o[o][0], "b" + pts, pts + "/4"); });
-      else h += `<div class="cempty">Not answered</div>`;
-    } else {
-      const picks = a ? a.p.slice().sort((x, y) => x - y) : [];
-      picks.forEach(o => { const ok = q.k.includes(L[o]); h += crow(ok ? "✓" : "✗", o, q.o[o][0], ok ? "b4" : "b0", ok ? "4/4" : "0/4"); });
-      if (!picks.length) h += `<div class="cempty">Not answered</div>`;
-      else if (picks.length < 3) h += `<div class="cempty">${3 - picks.length} pick${picks.length === 2 ? "" : "s"} left blank</div>`;
-    }
-    h += `</div></div><div class="ccol key"><h4>Correct answer</h4><div class="crows">`;
-    q.k.split("").forEach((ch, pos) => { const o = L.indexOf(ch); h += crow(rank ? pos + 1 : "", o, q.o[o][0], "neutral", ""); });
-    h += `</div></div></div><div class="takeaway"><span class="tlabel">Pattern · ${q.a}</span>${q.tk}</div></div>`;
-  }
+// 8
+{t:"best3", d:"E", g:"S", a:"Teen with much older boyfriend", k:"ACD",
+ s:"A 15-year-old attends for an emergency appointment with a man who says he is her 24-year-old boyfriend. He answers questions for her, keeps hold of her phone and says they need to be quick. She seems anxious, avoids eye contact and mentions she hasn’t been at school ‘for a while’.",
+ o:[["Find a reason to see her on her own, for example by asking him to wait in reception while you examine her.","Keyed. Seeing her alone gives her a safe chance to talk and lets you assess her properly without alerting him."],
+    ["Ask him directly about their relationship and warn him that it may be illegal.","Not keyed. Confronting him could put her at greater risk and alerts him to your concerns."],
+    ["Speak to the practice safeguarding lead the same day about a referral to children’s social care, following local procedures.","Keyed. An adult in a relationship with a 15-year-old is a serious child protection concern, and the lead can support a prompt referral to social care or the police."],
+    ["Record factually what you saw and what each of them said, including his name.","Keyed. Precise, factual notes support the referral and any later investigation."],
+    ["Phone her parents to tell them who she came with.","Not keyed. It may feel natural, but you don’t know her family situation, and acting outside the procedure could increase the risk to her."],
+    ["Decline to treat her until a parent or guardian can come with her.","Not keyed. Refusing care punishes her and loses a chance to help. She may well be able to consent to emergency treatment herself."],
+    ["Treat her as normal, and watch for further signs at future visits before acting.","Not keyed. Waiting leaves a child at risk when you already have enough to act on."],
+    ["Tell her you think she is being groomed and that you have to report him.","Not keyed. Frightening her with labels and announcing a report may make her deny everything or stop attending."]],
+ tk:"Possible exploitation: create a safe moment alone with the child, record precisely, and refer through the safeguarding lead. Don’t confront the adult or wait for more signs."},
 
-  h += `<div class="actions"><button type="button" class="btn" id="prev"${i === 0 ? " disabled" : ""}>Previous</button><div class="act-r">`;
-  if (S.mode === "practice" && !rev) h += `<button type="button" class="btn primary" id="check"${complete(i) ? "" : " disabled"}>Check answer</button>`;
-  h += `<button type="button" class="btn${rev || S.mode === "exam" ? " primary" : ""}" id="next"${i === Q.length - 1 ? " disabled" : ""}>Next</button></div></div>`;
-  if (S.mode === "practice" && !rev && !complete(i) && !rank) h += `<p class="hint">Choose three options, then check your answer.</p>`;
-  if (S.mode === "exam" && !rev) h += `<p class="hint">Exam mode: your answers are saved, and the whole paper is marked when you press Mark paper.</p>`;
-  document.getElementById("card").innerHTML = h;
-  initDrag();
-}
+// 9
+{t:"rank", d:"I", g:"F", a:"Treatment plan emailed wrongly", k:"CEBAD",
+ s:"At the end of a busy day you email a treatment plan, including a summary of the patient’s medical history, to a patient. Minutes later you realise that the email address autocompleted to a different patient with the same surname. The practice manager, who is the practice’s data protection lead, is still in the building.",
+ o:[["Try to recall the email and, if the system says the recall worked, send the plan to the right patient and treat the matter as closed.","Fourth. Trying a recall is sensible, but you cannot verify that a recall to an outside address worked, and treating the matter as closed sidesteps the practice’s breach process."],
+    ["Contact the patient whose information was sent, explain what happened and apologise.","Third. She has a right to know that her data was disclosed, and candour applies. It comes after the breach is being managed and contained, so you can also tell her what is being done."],
+    ["Tell the practice manager straight away so the breach can be assessed and handled under the practice’s data protection procedure.","Best. She is the data protection lead and is on site. She can direct containment and decide whether the breach must be reported to the ICO within the legal time limit."],
+    ["Wait until tomorrow to see whether the recipient replies before deciding who needs to know.","Last. Waiting loses the chance to contain the breach and could push the practice past the reporting deadline."],
+    ["Phone the recipient, explain that the email was sent in error and ask them to delete it without sharing it.","Second. Prompt containment limits the harm. It sits just below telling the data protection lead, who should know first and may want to coordinate the approach."]],
+ tk:"Your own data breach: tell the data protection lead at once, then contain it, then tell the affected patient. Never quietly recall the email and call it closed."},
 
-let sortable = null;
-function initDrag(){
-  if (sortable) { try { sortable.destroy(); } catch(e) {} sortable = null; }
-  const el = document.getElementById("rlist");
-  if (!el || !window.Sortable) return;
-  const i = S.cur;
-  sortable = Sortable.create(el, {
-    animation:160, forceFallback:true, fallbackTolerance:4, delayOnTouchOnly:true, delay:120,
-    filter:".mvb", preventOnFilter:false,
-    ghostClass:"ghost", chosenClass:"chosen", dragClass:"dragging",
-    onEnd: () => {
-      const a = ans(i);
-      a.ord = [...el.children].map(li => +li.dataset.o);
-      a.set = true; save();
-      setTimeout(render, 0);
-    }
+// 10
+{t:"best3", d:"T", g:"F", a:"Identifiable photos in a talk", k:"BDH",
+ s:"At a study day, a fellow FD shows you the slides for a case presentation she is giving in an hour. Several slides show full-face photographs of her patient, and one includes a screenshot of his clinical record with his name visible. She says he agreed to photographs ‘for his records’.",
+ o:[["Tell her it is fine as long as she asks the audience not to photograph the slides.","Not keyed. This is a disclaimer, not a fix. The patient can still be identified by everyone in the room."],
+    ["Tell her privately that consent to photographs for his records does not cover teaching, and that his name must not be shown.","Keyed. A quiet, specific word to the colleague is the first rung and explains exactly what the problem is."],
+    ["Say nothing, as it is her presentation and her responsibility.","Not keyed. You know a patient’s confidentiality is about to be breached, and staying silent fails him."],
+    ["Offer to help her crop or blur the images and remove the screenshot so that he cannot be identified.","Keyed. It solves the problem practically before the presentation and lets her keep the teaching value of the case."],
+    ["Report her to the GDC for breaching confidentiality.","Not keyed. Disproportionate. The breach has not happened yet and can be prevented locally."],
+    ["Tell the TPD straight away, before speaking to her.","Not keyed. It skips giving her the chance to put it right herself, which she may well do once told."],
+    ["Suggest she phones the patient now for verbal consent to teaching use, then presents the slides unchanged.","Not keyed. Tempting, but consent rushed over the phone is doubtful, and it would not justify showing his clinical record and name."],
+    ["If she will not change the slides, raise it with the TPD or the study-day lead before she presents.","Keyed. If she will not act, escalating before the breach happens protects the patient. This is the next rung, taken only when it is needed."]],
+ tk:"A colleague’s imminent confidentiality breach: speak to them privately and help fix it, and escalate before the breach only if they refuse."},
+
+// 11
+{t:"rank", d:"E", g:"F", a:"Patient with seizures still driving", k:"BDECA",
+ s:"A patient tells you that his epilepsy has become poorly controlled, with two seizures in the past month, and asks you to update his medical history. When you ask, he says he still drives every day because he would otherwise lose his job, and he has not told the DVLA. He asks you to keep this between the two of you.",
+ o:[["Respect his confidentiality, because driving is not a dental matter, and simply update his medical history.","Last. It leaves a serious, continuing risk to him and to the public unaddressed. Confidentiality is not absolute when others could be seriously harmed."],
+    ["Explain that he has a legal duty to tell the DVLA and to stop driving, and that driving puts him and others at serious risk.","Best. Persuading him to act himself respects his autonomy and deals with the risk. It is the first step before any disclosure is considered."],
+    ["Contact the DVLA straight away without telling him, because public safety overrides confidentiality.","Fourth. Disclosure may eventually be justified, but doing it immediately and secretly skips trying to persuade him and telling him first. It ranks above doing nothing only because it tackles the risk."],
+    ["Tell him that if he carries on driving you may have to inform the DVLA, and ask your ES for advice about doing so.","Second. It feels harsh, but being honest about the limits of confidentiality is the right next step, and taking senior advice before any disclosure is sensible."],
+    ["Encourage him to discuss his seizures and driving with his GP or neurologist, and offer to write to his GP with his consent.","Third. Helpful and supportive, but on its own it relies on him acting. The clear warning about disclosure is the stronger safeguard."]],
+ tk:"Confidentiality versus public safety: persuade the patient first, be honest that you may have to disclose, get advice, and disclose only as a last resort after telling them."},
+
+// 12
+{t:"best3", d:"T", g:"F", a:"Patient data in staff WhatsApp", k:"BEH",
+ s:"Your practice has a staff WhatsApp group for rota changes. The receptionist often posts photos of the day list showing patients’ names and treatments so staff can ‘see who’s in’, and yesterday a nurse posted a photo of an unusual lesion, with part of the patient’s face visible, and a joking caption.",
+ o:[["Leave the group so you are not associated with the posts.","Not keyed. It protects you but does nothing for the patients whose information is being shared."],
+    ["Speak privately to the receptionist and the nurse, explaining that the posts could identify patients, and suggest they delete them.","Keyed. A quiet word is proportionate, deals with the most harmful posts quickly and gives colleagues the chance to put it right."],
+    ["Screenshot the posts and send them to the practice owner as evidence.","Not keyed. It skips the colleagues and the practice manager, and it spreads the patient data even further."],
+    ["Post a reminder of GDC guidance in the group, using the nurse’s photo as an example.","Not keyed. Shaming a colleague in public damages the team and draws more attention to the patient’s image."],
+    ["Raise the group’s use with the practice manager, suggesting a secure, approved way to share the day list.","Keyed. The day-list habit is a practice-wide system problem, and the practice manager can fix the process and check whether the breach needs formal handling."],
+    ["Report the practice to the Information Commissioner’s Office.","Not keyed. It skips local steps that could resolve this quickly. External reporting is the practice’s responsibility, or a later rung."],
+    ["Say nothing, since the practice manager set up the group and is presumably aware.","Not keyed. Assuming someone else knows lets an ongoing confidentiality problem continue."],
+    ["Make sure you never share patient information in the group yourself, and use the practice’s secure systems instead.","Keyed. Modelling good practice is part of your own responsibility, and it doesn’t cut you off from the team the way leaving the group would."]],
+ tk:"Everyday data leaks: a private word with colleagues, a system fix through the manager, and your own good practice. No public shaming and no jumping to regulators."},
+
+// 13
+{t:"rank", d:"I", g:"N", a:"Patient’s exemption no longer valid", k:"CADEB",
+ s:"An NHS patient is about to sign the form for a course of fillings and has ticked that she receives Universal Credit and is exempt from charges. While chatting, she mentions that her Universal Credit stopped two months ago when she started a new job, but says ‘nobody checks, and money is really tight’.",
+ o:[["Tell her about help she may be eligible for, such as the NHS Low Income Scheme, and discuss prioritising her most urgent treatment.","Second. It responds kindly to her real money worries and keeps her in care. It supports, rather than replaces, making sure the form is accurate."],
+    ["Let her sign as she has ticked, since checking exemptions is the NHS’s job, not yours.","Last. Knowingly accepting a false declaration is colluding in fraud, however sympathetic her situation."],
+    ["Explain kindly that the form must reflect her current circumstances and that a false claim can lead to a penalty charge, and ask her to complete it accurately.","Best. It is honest, protects her from a penalty and keeps the claim accurate, without judging her."],
+    ["Tell the practice manager about the conversation so the correct charge can be collected.","Third. The practice is responsible for collecting charges, so it should know. This ranks below helping her correct the form herself, which may resolve it."],
+    ["Suggest she delays signing and postpones treatment until she has checked her eligibility online.","Fourth. It is honest but delays care she needs when her ineligibility is already clear. It is still far better than accepting a false form."]],
+ tk:"NHS charges and exemptions: correct a false declaration kindly and openly, and offer legitimate help with costs. Never look the other way."},
+
+// 14
+{t:"best3", d:"T", g:"N", a:"Private list in tutorial time", k:"CEG",
+ s:"Your DFT contract says that you provide NHS care only and that your Thursday afternoon tutorial with your ES is protected. The practice manager tells you she has booked three private patients into that slot this week because the associate is away, saying the practice ‘needs the income’ and your ES ‘won’t mind’. Your ES is on leave until Wednesday.",
+ o:[["See the patients, since it is only one week and the practice is under pressure.","Not keyed. It breaches both your contract and your protected training time, however understandable the pressure."],
+    ["Offer to see them after your normal hours instead, so your tutorial is protected.","Not keyed. It protects the tutorial but gives up your own time and still breaks the NHS-only terms."],
+    ["Politely explain to the practice manager that you cannot see them, because tutorial time is protected and your contract limits you to NHS care.","Keyed. A polite, clear refusal that gives the reasons is the right first response to a request you cannot accept."],
+    ["Contact the TPD straight away to report the practice manager.","Not keyed. It skips the ES, who is back before Thursday. The TPD is the next rung if the problem cannot be settled locally or keeps happening."],
+    ["Email your ES so they know before Thursday and can discuss it with the practice manager when they are back.","Keyed. The ES is responsible for protecting your training and can resolve this with the practice manager in good time."],
+    ["Agree to see them, but record the appointments as NHS so you stay within your contract.","Not keyed. Recording private treatment as NHS is dishonest and could amount to fraud."],
+    ["Suggest the patients are offered appointments with another dentist or on another day, so they are not left without care.","Keyed. It takes the patients’ needs seriously and gives the practice a practical way forward."],
+    ["Move your tutorial to Friday without telling your ES, so the patients can still be seen.","Not keyed. You would still be seeing private patients, and changing training arrangements without your ES undermines them."]],
+ tk:"Training rules versus practice income: politely decline, tell your ES, and help find another way to see the patients. Don’t bend the rules or give up your own time."},
+
+// 15
+{t:"best3", d:"I", g:"N", a:"Lab technician offers incentives", k:"ACE",
+ s:"A technician from a new dental laboratory visits and offers you personally a free set of whitening trays for every ten cases you send, plus a spa voucher at Christmas. His prices are a little lower than your current laboratory’s, but nobody at the practice has used his work before. The practice owner normally decides which laboratories the practice uses.",
+ o:[["Politely decline the personal incentives, explaining that they could influence, or appear to influence, your clinical choices.","Keyed. An incentive tied to how many cases you send is a clear conflict of interest, and declining it protects patients’ trust in your decisions."],
+    ["Accept the trays, since they are for your own use and cannot affect patients.","Not keyed. The reward depends on the number of cases you send, so it can affect which laboratory treats patients."],
+    ["Tell the practice owner about the offer, including the personal incentives, since the choice of laboratory is theirs.","Keyed. It is open, respects who makes the decision and lets the owner judge the offer properly."],
+    ["Accept the trays but give them to patients free of charge.","Not keyed. It sounds generous, but it still ties your referrals to a reward."],
+    ["If the practice does try his laboratory, judge his work on fit, quality and suitability for patients, not price.","Keyed. Basing laboratory work on patients’ interests is the principle that removes any conflict."],
+    ["Start sending him your cases, since lower prices benefit the practice.","Not keyed. It bypasses the owner and puts cost ahead of proven quality."],
+    ["Report him to the GDC for offering an inducement.","Not keyed. Disproportionate as a first step. Declining and telling the owner is enough, although a persistent pattern might justify more."],
+    ["Accept only the Christmas voucher, since an occasional seasonal gift is acceptable.","Not keyed. It is part of an offer linked to referrals, so it is not an ordinary gift."]],
+ tk:"Conflicts of interest: decline anything tied to your referrals, be open with whoever makes the decision, and choose on patient benefit alone."},
+
+// 16
+{t:"best3", d:"T", g:"R", a:"Fellow FD dating a patient", k:"BDG",
+ s:"Over lunch, a fellow FD tells you she has started dating one of her current patients, whom she is halfway through treating for two crowns. She says it is ‘nobody’s business’ because they met socially, not at the practice. You are friends, and she asks you not to mention it to anyone.",
+ o:[["Tell her ES straight away, because any boundary issue must be reported.","Not keyed. It skips giving her the chance to put it right herself. Telling her ES is appropriate only if she will not act."],
+    ["Explain as a friend that a relationship with a current patient crosses professional boundaries, however they met.","Keyed. A private, honest word is the first rung and is what a good friend and colleague would do."],
+    ["Keep her confidence, since the relationship started outside the practice.","Not keyed. Where they met does not change the fact that she is still his dentist, so loyalty cannot outweigh professional boundaries."],
+    ["Encourage her to speak to her ES about transferring his care to another dentist.","Keyed. Transferring his care resolves the conflict and lets her keep ownership of the situation."],
+    ["Suggest she finishes the crowns quickly and then transfers his care.","Not keyed. Tempting, but carrying on with his treatment keeps the conflict going while it continues."],
+    ["Report her to the GDC.","Not keyed. Disproportionate at this stage. The matter can be resolved locally if she acts."],
+    ["If she will not raise it herself, tell her you will need to speak to her ES.","Keyed. It can feel disloyal, but being honest about your next step protects the patient and gives her a last chance to act first."],
+    ["Speak to the patient to check he is comfortable with the situation.","Not keyed. It is inappropriate. It involves you in her personal life and may breach confidentiality."]],
+ tk:"A colleague’s boundary problem: speak to them first, point them to the fix, and tell them honestly that you will escalate if they won’t."},
+
+// 17
+{t:"rank", d:"T", g:"R", a:"Inheriting a colleague’s poor notes", k:"BEDCA",
+ s:"You take over the care of a patient from an associate who left the practice last month to work nearby. His notes for her last two visits are brief and partly illegible, with no record of a medical history check or of the anaesthetic used, and she says a filling was ‘started but never finished’. You notice that three of his other patients have similarly sparse notes.",
+ o:[["Add the missing details to his entries, based on what the patient remembers.","Last. Altering another clinician’s records, even to ‘complete’ them, is inappropriate. Your findings belong in your own dated entry."],
+    ["Take a full history and examination today, plan her care from your own findings and record them clearly.","Best. It makes her care safe now, whatever the old notes say, and is squarely within your competence."],
+    ["Tell the patient that the previous dentist’s notes are poor and that her filling was not finished properly.","Fourth. She deserves an honest account of her tooth as it is now, but criticising a colleague before you know the facts is unfair and unhelpful."],
+    ["Raise the pattern of incomplete notes with your ES, who can decide whether his other patients need a wider review.","Third. Several patients are affected, so the practice must know. It ranks just below contacting the associate, who may clear things up quickly and deserves the chance to explain."],
+    ["Contact the associate, explain the gaps you have found and ask whether he can clarify what was done.","Second. What he tells you may bear directly on her care, and it is fair to let him explain before the pattern is escalated. Both steps should follow promptly."]],
+ tk:"Inherited poor records: make the patient safe from your own assessment, ask the colleague, then raise any pattern. Never edit someone else’s notes."},
+
+// 18
+{t:"rank", d:"I", g:"R", a:"Associate hides separated file", k:"DACEB",
+ s:"A nurse tells you, visibly upset, that yesterday an associate separated a file in a patient’s canal and told the patient ‘everything went fine’. She says he told her not to mention it, and you can see it is not recorded in the notes. The associate is senior to you and a close friend of the practice owner, who is your ES.",
+ o:[["Encourage the nurse to write down what she saw and heard, and support her in raising it under the practice’s whistleblowing policy.","Second. She is the first-hand witness and should be supported to speak up. It ranks just below you raising it today, because relying on her alone may delay the patient being told."],
+    ["Wait to see whether the patient comes back with symptoms before deciding what to do.","Last. The patient has a right to know now, and a deliberate cover-up must not be left to chance."],
+    ["Speak to the associate first, to give him the chance to tell the patient himself.","Third. Normally this is the first rung, but a deliberate cover-up that involved pressuring a nurse is serious enough to go straight to the ES. Speaking to him first risks further concealment."],
+    ["Tell your ES today what the nurse has reported, with her knowledge, so the patient can be told and the records put right.","Best. Dishonesty and concealment justify prompt escalation, and the ES is responsible for making sure the duty of candour is met."],
+    ["Contact the TPD straight away, because your ES may protect his friend.","Fourth. The TPD is the right person if the ES fails to act, but assuming bias before the ES has had a chance bypasses the practice’s own process. It is still better than doing nothing."]],
+ tk:"Cover-ups and dishonesty justify skipping the private word: escalate promptly to the responsible senior, support the witness, and go higher only if that fails."},
+
+// 19
+{t:"rank", d:"I", g:"H", a:"Hungover before a clinic", k:"ADBEC",
+ s:"You wake at 7am after a friend’s birthday, having drunk heavily until about 2am. You feel nauseous, have a pounding headache and are unsure whether you are still over the drink-drive limit. Your list starts at 8:30 and includes two extractions, and your ES is in the practice today.",
+ o:[["Phone your ES before clinic, explain honestly that you drank heavily last night and may not be fit to treat patients, and agree a plan.","Best. It protects patients, is completely honest and lets your ES judge when you are fit to work."],
+    ["Phone in sick, saying you have a migraine, to avoid embarrassment.","Third. It keeps patients away from an impaired clinician, which puts it above going in, but giving a false reason is dishonest."],
+    ["Take a taxi in, drink plenty of water and decide by the first patient whether you feel well enough.","Last. You cannot reliably judge your own fitness while you may still be intoxicated, and patients would be at risk."],
+    ["Tell your ES you are unwell and ask to start late, without mentioning that you were drinking.","Second. It protects patients and involves your ES, but leaving out the cause is subtly dishonest and stops your ES judging your fitness properly."],
+    ["Go in, but ask reception to rebook the two extractions for another day.","Fourth. It removes the highest-risk procedures, but you would still be treating patients while possibly impaired. Slightly better than making no adjustment at all."]],
+ tk:"Fitness to practise: patient safety first, then full honesty with your supervisor. A convenient half-truth ranks below the whole truth."},
+
+// 20
+{t:"best3", d:"P", g:"H", a:"Your own low mood", k:"CEH",
+ s:"For about six weeks you have felt low, slept badly and dreaded going to work. Last week you forgot to send an urgent referral, and yesterday you nearly started treatment without checking an updated medical history. At your interim review, the TPD asks how you are finding the year.",
+ o:[["Ask for longer appointments so you have more time to double-check your work.","Not keyed. It shifts the problem onto the diary without dealing with the cause of the errors."],
+    ["Say things are going well, because you worry it could affect your satisfactory completion.","Not keyed. It is dishonest, and hiding a health problem that is causing near-misses puts patients at risk."],
+    ["Tell the TPD honestly how you have been feeling and about the recent near-misses.","Keyed. Being honest now opens the door to support and protects patients. The TPD is exactly the right person."],
+    ["Ask your nurse to double-check every medical history until you feel better.","Not keyed. It passes your responsibility to a colleague and does not address your health."],
+    ["Make an appointment with your GP to talk about your mood and sleep.","Keyed. Getting professional help for your own health is a professional responsibility, not just a personal one."],
+    ["Take a week of annual leave to rest, without telling anyone why.","Not keyed. Rest may help, but keeping it hidden leaves no plan or support for when you come back."],
+    ["Contact the GDC to tell them your health is affecting your work.","Not keyed. Premature. The expectation is that you seek help and follow advice, and self-referral is not the first step when you are getting support and adapting."],
+    ["Agree with the TPD and your ES what support would help, such as an occupational health referral or temporary changes to your work.","Keyed. It turns honesty into a practical plan that keeps both you and your patients safe."]],
+ tk:"Your own health: be honest with your supervisors, get medical help and agree support. Don’t hide it, and don’t just move the pressure elsewhere."},
+
+// 21
+{t:"rank", d:"E", g:"M", a:"Patient secretly recording", k:"EACDB",
+ s:"Halfway through explaining treatment options to a patient who is unhappy with a previous filling, you notice his phone in his shirt pocket with the camera recording. When you ask about it, he says he is recording ‘in case you lot try anything’. Your nurse looks uncomfortable.",
+ o:[["Offer him a written summary of the options and a copy of his records, so he has an accurate account to refer back to.","Second. It meets the anxiety behind the recording and supports informed consent. It sits just below engaging with his worry directly, which has to come first."],
+    ["Carry on, but avoid making firm recommendations in case they are used against you later.","Last. Defensive practice withholds the advice he needs to decide, putting your self-protection ahead of his care."],
+    ["Ask him to stop recording and delete the footage, explaining that it also captures your nurse without her consent.","Third. A polite request is reasonable, especially for your nurse’s sake, but you cannot make him delete it and pressing the point risks escalating things."],
+    ["Stop the appointment and tell him you will not continue until he puts the phone away.","Fourth. Disproportionate, because patients may generally record their own care and refusing to continue denies him advice. It is still better than deliberately giving him worse advice."],
+    ["Acknowledge the recording calmly, say you are happy to continue, and ask what has worried him so you can address it.","Best. Staying calm and open lowers the tension and gets to the real problem, which is his loss of trust."]],
+ tk:"Patients recording consultations: stay calm, carry on professionally and address the mistrust behind it. Never practise defensively."},
+
+// 22
+{t:"best3", d:"P", g:"M", a:"Relative filming staff in reception", k:"ADH",
+ s:"A man whose elderly mother’s appointment was cancelled at short notice starts shouting at the receptionist and filming her on his phone, saying he will ‘put this on Facebook’. Several patients, including a parent with young children, are in the waiting room. You are between patients and the practice manager is out.",
+ o:[["Go to reception, introduce yourself calmly and invite him to talk somewhere private about his mother’s appointment.","Keyed. Stepping in calmly supports your colleague, takes the situation out of a crowded room and addresses his actual grievance."],
+    ["Tell him the practice has zero tolerance for abuse and that he must leave immediately.","Not keyed. The policy may apply in the end, but opening with an ultimatum is likely to escalate someone who is upset and has not been listened to yet."],
+    ["Try to take the phone from him to stop the recording.","Not keyed. Physical intervention risks injury and escalation, and could expose you to an allegation."],
+    ["Ask him politely to stop filming, explaining that other patients in the waiting room could be identified.","Keyed. It protects other patients’ privacy with a proportionate, reasoned request rather than a demand."],
+    ["Offer his mother the next emergency slot, even if it means moving another patient, to calm things down.","Not keyed. It rewards aggression at another patient’s expense and is unfair."],
+    ["Stay in your surgery, since dealing with complaints is the practice manager’s job.","Not keyed. The manager is out and a colleague is being harassed now. Leaving it to someone else fails the team."],
+    ["Reassure him that the receptionist responsible for the cancellation will be dealt with.","Not keyed. It undermines a colleague and prejudges what happened, just to placate him."],
+    ["If he becomes threatening or will not calm down, follow the practice’s violence and aggression policy, calling the police if anyone is at risk.","Keyed. It sets a clear limit for safety if de-escalation fails, and uses the proper route."]],
+ tk:"An aggressive relative: step in calmly, de-escalate in private, protect other patients’ privacy, and use the policy or the police only if the risk rises."},
+
+// 23
+{t:"rank", d:"T", g:"T", a:"Conflicting senior instructions", k:"BDEAC",
+ s:"Your ES has told you always to take a periapical radiograph before starting root canal treatment. Today the practice owner, who is not your ES, sees you setting up for a patient in pain and tells you to skip it because the X-ray unit is needed next door and ‘an experienced dentist wouldn’t bother’. The patient is waiting in the chair.",
+ o:[["Write in the notes that the owner told you not to take a radiograph.","Fourth. Recording your clinical reasoning is fine, but noting a colleague’s instruction mainly protects you and does not help the patient. If you take the radiograph, there is nothing to defend."],
+    ["Politely explain to the owner that you need a radiograph to treat the tooth safely, and ask to use the unit as soon as it is free.","Best. Politely declining a senior’s instruction is right when following it would compromise safe care, and offering to wait a few minutes is a proportionate compromise."],
+    ["Skip the radiograph this time, since the owner is senior and the patient is in pain.","Last. Treating without the information you need puts the patient at risk just to fit in with a colleague’s convenience."],
+    ["Explain the short delay to the patient and reassure him that you will start as soon as the radiograph has been taken.","Second. It keeps the patient informed and at ease while you do the treatment properly."],
+    ["Later, ask your ES to clarify the expectation with the owner so you are not caught between conflicting instructions.","Third. It prevents a repeat and keeps working relationships good, but it is not urgent in the way that the patient in the chair is."]],
+ tk:"Conflicting seniors: follow the safe instruction, decline the unsafe one politely, keep the patient informed, and get the conflict resolved afterwards."},
+
+// 24
+{t:"best3", d:"T", g:"T", a:"Hygienist’s sharp feedback", k:"BEH",
+ s:"At the end of the day, the practice hygienist tells you quite sharply that your referrals to her often lack periodontal charts and clear instructions, so she has to repeat assessments and her list overruns. She adds that you ‘never even say hello’. You are tired and feel she was rude.",
+ o:[["Tell her that her tone was unprofessional and that you will discuss it when she is calmer.","Not keyed. It focuses on how she said it rather than what she said, which is valid and affects patients."],
+    ["Thank her for raising it and acknowledge that incomplete referrals make her job harder.","Keyed. Accepting feedback graciously, even when it is bluntly delivered, keeps the working relationship open."],
+    ["Explain that as an FD you have a heavy list, so she should expect some gaps.","Not keyed. It is an excuse that dismisses a real problem for her patients."],
+    ["Ask the practice manager to speak to her about how she gives feedback.","Not keyed. It turns her concern into a complaint about her and goes to management before you have dealt with it yourself."],
+    ["Agree with her what a complete referral should include, and start providing it.","Keyed. It fixes the practical problem at its source and improves patient care."],
+    ["Ask her to list the incomplete referrals so you can check whether she is right.","Not keyed. It is defensive. You do not need to audit her before improving your own referrals."],
+    ["Apologise and offer to stay late each evening to finish the referral paperwork.","Not keyed. Well meant, but your own time is not the fix. Referrals should be completed properly during the appointment."],
+    ["Reflect on the feedback, including how you come across to colleagues, and discuss it with your ES.","Keyed. The comment about greeting her points to how you come across, which is worth reflecting on and exploring with your ES."]],
+ tk:"Blunt feedback from a colleague: thank them, fix the substance and reflect on it. Don’t argue about their tone or escalate it."},
+
+// 25
+{t:"consider", d:"P", g:"P", a:"Late emergency near closing", k:"BEDAC",
+ s:"At 5:10pm, 20 minutes before closing, reception asks you to see a walk-in patient with a painful facial swelling that has grown since yesterday; he has no difficulty breathing or swallowing. Your nurse must leave at 5:30 to collect her child from nursery, and you had planned to leave on time to finish a case presentation due tomorrow. Rank these considerations in order of importance.",
+ o:[["Having time to finish your case presentation for tomorrow.","Fourth. Your own deadline matters, but it ranks below the patient and your colleague and can be managed, for example by asking for a short extension."],
+    ["The risk that the infection spreads overnight if he is not assessed and treated today.","Most important. A spreading swelling can become dangerous, so his clinical need comes first."],
+    ["The fact that he arrived without an appointment shortly before closing.","Last. How he arrived has no bearing on his clinical need."],
+    ["Whether a trained colleague can assist, so that your nurse can leave on time.","Third. Your nurse’s childcare is an important team consideration, and you should not work without chairside support. It comes after the patient’s needs."],
+    ["His need to understand his options, including where to get urgent help if the swelling gets worse.","Second. Whatever treatment is arranged, he must understand his condition and the warning signs. This comes just after assessing the clinical risk."]],
+ tk:"End-of-day pressures: clinical risk first, then the patient’s understanding, then colleagues, then yourself. How the patient arrived is irrelevant."},
+
+// 26
+{t:"best3", d:"P", g:"P", a:"Extra emergencies every lunchtime", k:"ACF",
+ s:"The associate is off sick for two weeks, and the practice manager asks you to see two of his emergency patients every lunchtime on top of your own full list. On the first day you skipped lunch, ran 30 minutes late all afternoon and felt rushed during a difficult extraction. Your ES is in the practice.",
+ o:[["Tell the practice manager honestly that yesterday felt unsafe, and agree how many extra patients you can safely manage.","Keyed. Saying clearly and honestly what you can safely do protects patients while still helping the practice."],
+    ["Agree to carry on, since it is only for two weeks and patients need to be seen.","Not keyed. Well meant, but you have already felt rushed during a difficult procedure, which is a warning sign for patient safety."],
+    ["Discuss it with your ES, including how emergency cover could be shared across the team.","Keyed. Your ES oversees your workload and can help spread the cover fairly and safely."],
+    ["Refuse to see any of the associate’s patients, since they are not your responsibility.","Not keyed. An outright refusal leaves patients in pain without care and ignores the team’s needs."],
+    ["Ask for all your afternoon appointments to be lengthened so you can absorb the extra patients.","Not keyed. It pushes the problem onto your own patients’ access rather than solving it."],
+    ["Suggest that the associate’s emergency patients are triaged by phone, so only those who need to be seen that day are booked in.","Keyed. Triage matches the appointments to clinical need and may make the extra load manageable."],
+    ["Stay an hour late each evening to catch up on notes and lab work.","Not keyed. Using your own time hides the problem and adds to the fatigue that is already making you rushed."],
+    ["Contact the TPD to complain about the practice manager’s request.","Not keyed. It skips the practice manager and your ES, who are on site and can sort it out."]],
+ tk:"Workload creep: be honest about what is safe, involve your ES, and make demand fit clinical need. Don’t soak it up with your own time or longer slots."},
+
+// 27
+{t:"consider", d:"P", g:"W", a:"Very high blood pressure", k:"CAEBD",
+ s:"A 62-year-old man attends for extraction of a painful, unrestorable lower molar. His blood pressure is 192/118 mmHg on two readings; he has no chest pain, headache or visual symptoms, and says his GP ‘keeps meaning to’ start him on tablets. He has taken a day off work and insists you go ahead. Rank these considerations in order of importance.",
+ o:[["His need to have his blood pressure assessed promptly by his GP.","Second. Blood pressure this high threatens his general health beyond the extraction, so arranging prompt medical review comes just after the immediate risk of the procedure."],
+    ["His wish, as an adult with capacity, to have the tooth out today.","Fourth. His autonomy matters, but a patient cannot insist on treatment you judge unsafe. You respect his wishes in how you plan his care, not by going ahead."],
+    ["The risk of a medical emergency or significant bleeding if you extract with his blood pressure this high.","Most important. It is the immediate safety risk of the procedure you are being asked to do."],
+    ["The inconvenience of his having taken a day off work.","Last. It is real for him, but it is convenience, and it cannot outweigh safety."],
+    ["Giving him a clear explanation of why you are not extracting today and what happens next, including pain relief in the meantime.","Third. Good communication keeps his trust and gives him a plan he can agree to. It follows the two safety considerations but comes before his wish to proceed today."]],
+ tk:"A patient’s insistence versus clinical safety: the risk decides, then the patient’s wider health and a clear explanation. Their wish and convenience come after."},
+
+// 28
+{t:"rank", d:"T", g:"W", a:"Therapist asks beyond scope", k:"CABED",
+ s:"The dental therapist asks you to add the extraction of a mobile lower permanent incisor to her prescription for a patient she is seeing this afternoon. She says the tooth is ‘barely hanging on’, that she did many permanent extractions when she worked abroad, and that it would save the patient another visit. You are fully booked but could see the patient briefly at the end of the day.",
+ o:[["Offer to assess the tooth yourself at the end of the day and extract it if appropriate, or arrange another appointment.","Second. It takes ownership of the patient’s need within your own competence, although the patient waits a few hours."],
+    ["Mention the request to your ES so they can make sure prescriptions to the therapist stay within scope.","Third. Sensible, because the request suggests a misunderstanding of scope that could recur. It is less immediate than declining and meeting the patient’s need."],
+    ["Explain that extracting permanent teeth is outside a dental therapist’s UK scope of practice, so you cannot add it to her prescription.","Best. Politely declining is right. Her experience abroad does not change what she may do under GDC scope of practice here."],
+    ["Tell her to go ahead without a written prescription, so it is her responsibility rather than yours.","Last. It allows an out-of-scope procedure, removes the paper trail and shifts blame rather than protecting the patient."],
+    ["Add the extraction to her prescription, since the tooth is very mobile and she is experienced.","Fourth. It still allows work outside UK scope, whatever her experience, but at least it is transparent, unlike an undocumented arrangement."]],
+ tk:"Scope of practice: decline politely whatever the colleague’s experience, meet the patient’s need yourself, and tell your ES if a misunderstanding might recur."},
+
+// 29
+{t:"rank", d:"E", g:"K", a:"14-year-old refuses extractions", k:"BEADC",
+ s:"A 14-year-old attends for extraction of two upper premolars as part of an orthodontic plan. Before you start, she says clearly that she has changed her mind: she does not want braces and understands that her teeth will stay crowded. Her mother insists you go ahead, saying her daughter ‘will thank her later’.",
+ o:[["Suggest the family goes back to the orthodontist to discuss the plan and alternatives before any extractions.","Third. The orthodontist designed the plan and can explore options with both of them. It comes after dealing with the situation in the room."],
+    ["Pause and talk with her about her reasons, checking that she understands what not having treatment would mean.","Best. It assesses her understanding, in effect her Gillick competence, and takes her view seriously before anything irreversible happens."],
+    ["Go ahead with the extractions, since her mother has parental responsibility and has consented.","Last. Irreversible elective treatment on a competent young person who clearly refuses would be ethically unacceptable, whatever her parent has consented to."],
+    ["Ask her mother to wait outside so you can persuade her daughter to go ahead.","Fourth. Seeing a young person alone can be useful, but the aim here is to pressure her, which undermines genuine consent."],
+    ["Explain calmly to her mother that, because the treatment is elective, you will not extract today against her daughter’s clear wishes.","Second. Politely declining the parent is right when the child appears competent and the treatment is not urgent. It follows from first understanding the girl’s view."]],
+ tk:"A competent young person refusing elective treatment: explore their understanding, then politely decline the parent. Never pressure or override them for non-urgent care."},
+
+// 30
+{t:"best3", d:"E", g:"K", a:"Carer wants full clearance", k:"BDF",
+ s:"A 45-year-old man with a severe learning disability lives in supported housing and lacks capacity to consent to dental treatment; nobody holds a lasting power of attorney or deputyship for him. He has several decayed but restorable teeth and becomes very anxious in the chair. His carer says the team would like ‘all his teeth out under a general anaesthetic’ so there are ‘no more problems’, and that his sister agrees.",
+ o:[["Arrange the clearance, since his carers know him best and his sister agrees.","Not keyed. Nobody else can consent for him, and removing restorable teeth for others’ convenience is unlikely to be in his best interests."],
+    ["Explain to the carer that removing restorable teeth is unlikely to be in his best interests, and that ways of restoring them will be explored.","Keyed. Politely declining a request that is not in the patient’s interests is right, even when it comes from the people who care for him."],
+    ["Ask his sister to sign the consent form on his behalf.","Not keyed. Without a lasting power of attorney or deputyship, she has no legal authority to consent for him."],
+    ["Follow the best-interests process, consulting his sister and carers about his wishes and values, and choose the least restrictive option.","Keyed. The Mental Capacity Act requires a best-interests decision by the treating clinician, informed by the people who know him."],
+    ["Extract only the teeth that are hardest to clean, as a compromise.","Not keyed. It sounds balanced, but it is driven by convenience rather than clinical need or his best interests."],
+    ["Refer him to the special care dental service for assessment, including whether treatment under sedation or general anaesthetic is appropriate.","Keyed. It finds a way to restore his teeth despite his anxiety, which is the least restrictive way to meet his needs."],
+    ["Decline to treat him until he can tolerate treatment in the chair.","Not keyed. It leaves his decay untreated and ignores the reasonable adjustments available to him."],
+    ["Tell the carer that the team is putting its own convenience first and that you will report them for neglect.","Not keyed. The request is misguided rather than abusive, and an accusation damages the working relationship his care depends on."]],
+ tk:"Adults who lack capacity: the clinician makes a best-interests decision after consulting those close to the patient, and chooses the least restrictive option. Carers’ convenience is not a reason."},
+
+// 31
+{t:"rank", d:"I", g:"I", a:"Owner asks for fake reviews", k:"CDBEA",
+ s:"The practice owner, who is also your ES, messages all staff asking each person to post two five-star Google reviews this week ‘as if you were a patient’, to bury a recent negative review. He suggests using family members’ accounts if needed. You are keen to stay on good terms with him.",
+ o:[["Post the reviews, since a better rating helps the practice and the patients who rely on it.","Last. Fake reviews deliberately mislead the public, however the practice benefits."],
+    ["Raise it with your TPD if he keeps pressing staff to post fake reviews.","Third. The right next rung if the pressure continues, because the ES is the person involved. It comes after responding to him directly and constructively."],
+    ["Reply politely that you are not comfortable posting reviews that are not genuine, because they would mislead patients.","Best. Politely refusing a senior’s dishonest request is right, and giving your reason keeps the conversation professional."],
+    ["Suggest honest ways to improve the practice’s reputation, such as replying professionally to the review without patient details and inviting satisfied patients to leave feedback.","Second. It deals with his underlying worry and offers a legitimate alternative. It supports the refusal rather than replacing it."],
+    ["Post one review describing your genuine experience of the practice, without saying that you work there.","Fourth. It seems a clever compromise, but hiding your connection to the practice still misleads readers."]],
+ tk:"A senior’s dishonest request: decline politely, offer an honest alternative, and escalate to the TPD only if the pressure continues. Clever half-measures are still dishonest."},
+
+// 32
+{t:"best3", d:"I", g:"I", a:"Charged with drink-driving", k:"AEG",
+ s:"Driving home from a colleague’s leaving party, you are stopped by the police, breathalysed and charged with drink-driving. Your court date is next month. Nobody at the practice knows, and you are due at work tomorrow.",
+ o:[["Tell the GDC promptly that you have been charged, without waiting for the court outcome.","Keyed. It can feel premature, but GDC standards require you to tell them as soon as you are charged with a criminal offence, not only if you are convicted."],
+    ["Wait until after the court case, since you may be found not guilty.","Not keyed. The duty to tell the GDC starts at the charge, so waiting for the outcome is a probity failure in itself."],
+    ["Ask your defence organisation for advice, and tell nobody until they reply.","Not keyed. Advice is sensible, but using it as a reason to delay a required disclosure is not."],
+    ["Call in sick tomorrow while you decide what to do.","Not keyed. It is dishonest and only puts off the disclosures you need to make."],
+    ["Tell your ES and TPD about the charge.","Keyed. Your supervisors need to know about anything that affects your registration and training, and they can support you."],
+    ["Tell the practice manager, but ask her not to pass it on to your ES.","Not keyed. Partial, conditional disclosure keeps the matter from the person responsible for your supervision."],
+    ["Think honestly about your alcohol use and seek support, for example from your GP, if you are concerned about it.","Keyed. Taking responsibility for your own health and insight into what happened is part of acting professionally."],
+    ["Tell only your TPD, and ask that it is kept from the practice.","Not keyed. Your ES is responsible for your day-to-day supervision and needs to know."]],
+ tk:"Criminal charges: tell the GDC and your supervisors promptly, whatever the likely verdict, and look honestly at the cause. Don’t delay, and don’t disclose selectively."}
+];
+
+Q.push(...P3);
+
+// Themes for Paper 1 and Paper 2, in question order.
+const G12 = "IMTPCTNMFHWSKPTKRFPWKIMIMRIPTNHK" + "WISPNTKHHIWMRTMWCKFRPMIWITKWRPKC";
+Q.forEach((q, i) => { if (!q.g) q.g = G12[i]; });
+Q.forEach((q, i) => { q.p = Math.floor(i / 32) + 1; q.n = i + 1; });
+
+// Fixed per-question shuffle of the displayed options; each key is remapped to the displayed letters.
+(function(){
+  function rng(seed){ let x = (seed >>> 0) || 1; return () => { x ^= x << 13; x >>>= 0; x ^= x >>> 17; x ^= x << 5; x >>>= 0; return x / 4294967296; }; }
+  Q.forEach((q, qi) => {
+    const rnd = rng(((qi + 11) * 2654435761) >>> 0);
+    for (let w = 0; w < 5; w++) rnd();
+    const order = q.o.map((_, j) => j);
+    for (let j = order.length - 1; j > 0; j--) { const r = Math.floor(rnd() * (j + 1)); [order[j], order[r]] = [order[r], order[j]]; }
+    const toNew = {}; order.forEach((old, pos) => toNew[old] = pos);
+    let k = q.k.split("").map(ch => L[toNew[L.indexOf(ch)]]);
+    if (q.t === "best3") k.sort();
+    q.k = k.join("");
+    q.o = order.map(old => q.o[old]);
   });
-}
-
-function renderPanel(){
-  const p = paperOf(S.cur), P = PAPERS[p];
-  let got = 0, max = 0, nrev = 0, nans = 0;
-  const dom = {I:[0,0], P:[0,0], E:[0,0], T:[0,0]};
-  for (let i = P.from; i < P.to; i++) {
-    if (complete(i)) nans++;
-    if (revealed(i)) { const s = qScore(i); got += s.got; max += s.max; dom[Q[i].d][0] += s.got; dom[Q[i].d][1] += s.max; nrev++; }
-  }
-  let og = 0, om = 0;
-  Q.forEach((_, i) => { if (revealed(i)) { const s = qScore(i); og += s.got; om += s.max; } });
-  const pct = max ? Math.round(got / max * 100) : 0;
-  let h = `<div><p class="plabel">Mode</p><div class="seg" role="group" aria-label="Mode">
-    <button type="button" id="mode-practice" data-mode="practice" aria-pressed="${S.mode === "practice"}">Practice</button>
-    <button type="button" id="mode-exam" data-mode="exam" aria-pressed="${S.mode === "exam"}">Exam</button></div>
-    <p class="muted">${S.mode === "practice" ? "See the key and reasoning after each question." : "No feedback until you mark the whole paper."}</p></div>`;
-  h += `<div><p class="plabel">${P.name} score</p>`;
-  if (nrev) h += `<div class="big">${got}<small> / ${max} · ${pct}%</small></div><p class="muted">${nrev} of 32 marked · ${nans} answered</p>`;
-  else h += `<div class="big">—</div><p class="muted">${nans} of 32 answered. ${S.mode === "practice" ? "Check an answer to see your score." : "Mark the paper to see your score."}</p>`;
-  if (om > max) h += `<p class="muted">Both papers: ${og} / ${om} · ${Math.round(og / om * 100)}%</p>`;
-  h += "</div>";
-  if (nrev) {
-    h += '<div class="doms">';
-    Object.keys(DOMAINS).forEach(k => {
-      const [g, m] = dom[k], dp = m ? Math.round(g / m * 100) : 0;
-      h += `<div class="dom"><span>${DOMAINS[k]}</span><span>${m ? dp + "%" : "–"}</span><div class="bar"><i style="width:${dp}%"></i></div></div>`;
-    });
-    h += "</div>";
-  }
-  if (S.mode === "exam" && !S.marked[p]) {
-    const blanks = 32 - nans;
-    if (ui.confirmMark) h += `<div class="confirm"><span>${blanks} question${blanks === 1 ? " is" : "s are"} not fully answered and will score only what’s filled in. Mark anyway?</span><div class="row"><button type="button" class="btn small primary" id="mark-yes">Mark ${P.name}</button><button type="button" class="btn small" id="mark-no">Keep going</button></div></div>`;
-    else h += `<button type="button" class="btn primary" id="mark">Mark ${P.name}</button>`;
-  }
-  const paceQ = Math.min(P.to, P.from + Math.floor(S.el[p] / 112.5) + 1);
-  h += `<div class="divider"></div><div><p class="plabel">Timer · ${P.name} · target 60:00</p><div class="clock"><span class="t" id="clock">${fmt(S.el[p])}</span><button type="button" class="btn small" id="timer">${S.on ? "Pause" : (S.el[p] ? "Resume" : "Start")}</button></div><p class="muted" id="pace">At live-test pace you’d be on question ${paceQ}.</p></div>`;
-  if (ui.confirmReset) h += `<div class="confirm"><span>Clear all answers, scores and the timer for ${P.name}?</span><div class="row"><button type="button" class="btn small danger" id="reset-yes">Clear ${P.name}</button><button type="button" class="btn small" id="reset-no">Cancel</button></div></div>`;
-  else h += `<button type="button" class="btn small danger" id="reset">Reset ${P.name}</button>`;
-  h += `<p class="note">These are original practice questions, not taken from any question bank. They're modelled on patterns in the official 2016 and 2021 DFT practice papers and on guidance from the GDC and dental defence organisations. The keys are reasoned judgements, not official answers. Paper 2’s middle ranks are deliberately close calls, so where yours differ, compare the reasoning rather than just the letters. Your answers are saved only in your own browser.</p>`;
-  document.getElementById("panel").innerHTML = h;
-}
-
-function render(){ renderNav(); renderCard(); renderPanel(); }
-function go(i){
-  S.cur = Math.max(0, Math.min(Q.length - 1, i));
-  S.last[paperOf(S.cur)] = S.cur;
-  ui.warn = false; ui.confirmMark = false; ui.confirmReset = false;
-  save(); render();
-  document.getElementById("card").scrollIntoView({block:"nearest"});
-}
-
-document.getElementById("card").addEventListener("click", e => {
-  const b = e.target.closest("button"); if (!b) return;
-  const i = S.cur;
-  if (b.classList.contains("mvb")) {
-    const a = ans(i), o = +b.dataset.o, d = +b.dataset.d, pos = a.ord.indexOf(o), np = pos + d;
-    if (np < 0 || np > 4) return;
-    [a.ord[pos], a.ord[np]] = [a.ord[np], a.ord[pos]];
-    a.set = true; save(); render();
-    const f = document.getElementById(`mv-${i}-${o}-${d < 0 ? "up" : "down"}`);
-    const alt = document.getElementById(`mv-${i}-${o}-${d < 0 ? "down" : "up"}`);
-    (f && !f.disabled ? f : alt)?.focus();
-  } else if (b.id === "useorder") {
-    ans(i).set = true; save(); render();
-  } else if (b.classList.contains("pick")) {
-    const a = ans(i), o = +b.dataset.o, at = a.p.indexOf(o);
-    if (at !== -1) { a.p.splice(at, 1); ui.warn = false; }
-    else if (a.p.length < 3) { a.p.push(o); ui.warn = false; }
-    else ui.warn = true;
-    save(); render();
-    document.getElementById(`pk-${i}-${o}`)?.focus();
-  } else if (b.id === "check" && complete(i)) {
-    S.chk[i] = true; save(); render();
-  } else if (b.id === "prev") go(i - 1);
-  else if (b.id === "next") go(i + 1);
-});
-
-document.querySelector(".chart").addEventListener("click", e => {
-  const tab = e.target.closest("button[data-p]");
-  if (tab) { go(S.last[+tab.dataset.p]); return; }
-  const b = e.target.closest("button[data-q]"); if (b) go(+b.dataset.q);
-});
-
-document.getElementById("panel").addEventListener("click", e => {
-  const b = e.target.closest("button"); if (!b) return;
-  const p = paperOf(S.cur), P = PAPERS[p];
-  if (b.dataset.mode) {
-    if (b.dataset.mode !== S.mode) { S.mode = b.dataset.mode; ui.confirmMark = false; save(); render(); }
-  } else if (b.id === "mark") {
-    let nans = 0; for (let i = P.from; i < P.to; i++) if (complete(i)) nans++;
-    if (nans < 32) { ui.confirmMark = true; renderPanel(); } else markPaper(p);
-  } else if (b.id === "mark-yes") markPaper(p);
-  else if (b.id === "mark-no") { ui.confirmMark = false; renderPanel(); }
-  else if (b.id === "timer") { S.on = !S.on; save(); renderPanel(); }
-  else if (b.id === "reset") { ui.confirmReset = true; renderPanel(); }
-  else if (b.id === "reset-no") { ui.confirmReset = false; renderPanel(); }
-  else if (b.id === "reset-yes") {
-    for (let i = P.from; i < P.to; i++) { delete S.ans[i]; delete S.chk[i]; }
-    S.marked[p] = false; S.el[p] = 0; S.on = false; S.cur = P.from; S.last[p] = P.from;
-    ui = {warn:false, confirmReset:false, confirmMark:false}; save(); render();
-  }
-});
-
-function markPaper(p){
-  const P = PAPERS[p];
-  S.marked[p] = true; S.on = false; ui.confirmMark = false;
-  for (let i = P.from; i < P.to; i++) if (started(i)) S.chk[i] = true;
-  save(); render();
-}
-
-let tick = 0;
-setInterval(() => {
-  if (!S.on || document.visibilityState !== "visible") return;
-  const p = paperOf(S.cur), P = PAPERS[p];
-  S.el[p]++; tick++;
-  const c = document.getElementById("clock"), pc = document.getElementById("pace");
-  if (c) c.textContent = fmt(S.el[p]);
-  if (pc) pc.textContent = `At live-test pace you’d be on question ${Math.min(P.to, P.from + Math.floor(S.el[p] / 112.5) + 1)}.`;
-  if (tick % 5 === 0) save();
-}, 1000);
-
-render();
-</script>
-</body>
-</html>
+})();

@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>DFT SJT Mock Paper</title>
+<meta name="description" content="Unofficial practice for the Dental Foundation Training SJT: 96 original questions with drag-to-rank, near-miss scoring, a pattern guide and community stats.">
+<meta name="theme-color" content="#0E6A62" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0E1413" media="(prefers-color-scheme: dark)">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-title" content="DFT SJT">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap">
+<link rel="stylesheet" href="styles.css">
+<!-- ANALYTICS -->
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div>
+      <p class="eyebrow">Unofficial practice · Dental Foundation Training SJT</p>
+      <h1>DFT SJT Mock Paper</h1>
+    </div>
+    <nav class="views" aria-label="Sections">
+      <button type="button" data-act="view" data-v="practice">Practice</button>
+      <button type="button" data-act="view" data-v="results">Results</button>
+      <button type="button" data-act="view" data-v="guide">Guide</button>
+      <button type="button" data-act="view" data-v="settings">Settings</button>
+    </nav>
+  </header>
+
+  <section data-view-panel="practice" id="view-practice">
+    <p class="sub">Original practice questions in three papers, plus quick quizzes and a full-length mock. Drag ranking items into order; everything is marked with the live test’s near-miss scoring.</p>
+    <nav class="chart" aria-label="Question sets">
+      <div class="ptabs" id="ptabs" role="tablist" aria-label="Question sets"></div>
+      <div class="chart-top">
+        <span class="chart-title" id="chart-title"></span>
+        <span class="legend">
+          <span><i style="background:var(--surface-2)"></i>Not started</span>
+          <span><i style="background:var(--accent-soft)"></i>Answered</span>
+          <span><i style="background:var(--good-soft)"></i>80%+</span>
+          <span><i style="background:var(--near-soft)"></i>55–79%</span>
+          <span><i style="background:var(--bad-soft)"></i>Under 55%</span>
+        </span>
+      </div>
+      <div id="grid"></div>
+    </nav>
+    <div class="layout">
+      <section class="card" id="card" aria-live="polite"></section>
+      <aside class="panel" id="panel"></aside>
+    </div>
+  </section>
+  <section data-view-panel="results" id="view-results" hidden></section>
+  <section data-view-panel="guide" id="view-guide" hidden></section>
+  <section data-view-panel="settings" id="view-settings" hidden></section>
+
+  <footer class="foot">Unofficial, and not affiliated with NHS England, COPDEND, HEIW or NIMDTA. <a href="https://github.com/sajeev2112/dft-sjt-mock" target="_blank" rel="noopener">Source on GitHub</a></footer>
+</div>
+<noscript><p class="wrap">This practice paper needs JavaScript turned on.</p></noscript>
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
+<script src="questions.js"></script>
+<script src="guide.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
