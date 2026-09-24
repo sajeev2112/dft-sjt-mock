@@ -37,3 +37,16 @@ let limited = 0; for (let i = 0; i < 14; i++) { const [st] = await call("POST", 
 results.push(["rate limited posts", limited]);
 results.push(["stored comment", db.prepare("SELECT comment FROM feedback").all()]);
 for (const r of results) console.log(JSON.stringify(r));
+
+const IP2 = {"CF-Connecting-IP": "5.6.7.8"};
+// Visitor stats, error reports and health
+const v = [];
+v.push(["visit", (await call("POST", "/api/visit", {client: "client-aaaa1", app: false}, IP2))[1]]);
+v.push(["visit again (app)", (await call("POST", "/api/visit", {client: "client-aaaa1", app: true}, IP2))[1]]);
+v.push(["visit other", (await call("POST", "/api/visit", {client: "client-bbbb2"}, IP2))[1]]);
+v.push(["visits table", db.prepare("SELECT client, views, app FROM visits ORDER BY client").all()]);
+v.push(["client error", (await call("POST", "/api/error", {msg: "TypeError: x is undefined @ app.js:12\u0007"}, IP2))[1]]);
+v.push(["bad error body", (await call("POST", "/api/error", {nope: 1}, IP2))[0]]);
+v.push(["health", (await call("GET", "/api/health"))[1]]);
+v.push(["errors table", db.prepare("SELECT kind, msg FROM errors").all()]);
+for (const r of v) console.log(JSON.stringify(r));

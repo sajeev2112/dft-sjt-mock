@@ -464,7 +464,7 @@ function renderSettings(){
   const el = document.getElementById("view-settings");
   const standalone = window.matchMedia && window.matchMedia("(display-mode: standalone)").matches;
   let h = `<div class="card"><h2 class="bh">Settings</h2>`;
-  h += `<section class="sset"><h3>Community stats</h3><label class="toggle"><input type="checkbox" id="share" ${S.share ? "checked" : ""}> <span>Share my answers anonymously</span></label><p class="muted">When on, your first attempt at each question is sent without your name, email or IP address. It’s identified only by a random code stored in this browser, and it’s used to show everyone how others answered. Turning it off stops sending; answers already sent stay in the totals.</p></section>`;
+  h += `<section class="sset"><h3>Community stats</h3><label class="toggle"><input type="checkbox" id="share" ${S.share ? "checked" : ""}> <span>Share anonymous answers and usage</span></label><p class="muted">When on, the site sends your first attempt at each question, a count of your visits, and any error reports. None of it includes your name, email or IP address; it’s linked only to a random code stored in this browser. Answers power the community stats. Visit counts and error reports are only seen by the site owner, to keep the site running. Turning this off stops all sending; data already sent stays in the totals.</p></section>`;
   h += `<section class="sset"><h3>How your progress is saved</h3><p class="muted">Your answers, scores and settings are saved automatically in this browser, with a backup copy, so they’re still here when you come back. There’s no account, and nothing leaves your device apart from anonymous answers for the community stats. Progress can be lost if you clear your browsing data, use a private window, or (in Safari) don’t visit for 7 days. Adding the site to your home screen avoids the Safari limit. For extra safety, keep a progress code.</p></section>`;
   h += `<section class="sset"><h3>Move your progress to another device</h3><p class="muted">Copy a progress code here, then paste it into Settings on your other device. It replaces the progress there.</p><div class="row"><button type="button" class="btn small primary" data-act="copy-code">Create progress code</button></div>`;
   if (ui.code) h += `<textarea class="code" id="code-out" rows="3" readonly>${ui.code}</textarea>`;
@@ -627,11 +627,35 @@ setInterval(() => {
   if (tick % 5 === 0) save();
 }, 1000);
 
+// ---------- private usage stats and error reports ----------
+// One anonymous visit per page load (random browser code only), and up to 3 error reports per visit.
+// Both respect the anonymous-sharing setting and are never shown on the site.
+let errorsSent = 0;
+function reportError(msg){
+  if (!S.share || errorsSent >= 3 || location.protocol === "file:") return;
+  errorsSent++;
+  try { fetch(API + "/api/error", {method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({msg: String(msg).slice(0, 300)}), keepalive:true}).catch(() => {}); } catch(e) {}
+}
+window.addEventListener("error", e => {
+  if (!e.filename || !/\/(app|questions|guide|sw)\.js/.test(e.filename)) return; // ignore extensions and third-party scripts
+  reportError(`${e.message} @ ${e.filename.split("/").pop()}:${e.lineno}`);
+});
+window.addEventListener("unhandledrejection", e => {
+  const r = e.reason; if (r && r.name === "TypeError" && /fetch|network|load failed/i.test(r.message)) return; // offline, not a bug
+  reportError("Unhandled: " + (r && r.message || r));
+});
+function countVisit(){
+  if (!S.share || location.protocol === "file:" || /^(localhost|127\.)/.test(location.hostname)) return;
+  const app = !!(window.matchMedia && window.matchMedia("(display-mode: standalone)").matches);
+  fetch(API + "/api/visit", {method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({client:S.cid, app}), keepalive:true}).catch(() => {});
+}
+
 // ---------- start ----------
 window.addEventListener("online", flush);
 if ("serviceWorker" in navigator && location.protocol !== "file:") navigator.serviceWorker.register("sw.js").catch(() => {});
 if (location.hash) fromHash(); else render();
 flush();
+countVisit();
 (async () => {
   const backup = await idbGet();
   if (backup) {

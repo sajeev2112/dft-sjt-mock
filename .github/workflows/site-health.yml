@@ -1,0 +1,75 @@
+# Checks the live site every hour. If something is wrong, it opens a "site-alert" issue,
+# which makes GitHub email the repo owner. When everything is healthy again, it closes the issue.
+name: Site health check
+
+on:
+  schedule:
+    - cron: "17 * * * *"
+  workflow_dispatch:
+
+permissions:
+  issues: write
+
+concurrency:
+  group: site-health
+  cancel-in-progress: false
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      SITE: https://dft-sjt-mock.sajeev-r13.workers.dev
+      MIRROR: https://sajeev2112.github.io/dft-sjt-mock/
+    steps:
+      - name: Check the site, the API and the error counts
+        id: check
+        run: |
+          problems=""
+          add() { problems="${problems}- $1"$'\n'; }
+          fetch() { curl -sS -L --max-time 20 --retry 2 --retry-delay 10 -o body.txt -w '%{http_code}' "$1" || true; }
+
+          code=$(fetch "$SITE/")
+          if [ "$code" != "200" ] || ! grep -q "DFT SJT Mock Paper" body.txt; then add "Main site returned HTTP $code or the wrong page"; fi
+
+          code=$(fetch "$SITE/app.js")
+          [ "$code" = "200" ] || add "App script (app.js) returned HTTP $code"
+
+          code=$(fetch "$MIRROR")
+          [ "$code" = "200" ] || add "GitHub Pages copy returned HTTP $code"
+
+          code=$(fetch "$SITE/api/health")
+          if [ "$code" != "200" ]; then
+            add "Stats API health check returned HTTP $code"
+          else
+            s1=$(jq -r '.errors.server_1h // 0' body.txt); c1=$(jq -r '.errors.client_1h // 0' body.txt)
+            s24=$(jq -r '.errors.server_24h // 0' body.txt); c24=$(jq -r '.errors.client_24h // 0' body.txt)
+            echo "server errors: ${s1} in the last hour, ${s24} in 24h; browser errors: ${c1} in the last hour, ${c24} in 24h"
+            [ "$s1" -gt 0 ] && add "${s1} server error(s) in the last hour (${s24} in 24h)"
+            [ "$c1" -ge 5 ] && add "${c1} browser error reports in the last hour (${c24} in 24h)"
+          fi
+
+          code=$(fetch "$SITE/api/stats?q=1")
+          [ "$code" = "200" ] || add "Community stats returned HTTP $code"
+
+          { echo "problems<<EOF"; printf '%s' "$problems"; echo "EOF"; } >> "$GITHUB_OUTPUT"
+          if [ -n "$problems" ]; then echo "Problems found:"; printf '%s' "$problems"; else echo "All checks passed."; fi
+
+      - name: Open or close the alert issue
+        env:
+          PROBLEMS: ${{ steps.check.outputs.problems }}
+        run: |
+          gh label create site-alert --color B60205 --description "Automatic site health alert" --force >/dev/null
+          open=$(gh issue list --label site-alert --state open --json number --jq '.[0].number // empty')
+          run_url="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          if [ -n "$PROBLEMS" ]; then
+            if [ -z "$open" ]; then
+              body=$(printf 'The hourly health check found a problem with the DFT SJT site:\n\n%s\nCheck details: %s\n\nError messages (not shown here) can be read in the Cloudflare D1 console:\n```sql\nSELECT datetime(t / 1000, '"'"'unixepoch'"'"') AS at, kind, msg FROM errors ORDER BY t DESC LIMIT 50;\n```\nThis issue closes automatically when the site is healthy again.' "$PROBLEMS" "$run_url")
+              gh issue create --title "Site alert: the DFT SJT site has a problem" --label site-alert --body "$body"
+            else
+              echo "Alert #$open is already open; not sending another email."
+            fi
+          elif [ -n "$open" ]; then
+            gh issue close "$open" --comment "Recovered: all health checks passed at $(date -u '+%Y-%m-%d %H:%M UTC'). $run_url"
+          fi

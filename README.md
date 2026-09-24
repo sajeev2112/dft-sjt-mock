@@ -33,3 +33,28 @@ To read the feedback, open the D1 console in the Cloudflare dashboard and run:
 ```sql
 SELECT q, comment, datetime(t / 1000, 'unixepoch') AS sent FROM feedback ORDER BY t DESC;
 ```
+
+## Private visitor stats
+
+Visits are counted anonymously in D1, one row per browser per day. They're never shown on the site. Run these queries in the D1 console:
+
+```sql
+-- Visitors and page views per day (app = opened from the home screen)
+SELECT day, COUNT(*) AS visitors, SUM(views) AS page_views, SUM(app) AS app_users
+FROM visits GROUP BY day ORDER BY day DESC LIMIT 30;
+
+-- All-time unique visitors, and people who have answered at least one question
+SELECT (SELECT COUNT(DISTINCT client) FROM visits) AS visitors,
+       (SELECT COUNT(DISTINCT client) FROM answers) AS answering;
+
+-- The most-answered questions
+SELECT q, COUNT(*) AS answers FROM answers GROUP BY q ORDER BY answers DESC LIMIT 10;
+```
+
+## Error alerts
+
+`.github/workflows/site-health.yml` runs every hour. It checks the site, the GitHub Pages copy, the stats API and the error counts from `/api/health`. If anything fails, it opens a `site-alert` issue, which makes GitHub email the repo owner. When the site recovers, it closes the issue. Error messages are kept in D1 and never shown in the public issue:
+
+```sql
+SELECT datetime(t / 1000, 'unixepoch') AS at, kind, msg FROM errors ORDER BY t DESC LIMIT 50;
+```
