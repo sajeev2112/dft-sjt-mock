@@ -94,17 +94,22 @@ try {
   else { const old = localStorage.getItem(V3); if (old) S = normalise(migrateV3(JSON.parse(old))); }
 } catch(e) {}
 
-let flushing = false;
-async function flush(){
-  if (flushing || !S.outbox.length || !S.share) return;
-  flushing = true;
-  const items = S.outbox.slice(0, 100);
-  try {
-    const r = await fetch(API + "/api/answers", {method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({client:S.cid, items})});
-    if (r.ok || r.status === 400) { S.outbox = S.outbox.slice(items.length); save(); }
-  } catch(e) {}
-  flushing = false;
-  if (S.outbox.length && items.length === 100) setTimeout(flush, 1000);
+// Sends queued first attempts. Returns the in-flight promise so callers can wait for it.
+let flushP = null;
+function flush(){
+  if (flushP) return flushP;
+  if (!S.outbox.length || !S.share) return Promise.resolve();
+  flushP = (async () => {
+    while (S.outbox.length && S.share) {
+      const items = S.outbox.slice(0, 100);
+      try {
+        const r = await fetch(API + "/api/answers", {method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({client:S.cid, items})});
+        if (!(r.ok || r.status === 400)) break;
+        S.outbox = S.outbox.slice(items.length); save();
+      } catch(e) { break; }
+    }
+  })().finally(() => { flushP = null; });
+  return flushP;
 }
 function logSetIfDone(id){
   const set = S.sets[id], list = listOf(id);
@@ -272,7 +277,7 @@ function renderCard(){
   if (set.mode === "practice" && !rev && !complete(set, qi) && !rank) h += `<p class="hint">Choose three options, then check your answer.</p>`;
   if (set.mode === "exam" && !rev) h += `<p class="hint">Exam mode: your answers are saved and the whole set is marked when you press Mark.</p>`;
   card.innerHTML = h;
-  if (rev) { loadStats(qi); flush(); }
+  if (rev) { if (stats[qi]) loadStats(qi); else { stats[qi] = {state:"loading"}; flush().then(() => loadStats(qi, true)); } }
   initDrag();
 }
 
