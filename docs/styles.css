@@ -318,3 +318,7 @@ textarea:focus{border-color:var(--accent)}
   .hrow{grid-template-columns:24px repeat(5, minmax(30px, 1fr)) 58px}
   .prow{grid-template-columns:24px minmax(0,1fr) 84px}
 }
+
+/* saved indicator */
+.saved{font-size:12.5px; color:var(--good); margin:0}
+.saved.warn{color:var(--bad)}

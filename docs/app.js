@@ -50,7 +50,25 @@ function migrateV3(o){
   return s;
 }
 let timerOn = false;
-function save(){ try { localStorage.setItem(STORE, JSON.stringify(S)); } catch(e) {} }
+// Progress lives in localStorage, with a debounced backup copy in IndexedDB in case one store is cleared.
+let storageOk = true, savedAt = 0, idbTimer = null;
+function save(){
+  const json = JSON.stringify(S);
+  try { localStorage.setItem(STORE, json); storageOk = true; } catch(e) { storageOk = false; }
+  savedAt = Date.now();
+  clearTimeout(idbTimer); idbTimer = setTimeout(() => idbPut(json), 800);
+}
+function idb(){
+  return new Promise((res, rej) => {
+    if (!window.indexedDB) return rej(new Error("no idb"));
+    const r = indexedDB.open("dft-sjt-mock", 1);
+    r.onupgradeneeded = () => r.result.createObjectStore("kv");
+    r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error);
+  });
+}
+async function idbPut(json){ try { const db = await idb(); db.transaction("kv", "readwrite").objectStore("kv").put(json, STORE); } catch(e) {} }
+async function idbGet(){ try { const db = await idb(); return await new Promise(res => { const r = db.transaction("kv").objectStore("kv").get(STORE); r.onsuccess = () => res(r.result || null); r.onerror = () => res(null); }); } catch(e) { return null; } }
+function answeredCount(s){ return Object.values(s.att || {}).length; }
 
 // ---------- set helpers ----------
 function listOf(id, s = S){ const P = PAPERS[id]; if (P) return range(P.from, Math.min(P.to, Q.length)); return (s.sets.custom && s.sets.custom.list) || []; }
@@ -360,6 +378,9 @@ function renderPanel(){
   h += `<div class="divider"></div><div><p class="plabel">Timer · target ${fmt(target)}</p><div class="clock"><span class="t" id="clock">${fmt(set.el)}</span><button type="button" class="btn small" data-act="timer">${timerOn ? "Pause" : (set.el ? "Resume" : "Start")}</button></div><p class="muted" id="pace">At live-test pace you’d be on question ${paceK} of this set.</p></div>`;
   if (ui.confirmReset) h += `<div class="confirm"><span>Clear the answers and timer for ${esc(name)}? Your Results history is kept.</span><div class="row"><button type="button" class="btn small danger" data-act="reset-yes">Clear ${esc(name)}</button><button type="button" class="btn small" data-act="reset-no">Cancel</button></div></div>`;
   else h += `<button type="button" class="btn small danger" data-act="reset">Reset ${esc(name)}</button>`;
+  h += storageOk
+    ? `<p class="saved">✓ Progress saved on this device. It stays when you come back in this browser.</p>`
+    : `<p class="saved warn">This browser isn’t saving progress (it may be a private window). Use a normal window, or copy a progress code in Settings.</p>`;
   h += `<p class="note">These are original, unofficial questions modelled on the official DFT practice papers and on GDC guidance. The keys are reasoned judgements, not official answers. Where yours differ in the middle ranks, compare the reasoning, and use “I disagree” to flag keys you think are wrong.</p>`;
   document.getElementById("panel").innerHTML = h;
 }
@@ -444,6 +465,7 @@ function renderSettings(){
   const standalone = window.matchMedia && window.matchMedia("(display-mode: standalone)").matches;
   let h = `<div class="card"><h2 class="bh">Settings</h2>`;
   h += `<section class="sset"><h3>Community stats</h3><label class="toggle"><input type="checkbox" id="share" ${S.share ? "checked" : ""}> <span>Share my answers anonymously</span></label><p class="muted">When on, your first attempt at each question is sent without your name, email or IP address. It’s identified only by a random code stored in this browser, and it’s used to show everyone how others answered. Turning it off stops sending; answers already sent stay in the totals.</p></section>`;
+  h += `<section class="sset"><h3>How your progress is saved</h3><p class="muted">Your answers, scores and settings are saved automatically in this browser, with a backup copy, so they’re still here when you come back. There’s no account, and nothing leaves your device apart from anonymous answers for the community stats. Progress can be lost if you clear your browsing data, use a private window, or (in Safari) don’t visit for 7 days. Adding the site to your home screen avoids the Safari limit. For extra safety, keep a progress code.</p></section>`;
   h += `<section class="sset"><h3>Move your progress to another device</h3><p class="muted">Copy a progress code here, then paste it into Settings on your other device. It replaces the progress there.</p><div class="row"><button type="button" class="btn small primary" data-act="copy-code">Create progress code</button></div>`;
   if (ui.code) h += `<textarea class="code" id="code-out" rows="3" readonly>${ui.code}</textarea>`;
   h += `<label class="lbl" for="code-in">Paste a progress code</label><textarea class="code" id="code-in" rows="3" placeholder="SJT1.…"></textarea>`;
@@ -610,3 +632,14 @@ window.addEventListener("online", flush);
 if ("serviceWorker" in navigator && location.protocol !== "file:") navigator.serviceWorker.register("sw.js").catch(() => {});
 if (location.hash) fromHash(); else render();
 flush();
+(async () => {
+  const backup = await idbGet();
+  if (backup) {
+    try {
+      const b = normalise(JSON.parse(backup));
+      if (answeredCount(b) > answeredCount(S)) { S = b; save(); render(); }
+    } catch(e) {}
+  } else if (answeredCount(S)) idbPut(JSON.stringify(S));
+  try { if (navigator.storage && navigator.storage.persist && !(await navigator.storage.persisted())) await navigator.storage.persist(); } catch(e) {}
+  if (S.view === "practice") renderPanel();
+})();
