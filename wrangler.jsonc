@@ -5,7 +5,9 @@
   "compatibility_date": "2026-09-21",
   "observability": { "enabled": true },
   // Only the docs folder is public. Everything else in the repo stays private to the build.
-  "assets": { "directory": "./docs", "binding": "ASSETS" }
-  // Community stats: create a D1 database named dft-sjt-stats, then uncomment and paste its ID.
-  // ,"d1_databases": [{ "binding": "DB", "database_name": "dft-sjt-stats", "database_id": "PASTE-DATABASE-ID" }]
+  "assets": { "directory": "./docs", "binding": "ASSETS" },
+  // Community stats. Tables are created automatically on first use.
+  "d1_databases": [
+    { "binding": "DB", "database_name": "dft-sjt-stats", "database_id": "178ed023-bba5-4d04-8cd2-3928c7b51858" }
+  ]
 }
