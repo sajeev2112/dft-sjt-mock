@@ -2,7 +2,7 @@
 
 An unofficial practice paper for the UK Dental Foundation Training (DFT) Situational Judgement Test.
 
-**Try it:** https://sajeev2112.github.io/dft-sjt-mock/
+**Try it:** https://dft-sjt-mock.sajeev-r13.workers.dev
 
 - 64 original questions in two papers: Paper 1 (standard) and Paper 2 (harder)
 - Ranking items you drag into order, and best-three-of-eight items
