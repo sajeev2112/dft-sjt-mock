@@ -1,9 +1,9 @@
 // Offline support. The site's own files load network-first, so updates show straight away when online;
 // fonts and the drag library load cache-first. API calls are never cached.
-const VERSION = "06525f51e0"; // set by tools/build.js
+const VERSION = "9564daa4fb"; // set by tools/build.js
 const CACHE = "dft-sjt-" + VERSION;
 const CORE = [
-  "./", "index.html", "styles.css", "questions.js", "guide.js", "app.js",
+  "./", "styles.css", "questions.js", "guide.js", "app.js",
   "manifest.webmanifest", "icon.svg", "icon-192.png", "icon-512.png", "apple-touch-icon.png",
   "https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"
 ];
@@ -37,7 +37,8 @@ self.addEventListener("fetch", event => {
   // Revalidate with the server every time (cheap with ETags), so an update is never hidden behind the HTTP cache.
   const fresh = new Request(req.url, {cache: "no-cache", credentials: "same-origin"});
   event.respondWith(fetch(fresh).then(res => {
-    if (res.ok) { const copy = res.clone(); caches.open(CACHE).then(c => c.put(req, copy)); }
+    // Cloudflare redirects /index.html to /, and browsers refuse redirected responses for page loads, so never cache those.
+    if (res.ok && !res.redirected) { const copy = res.clone(); caches.open(CACHE).then(c => c.put(req, copy)); }
     return res;
-  }).catch(() => caches.match(req, {ignoreSearch: true}).then(hit => hit || (req.mode === "navigate" ? caches.match("index.html") : Response.error()))));
+  }).catch(() => caches.match(req, {ignoreSearch: true}).then(hit => hit || (req.mode === "navigate" ? caches.match("./") : Response.error()))));
 });

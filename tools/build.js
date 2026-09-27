@@ -42,6 +42,7 @@ fs.writeFileSync(path.join(root, "src/worker.js"), worker);
 
 const files = ["index.html", "styles.css", "questions.js", "guide.js", "app.js", "manifest.webmanifest"];
 const hash = crypto.createHash("sha256"); files.forEach(f => hash.update(read("docs/" + f)));
+hash.update(read("docs/sw.js").replace(/const VERSION = "[^"]*";/, "")); // changes to the service worker itself also rotate the cache
 const version = hash.digest("hex").slice(0, 10);
 fs.writeFileSync(path.join(root, "docs/sw.js"), read("docs/sw.js").replace(/const VERSION = "[^"]*";/, `const VERSION = "${version}";`));
 
