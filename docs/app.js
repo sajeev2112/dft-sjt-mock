@@ -2,9 +2,9 @@
 // DFT SJT Mock Paper: practice sets, results, the guide, settings and anonymous community stats.
 
 const PAPERS = {
-  p1:{name:"Paper 1", sub:"Standard", from:0, to:32},
-  p2:{name:"Paper 2", sub:"Harder", from:32, to:64},
-  p3:{name:"Paper 3", sub:"Harder", from:64, to:96}
+  p1:{name:"Paper 1", from:0, to:32},
+  p2:{name:"Paper 2", from:32, to:64},
+  p3:{name:"Paper 3", from:64, to:96}
 };
 const PAPER_IDS = Object.keys(PAPERS).filter(id => Q.length >= PAPERS[id].to);
 const PACE = 112.5; // seconds per item at live-test pace (105 min / 56)
@@ -21,9 +21,9 @@ function uid(){ try { return crypto.randomUUID(); } catch(e) { return "c" + Date
 function shuffle(a){ a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
 
 // ---------- state ----------
-const STORE = "dft-sjt-mock-v4", V3 = "dft-sjt-mock-v3";
+const STORE = "dft-sjt-mock-v5", V4 = "dft-sjt-mock-v4";
 function newSet(extra){ return Object.assign({ans:{}, chk:{}, marked:false, el:0, cur:0, mode:"practice", logged:false}, extra || {}); }
-function fresh(){ return {v:4, cid:uid(), share:true, view:"practice", setId:"p1", sets:{p1:newSet(), p2:newSet(), p3:newSet(), custom:null}, att:{}, days:{}, hist:[], sent:{}, outbox:[], fb:{}}; }
+function fresh(){ return {v:5, cid:uid(), share:true, view:"practice", setId:"p1", sets:{p1:newSet(), p2:newSet(), p3:newSet(), custom:null}, att:{}, days:{}, hist:[], sent:{}, outbox:[], fb:{}}; }
 let S = fresh();
 function normalise(o){
   const s = Object.assign(fresh(), o);
@@ -33,22 +33,19 @@ function normalise(o){
   if (!s.sets[s.setId] || (s.setId !== "custom" && !PAPER_IDS.includes(s.setId))) s.setId = "p1";
   return s;
 }
-function migrateV3(o){
+// The question bank was rewritten in September 2026, so saved answers from v4 no longer match the options.
+// Keep the browser code, sharing choice and progress history; start the papers fresh.
+function carryOver(o){
   const s = fresh();
-  [1, 2].forEach(p => {
-    const set = s.sets["p" + p], P = PAPERS["p" + p];
-    set.mode = o.mode === "exam" ? "exam" : "practice";
-    set.marked = !!(o.marked && o.marked[p]);
-    set.el = (o.el && +o.el[p]) || 0;
-    const last = o.last && Number.isInteger(o.last[p]) ? o.last[p] : P.from;
-    set.cur = Math.max(0, Math.min(31, last - P.from));
-  });
-  Object.keys(o.ans || {}).forEach(k => { const i = +k; if (i >= 0 && i < 64) s.sets[i < 32 ? "p1" : "p2"].ans[i] = o.ans[k]; });
-  Object.keys(o.chk || {}).forEach(k => { const i = +k; if (i >= 0 && i < 64) s.sets[i < 32 ? "p1" : "p2"].chk[i] = true; });
-  s.setId = (+o.cur || 0) < 32 ? "p1" : "p2";
-  ["p1", "p2"].forEach(id => { const set = s.sets[id]; listOf(id, s).forEach(qi => { if (revealed(set, qi) && complete(set, qi)) addAttempt(s, set, qi, false); }); });
-  return s;
+  if (o && typeof o === "object") {
+    if (typeof o.cid === "string") s.cid = o.cid;
+    if (typeof o.share === "boolean") s.share = o.share;
+    if (o.days && typeof o.days === "object") s.days = o.days;
+    if (Array.isArray(o.hist)) s.hist = o.hist.map(h => Object.assign({}, h, {name: h.name + " (old version)"}));
+  }
+  return normalise(s);
 }
+const ui0 = {rewritten:false};
 let timerOn = false;
 // Progress lives in localStorage, with a debounced backup copy in IndexedDB in case one store is cleared.
 let storageOk = true, savedAt = 0, idbTimer = null;
@@ -109,7 +106,7 @@ function addAttempt(s, set, qi, submit = true){
 try {
   const raw = localStorage.getItem(STORE);
   if (raw) S = normalise(JSON.parse(raw));
-  else { const old = localStorage.getItem(V3); if (old) S = normalise(migrateV3(JSON.parse(old))); }
+  else { const old = localStorage.getItem(V4); if (old) { S = carryOver(JSON.parse(old)); ui0.rewritten = true; } }
 } catch(e) {}
 
 // Sends queued first attempts. Returns the in-flight promise so callers can wait for it.
@@ -204,7 +201,7 @@ function renderTabs(){
   let h = PAPER_IDS.map(id => {
     const P = PAPERS[id], set = S.sets[id], list = listOf(id);
     const done = list.filter(qi => complete(set, qi)).length;
-    return `<button type="button" class="ptab" role="tab" data-act="set" data-id="${id}" aria-selected="${S.setId === id}">${P.name} · ${P.sub}<small>${done}/${list.length}</small></button>`;
+    return `<button type="button" class="ptab" role="tab" data-act="set" data-id="${id}" aria-selected="${S.setId === id}">${P.name}<small>${done}/${list.length}</small></button>`;
   }).join("");
   const c = S.sets.custom;
   if (c) { const done = c.list.filter(qi => complete(c, qi)).length; h += `<button type="button" class="ptab quiz" role="tab" data-act="set" data-id="custom" aria-selected="${S.setId === "custom"}">${esc(c.name)}<small>${done}/${c.list.length}</small></button>`; }
@@ -245,7 +242,8 @@ function renderCard(){
   const set = curSet(), list = curList(), k = set.cur, qi = curQi(), q = Q[qi], a = set.ans[qi], rev = revealed(set, qi), rank = isRank(q);
   const word = q.t === "consider" ? "important" : "appropriate";
   const where = S.setId === "custom" ? ` <span class="qfrom">· Paper ${q.p}, Q${q.n}</span>` : "";
-  let h = `<div class="qhead"><span class="qnum">Question ${k + 1} of ${list.length}${where}</span><div class="chips">${q.p > 1 ? `<span class="chip hard">Paper ${q.p} · Harder</span>` : ""}<span class="chip type">${TYPES[q.t]}</span><span class="chip">${DOMAINS[q.d]}</span></div></div>`;
+  let h = ui0.rewritten ? `<div class="notice"><b>The questions have been rewritten to be harder.</b> Every option is now plausible, so your earlier answers have been cleared. Your progress chart and visit history are kept. <button type="button" class="btn small" data-act="dismiss-notice">OK</button></div>` : "";
+  h += `<div class="qhead"><span class="qnum">Question ${k + 1} of ${list.length}${where}</span><div class="chips"><span class="chip type">${TYPES[q.t]}</span><span class="chip">${DOMAINS[q.d]}</span></div></div>`;
   h += `<p class="scenario">${q.s}</p><p class="instr">${PROMPTS[q.t]}</p>`;
   if (!rev) {
     if (rank) {
@@ -416,7 +414,7 @@ function renderResults(){
   const themeOrder = themesSorted.concat(Object.keys(THEMES).filter(t => !byG[t].n));
   themeOrder.forEach(t => { const x = byG[t]; h += `<tr><td><a href="#guide-${t}">${THEMES[t]}</a></td><td>${x.n}/${x.total}</td><td>${x.n ? `<span class="pill ${band(x.g, x.m)}">${pct(x.g, x.m)}%</span>` : "–"}</td><td><button type="button" class="btn small" data-act="build" data-kind="theme" data-arg="${t}">Practise</button></td></tr>`; });
   h += `</tbody></table></div>`;
-  h += `<h3 class="bsub">By paper</h3><div class="doms wide">` + PAPER_IDS.map(id => { const P = PAPERS[id]; let pg = 0, pm = 0, n = 0; range(P.from, P.to).forEach(i => { const a = lastAtt(i); if (a) { pg += a.g; pm += a.m; n++; } }); return `<div class="dom"><span>${P.name} · ${P.sub} <small class="muted">${n}/32</small></span><span>${n ? pct(pg, pm) + "%" : "–"}</span><div class="bar"><i style="width:${pct(pg, pm)}%"></i></div></div>`; }).join("") + `</div>`;
+  h += `<h3 class="bsub">By paper</h3><div class="doms wide">` + PAPER_IDS.map(id => { const P = PAPERS[id]; let pg = 0, pm = 0, n = 0; range(P.from, P.to).forEach(i => { const a = lastAtt(i); if (a) { pg += a.g; pm += a.m; n++; } }); return `<div class="dom"><span>${P.name} <small class="muted">${n}/32</small></span><span>${n ? pct(pg, pm) + "%" : "–"}</span><div class="bar"><i style="width:${pct(pg, pm)}%"></i></div></div>`; }).join("") + `</div>`;
   if (S.hist.length) {
     h += `<h3 class="bsub">Completed sets</h3><div class="tscroll"><table class="rtable"><thead><tr><th>Date</th><th>Set</th><th>Mode</th><th>Score</th></tr></thead><tbody>`;
     S.hist.slice().reverse().forEach(x => { h += `<tr><td>${new Date(x.t).toLocaleDateString("en-GB", {day:"numeric", month:"short"})}</td><td>${esc(x.name)}</td><td>${x.mode === "exam" ? "Exam" : "Practice"}</td><td>${x.g} / ${x.m} · ${pct(x.g, x.m)}%</td></tr>`; });
@@ -534,6 +532,7 @@ document.addEventListener("click", async e => {
   const act = b.dataset.act, set = curSet();
   const qi = S.view === "practice" && !ui.building ? curQi() : null;
   switch (act) {
+    case "dismiss-notice": ui0.rewritten = false; render(); break;
     case "view": if (location.hash === "#" + b.dataset.v) fromHash(); else location.hash = b.dataset.v; break;
     case "set": S.setId = b.dataset.id; ui.building = false; ui.confirmMark = ui.confirmReset = false; timerOn = false; save(); render(); break;
     case "new": ui.building = !ui.building; render(); scrollToCard(); break;

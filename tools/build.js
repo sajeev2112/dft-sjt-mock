@@ -23,6 +23,19 @@ Q.forEach((q, i) => {
 });
 if (errors.length) { console.error(errors.join("\n")); process.exit(1); }
 
+// Difficulty audit (warnings only): the answer shouldn’t be guessable from length or giveaway wording.
+const GIVEAWAY = /\b(lie|lying|pretend|ignore|shout|tell (?:her|him|them) off|refuse to discuss|in front of (?:the )?(?:patient|patients|everyone)|threaten|humiliat|make fun|say nothing)\b/i;
+const warnings = [];
+Q.forEach((q, i) => {
+  const len = j => q.o[j][0].length, keyed = q.t === "best3" ? q.k.split("").map(c => "ABCDEFGH".indexOf(c)) : [q.k[0], q.k[1]].map(c => "ABCDE".indexOf(c));
+  const rest = q.o.map((_, j) => j).filter(j => !keyed.includes(j));
+  const avg = a => a.reduce((s, j) => s + len(j), 0) / a.length;
+  const ratio = avg(keyed) / avg(rest);
+  if (ratio > 1.3) warnings.push(`Q${i + 1}: keyed options are ${Math.round((ratio - 1) * 100)}% longer than the rest`);
+  q.o.forEach(([t], j) => { if (GIVEAWAY.test(t)) warnings.push(`Q${i + 1} option ${"ABCDEFGH"[j]}: giveaway wording “${t.match(GIVEAWAY)[0]}”`); });
+});
+if (warnings.length) console.warn(`${warnings.length} difficulty warning(s):\n  ` + warnings.join("\n  "));
+
 const types = Q.map(q => q.t === "best3" ? "b" : "r").join("");
 const worker = read("src/worker.js").replace(/\/\/ TYPES:start[\s\S]*?\/\/ TYPES:end/, `// TYPES:start\nconst QTYPES = "${types}";\n// TYPES:end`);
 fs.writeFileSync(path.join(root, "src/worker.js"), worker);

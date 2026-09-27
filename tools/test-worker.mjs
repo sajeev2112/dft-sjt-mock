@@ -35,7 +35,7 @@ results.push(["cors preflight", s, h.get("access-control-allow-origin")]);
 results.push(["cors other origin", (await call("GET", "/api/stats?q=1", null, {Origin: "https://evil.example"}))[2].get("access-control-allow-origin")]);
 let limited = 0; for (let i = 0; i < 14; i++) { const [st] = await call("POST", "/api/answers", {client: "spam-" + i + "-xxxxxx", items: [...QT].map((t, j) => t === "r" ? {q: j + 1, a: "01234"} : null).filter(Boolean)}); if (st === 429) limited++; }
 results.push(["rate limited posts", limited]);
-results.push(["stored comment", db.prepare("SELECT comment FROM feedback").all()]);
+results.push(["stored comment", db.prepare("SELECT comment FROM feedback_v2").all()]);
 for (const r of results) console.log(JSON.stringify(r));
 
 const IP2 = {"CF-Connecting-IP": "5.6.7.8"};

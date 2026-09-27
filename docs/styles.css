@@ -333,3 +333,6 @@ textarea:focus{border-color:var(--accent)}
 .ccol.key .crow{background:var(--good-soft)}
 .ccol.key .crow .pos{color:var(--good)}
 .ccol.key .crow .letter{background:var(--good); color:var(--surface)}
+
+/* one-time notice */
+.notice{display:flex; flex-wrap:wrap; gap:8px 12px; align-items:center; justify-content:space-between; background:var(--accent-soft); color:var(--ink); border-radius:10px; padding:12px 14px; margin-bottom:16px; font-size:14px}
