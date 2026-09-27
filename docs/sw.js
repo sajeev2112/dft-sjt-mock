@@ -1,6 +1,6 @@
 // Offline support. The site's own files load network-first, so updates show straight away when online;
 // fonts and the drag library load cache-first. API calls are never cached.
-const VERSION = "9564daa4fb"; // set by tools/build.js
+const VERSION = "df2af28b94"; // set by tools/build.js
 const CACHE = "dft-sjt-" + VERSION;
 const CORE = [
   "./", "styles.css", "questions.js", "guide.js", "app.js",
@@ -35,7 +35,8 @@ self.addEventListener("fetch", event => {
 
   if (url.origin !== self.location.origin) return;
   // Revalidate with the server every time (cheap with ETags), so an update is never hidden behind the HTTP cache.
-  const fresh = new Request(req.url, {cache: "no-cache", credentials: "same-origin"});
+  // Page loads use redirect "manual" so a Cloudflare redirect (e.g. /index.html to /) is passed back for the browser to follow.
+  const fresh = new Request(req.url, {cache: "no-cache", credentials: "same-origin", redirect: req.mode === "navigate" ? "manual" : "follow"});
   event.respondWith(fetch(fresh).then(res => {
     // Cloudflare redirects /index.html to /, and browsers refuse redirected responses for page loads, so never cache those.
     if (res.ok && !res.redirected) { const copy = res.clone(); caches.open(CACHE).then(c => c.put(req, copy)); }

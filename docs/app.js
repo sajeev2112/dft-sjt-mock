@@ -24,7 +24,7 @@ function shuffle(a){ a = a.slice(); for (let i = a.length - 1; i > 0; i--) { con
 // ---------- state ----------
 const STORE = "dft-sjt-mock-v5", V4 = "dft-sjt-mock-v4";
 function newSet(extra){ return Object.assign({ans:{}, chk:{}, marked:false, el:0, cur:0, mode:"practice", logged:false}, extra || {}); }
-function fresh(){ return {v:5, cid:uid(), share:true, view:"practice", setId:"p1", sets:{p1:newSet(), p2:newSet(), p3:newSet(), custom:null}, att:{}, days:{}, hist:[], sent:{}, outbox:[], fb:{}}; }
+function fresh(){ return {v:5, ts:0, cid:uid(), share:true, view:"practice", setId:"p1", sets:{p1:newSet(), p2:newSet(), p3:newSet(), custom:null}, att:{}, days:{}, hist:[], sent:{}, outbox:[], fb:{}}; }
 let S = fresh();
 // Rebuilds state from untrusted JSON (localStorage, IndexedDB or a pasted progress code),
 // keeping only well-formed values so nothing odd can reach the page or crash rendering.
@@ -101,7 +101,15 @@ function save(now){
 }
 window.addEventListener("storage", e => {
   if (e.key !== STORE || !e.newValue || document.querySelector(".dragging")) return;
-  try { const n = normalise(JSON.parse(e.newValue)); if (n.ts >= S.ts) { S = n; render(); } } catch(err) {}
+  try {
+    const n = normalise(JSON.parse(e.newValue));
+    if (n.ts < (S.ts || 0)) return;
+    // Take the other tab’s answers, but keep this tab’s view, set and question.
+    const view = S.view, setId = S.setId, cur = S.sets[S.setId] && S.sets[S.setId].cur;
+    S = n; S.view = view;
+    if (S.sets[setId]) { S.setId = setId; S.sets[setId].cur = cur; }
+    render();
+  } catch(err) {}
 });
 window.addEventListener("pagehide", () => { clearTimeout(idbTimer); idbPut(JSON.stringify(S)); });
 function idb(){
@@ -155,10 +163,10 @@ function addAttempt(s, set, qi, submit = true){
 let hadLocal = false;
 try {
   const raw = localStorage.getItem(STORE);
-  hadLocal = !!raw;
-  if (raw) S = normalise(JSON.parse(raw));
+  if (raw) { S = normalise(JSON.parse(raw)); hadLocal = true; }
   else { const old = localStorage.getItem(V4); if (old) { S = carryOver(JSON.parse(old)); ui0.rewritten = true; } }
 } catch(e) {}
+const loadedTs = S.ts || 0; // captured before anything saves, for the backup comparison at startup
 
 // Sends queued first attempts. Returns the in-flight promise so callers can wait for it.
 let flushP = null;
@@ -171,7 +179,8 @@ function flush(){
       try {
         const r = await fetch(API + "/api/answers", {method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({client:S.cid, items})});
         if (!(r.ok || r.status === 400)) break;
-        S.outbox = S.outbox.slice(items.length); save();
+        const done = new Set(items.map(x => x.q + ":" + x.a));
+        S.outbox = S.outbox.filter(x => !done.has(x.q + ":" + x.a)); save();
       } catch(e) { break; }
     }
   })().finally(() => { flushP = null; });
@@ -567,7 +576,7 @@ function go(k){
   const set = curSet(), list = curList();
   set.cur = Math.max(0, Math.min(list.length - 1, k));
   ui.warn = false; ui.confirmMark = false; ui.confirmReset = false; ui.fbOpen = null; ui.building = false;
-  save(); render(); scrollToCard(); focusCard();
+  save(); render(); scrollToCard();
 }
 function fromHash(){
   const h = decodeURIComponent(location.hash.slice(1));
@@ -593,7 +602,7 @@ document.addEventListener("click", async e => {
     case "new": ui.building = !ui.building; render(); scrollToCard(); break;
     case "cancel-build": ui.building = false; render(); break;
     case "build": buildQuiz(b.dataset.kind, b.dataset.arg); break;
-    case "go": go(+b.dataset.k); break;
+    case "go": go(+b.dataset.k); focusCard(); break;
     case "prev": go(set.cur - 1); break;
     case "next": go(set.cur + 1); break;
     case "mv": {
@@ -713,7 +722,7 @@ if ("serviceWorker" in navigator && location.protocol !== "file:") {
   const hadController = !!navigator.serviceWorker.controller;
   let reloading = false;
   navigator.serviceWorker.addEventListener("controllerchange", () => {
-    if (!hadController || reloading || ui.building || document.querySelector(".dragging, textarea:focus")) return;
+    if (!hadController || reloading || ui.building || timerOn || document.querySelector(".dragging, textarea:focus") || (document.getElementById("code-in") || {}).value) return;
     reloading = true; save(); location.reload();
   });
   navigator.serviceWorker.register("sw.js").catch(() => {});
@@ -726,7 +735,7 @@ countVisit();
   if (backup) {
     try {
       const b = normalise(JSON.parse(backup));
-      if (!hadLocal || b.ts > S.ts) { S = b; save(true); render(); }
+      if (!hadLocal || b.ts > loadedTs) { const view = S.view; S = b; S.view = view; save(true); render(); }
     } catch(e) {}
   } else if (answeredCount(S)) idbPut(JSON.stringify(S));
   try { if (navigator.storage && navigator.storage.persist && !(await navigator.storage.persisted())) await navigator.storage.persist(); } catch(e) {}

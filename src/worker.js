@@ -154,8 +154,11 @@ async function health(env, cors) {
 // IPv6 addresses are grouped by /64 (one home or device network) so rotating addresses doesn’t bypass the limit.
 function network(ip) {
   if (!ip.includes(":")) return ip;
-  const parts = ip.split("::")[0].split(":").concat(["0", "0", "0", "0"]).slice(0, 4);
-  return parts.join(":") + "::/64";
+  if (/^::ffff:\d+\.\d+\.\d+\.\d+$/i.test(ip)) return ip.slice(7); // IPv4-mapped address: treat as IPv4
+  const [head, tail] = ip.split("::");
+  const h = head ? head.split(":") : [], t = tail !== undefined && tail !== "" ? tail.split(":") : [];
+  const groups = tail === undefined ? h : h.concat(Array(Math.max(0, 8 - h.length - t.length)).fill("0"), t);
+  return groups.slice(0, 4).map(g => (parseInt(g, 16) || 0).toString(16)).join(":") + "::/64";
 }
 async function allow(request, env, ctx, weight, kind) {
   const ip = network(request.headers.get("CF-Connecting-IP") || "unknown");
