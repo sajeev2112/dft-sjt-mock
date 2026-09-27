@@ -50,3 +50,17 @@ v.push(["bad error body", (await call("POST", "/api/error", {nope: 1}, IP2))[0]]
 v.push(["health", (await call("GET", "/api/health"))[1]]);
 v.push(["errors table", db.prepare("SELECT kind, msg FROM errors").all()]);
 for (const r of v) console.log(JSON.stringify(r));
+
+// Rate limit: many answer posts from rotating IPv6 addresses in one /64 share a single limit
+const ranks = [...QT].map((t, j) => t === "r" ? {q: j + 1, a: "01234"} : null).filter(Boolean);
+let first429 = 0;
+for (let i = 0; i < 120 && !first429; i++) {
+  const ip = `2001:db8:1:2:${(i * 7919).toString(16)}::${i.toString(16)}`;
+  const [st] = await call("POST", "/api/answers", {client: "v6-" + i + "-abcdefgh", items: ranks}, {"CF-Connecting-IP": ip});
+  if (st === 429) first429 = i + 1;
+}
+console.log(JSON.stringify(["ipv6 /64 rate limited at post", first429, "(expect ~" + Math.ceil(3000 / ranks.length) + ")"]));
+const [otherNet] = await call("POST", "/api/answers", {client: "v6-other-abcdefgh", items: ranks}, {"CF-Connecting-IP": "2001:db8:9:9::1"});
+console.log(JSON.stringify(["different /64 still allowed", otherNet]));
+const [fbOk] = await call("POST", "/api/feedback", {client: "v6-0-abcdefgh", q: 1, comment: "x"}, {"CF-Connecting-IP": "2001:db8:1:2::5"});
+console.log(JSON.stringify(["feedback has its own limit", fbOk]));

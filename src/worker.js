@@ -15,7 +15,8 @@ const QTYPES = "rbrrbrrbrbrbrbrrrbrbrbrbrbrrrbbrrbrbrrbrbrbrbrbrbrrbrbrbrbrbrrbr
 // TYPES:end
 
 const CORS_ORIGINS = ["https://sajeev2112.github.io"];
-const HOURLY_LIMIT = 400;
+// Hourly limits per network and endpoint. Generous enough for a whole class on shared Wi-Fi.
+const LIMITS = {answers: 3000, feedback: 100, visit: 600, error: 200};
 const MIN_STATS = 3;
 
 let schemaReady = false;
@@ -96,7 +97,7 @@ async function answers(request, env, ctx, cors) {
     if (q && typeof it.a === "string" && validAnswer(QTYPES[q - 1], it.a)) items.push([q, it.a]);
   }
   if (!items.length) return json({ok: true, stored: 0}, 200, cors);
-  if (!(await allow(request, env, ctx, items.length))) return json({error: "rate_limited"}, 429, cors);
+  if (!(await allow(request, env, ctx, items.length, "answers"))) return json({error: "rate_limited"}, 429, cors);
   const now = Date.now();
   await env.DB.batch(items.map(([q, a]) =>
     env.DB.prepare("INSERT OR IGNORE INTO answers_v2 (client, q, a, t) VALUES (?, ?, ?, ?)").bind(body.client, q, a, now)));
@@ -109,7 +110,7 @@ async function feedback(request, env, ctx, cors) {
   if (!body || !validClient(body.client) || !q) return json({error: "bad_request"}, 400, cors);
   let comment = typeof body.comment === "string" ? body.comment : "";
   comment = comment.replace(/[\u0000-\u0008\u000B-\u001F\u007F]/g, "").trim().slice(0, 500);
-  if (!(await allow(request, env, ctx, 5))) return json({error: "rate_limited"}, 429, cors);
+  if (!(await allow(request, env, ctx, 1, "feedback"))) return json({error: "rate_limited"}, 429, cors);
   await env.DB.prepare(
     "INSERT INTO feedback_v2 (client, q, comment, t) VALUES (?, ?, ?, ?) ON CONFLICT (client, q) DO UPDATE SET comment = excluded.comment, t = excluded.t"
   ).bind(body.client, q, comment || null, Date.now()).run();
@@ -119,7 +120,7 @@ async function feedback(request, env, ctx, cors) {
 async function visit(request, env, ctx, cors) {
   const body = await readJson(request, 1024);
   if (!body || !validClient(body.client)) return json({error: "bad_request"}, 400, cors);
-  if (!(await allow(request, env, ctx, 1))) return json({error: "rate_limited"}, 429, cors);
+  if (!(await allow(request, env, ctx, 1, "visit"))) return json({error: "rate_limited"}, 429, cors);
   const day = new Date().toISOString().slice(0, 10);
   await env.DB.prepare(
     "INSERT INTO visits (day, client, views, app) VALUES (?, ?, 1, ?) ON CONFLICT (day, client) DO UPDATE SET views = views + 1, app = MAX(app, excluded.app)"
@@ -130,7 +131,7 @@ async function visit(request, env, ctx, cors) {
 async function clientError(request, env, ctx, cors) {
   const body = await readJson(request, 2048);
   if (!body || typeof body.msg !== "string") return json({error: "bad_request"}, 400, cors);
-  if (!(await allow(request, env, ctx, 2))) return json({error: "rate_limited"}, 429, cors);
+  if (!(await allow(request, env, ctx, 1, "error"))) return json({error: "rate_limited"}, 429, cors);
   const since = Date.now() - 3600000;
   const recent = await env.DB.prepare("SELECT COUNT(*) AS c FROM errors WHERE kind = ? AND t > ?").bind("client", since).first();
   if ((recent && recent.c) < 200) {
@@ -150,16 +151,22 @@ async function health(env, cors) {
 }
 
 // Hourly rate limit per hashed IP. Old buckets are pruned occasionally.
-async function allow(request, env, ctx, weight) {
-  const ip = request.headers.get("CF-Connecting-IP") || "unknown";
+// IPv6 addresses are grouped by /64 (one home or device network) so rotating addresses doesn’t bypass the limit.
+function network(ip) {
+  if (!ip.includes(":")) return ip;
+  const parts = ip.split("::")[0].split(":").concat(["0", "0", "0", "0"]).slice(0, 4);
+  return parts.join(":") + "::/64";
+}
+async function allow(request, env, ctx, weight, kind) {
+  const ip = network(request.headers.get("CF-Connecting-IP") || "unknown");
   const hour = Math.floor(Date.now() / 3600000);
-  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(ip + "|dft-sjt|" + hour));
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(ip + "|dft-sjt|" + kind + "|" + hour));
   const key = [...new Uint8Array(digest).slice(0, 12)].map(b => b.toString(16).padStart(2, "0")).join("");
   const row = await env.DB.prepare(
     "INSERT INTO hits (k, h, n) VALUES (?, ?, ?) ON CONFLICT (k) DO UPDATE SET n = n + excluded.n RETURNING n"
   ).bind(key, hour, weight).first();
   if (Math.random() < 0.02) ctx.waitUntil(env.DB.prepare("DELETE FROM hits WHERE h < ?").bind(hour - 24).run());
-  return !row || row.n <= HOURLY_LIMIT;
+  return !row || row.n <= LIMITS[kind];
 }
 
 function toQ(v) {

@@ -35,7 +35,7 @@
   <section data-view-panel="practice" id="view-practice">
     <p class="sub">Original practice questions in three papers, plus quick quizzes and a full-length mock. Drag ranking items into order; everything is marked with the live test’s near-miss scoring.</p>
     <nav class="chart" aria-label="Question sets">
-      <div class="ptabs" id="ptabs" role="tablist" aria-label="Question sets"></div>
+      <div class="setbar"><div class="ptabs" id="ptabs" role="tablist" aria-label="Question sets"></div><button type="button" class="ptab new" id="newquiz" data-act="new" aria-pressed="false">+ New quiz</button></div>
       <div class="chart-top">
         <span class="chart-title" id="chart-title"></span>
         <span class="legend">
@@ -49,7 +49,8 @@
       <div id="grid"></div>
     </nav>
     <div class="layout">
-      <section class="card" id="card" aria-live="polite"></section>
+      <section class="card" id="card"></section>
+      <p class="sr-only" id="status" role="status" aria-live="polite"></p>
       <aside class="panel" id="panel"></aside>
     </div>
   </section>

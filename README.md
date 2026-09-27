@@ -31,7 +31,8 @@ The questions are original. They're modelled on patterns in the official 2016 an
 To read the feedback, open the D1 console in the Cloudflare dashboard and run:
 
 ```sql
-SELECT q, comment, datetime(t / 1000, 'unixepoch') AS sent FROM feedback_v2 ORDER BY t DESC;
+SELECT (q - 1) / 32 + 1 AS paper, (q - 1) % 32 + 1 AS question, comment, datetime(t / 1000, 'unixepoch') AS sent
+FROM feedback_v2 ORDER BY t DESC;
 ```
 
 ## Private visitor stats
@@ -48,7 +49,8 @@ SELECT (SELECT COUNT(DISTINCT client) FROM visits) AS visitors,
        (SELECT COUNT(DISTINCT client) FROM answers_v2) AS answering;
 
 -- The most-answered questions
-SELECT q, COUNT(*) AS answers FROM answers_v2 GROUP BY q ORDER BY answers DESC LIMIT 10;
+SELECT (q - 1) / 32 + 1 AS paper, (q - 1) % 32 + 1 AS question, COUNT(*) AS answers
+FROM answers_v2 GROUP BY q ORDER BY answers DESC LIMIT 10;
 ```
 
 ## Error alerts

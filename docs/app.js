@@ -12,6 +12,7 @@ const WORKER = "https://dft-sjt-mock.sajeev-r13.workers.dev";
 const API = (location.protocol === "file:" || location.hostname.endsWith("github.io")) ? WORKER : "";
 const GRIP = '<svg width="10" height="16" viewBox="0 0 10 16" aria-hidden="true"><g fill="currentColor"><circle cx="2" cy="2" r="1.5"/><circle cx="8" cy="2" r="1.5"/><circle cx="2" cy="8" r="1.5"/><circle cx="8" cy="8" r="1.5"/><circle cx="2" cy="14" r="1.5"/><circle cx="8" cy="14" r="1.5"/></g></svg>';
 const isRank = q => q.t !== "best3";
+const localNum = q => q.n - (q.p - 1) * 32; // 1–32 within its paper; q.n stays the site-wide ID used by the stats API
 const range = (a, b) => Array.from({length: b - a}, (_, i) => a + i);
 const esc = s => String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const fmt = s => String(Math.floor(s / 60)).padStart(2, "0") + ":" + String(s % 60).padStart(2, "0");
@@ -25,12 +26,53 @@ const STORE = "dft-sjt-mock-v5", V4 = "dft-sjt-mock-v4";
 function newSet(extra){ return Object.assign({ans:{}, chk:{}, marked:false, el:0, cur:0, mode:"practice", logged:false}, extra || {}); }
 function fresh(){ return {v:5, cid:uid(), share:true, view:"practice", setId:"p1", sets:{p1:newSet(), p2:newSet(), p3:newSet(), custom:null}, att:{}, days:{}, hist:[], sent:{}, outbox:[], fb:{}}; }
 let S = fresh();
+// Rebuilds state from untrusted JSON (localStorage, IndexedDB or a pasted progress code),
+// keeping only well-formed values so nothing odd can reach the page or crash rendering.
+const num = (v, max = 1e9) => { v = Number(v); return Number.isFinite(v) && v >= 0 && v <= max ? v : 0; };
+const isQi = i => Number.isInteger(i) && i >= 0 && i < Q.length;
+function cleanAns(qi, a){
+  if (!a || typeof a !== "object") return null;
+  if (isRank(Q[qi])) {
+    const ord = Array.isArray(a.ord) ? a.ord.map(Number) : [];
+    return ord.length === 5 && new Set(ord).size === 5 && ord.every(x => Number.isInteger(x) && x >= 0 && x < 5) ? {ord, set: !!a.set} : null;
+  }
+  const p = Array.isArray(a.p) ? [...new Set(a.p.map(Number))].filter(x => Number.isInteger(x) && x >= 0 && x < 8).slice(0, 3) : [];
+  return {p};
+}
+function cleanSet(x, list){
+  const set = newSet();
+  if (!x || typeof x !== "object") return set;
+  set.mode = x.mode === "exam" ? "exam" : "practice";
+  set.marked = !!x.marked; set.logged = !!x.logged;
+  set.el = Math.floor(num(x.el, 1e6)); set.cur = Math.floor(num(x.cur, list.length - 1));
+  for (const k of Object.keys(x.ans || {})) { const i = +k; if (isQi(i) && list.includes(i)) { const a = cleanAns(i, x.ans[k]); if (a) set.ans[i] = a; } }
+  for (const k of Object.keys(x.chk || {})) { const i = +k; if (isQi(i) && list.includes(i) && x.chk[k]) set.chk[i] = true; }
+  return set;
+}
 function normalise(o){
-  const s = Object.assign(fresh(), o);
-  s.sets = Object.assign({p1:newSet(), p2:newSet(), p3:newSet(), custom:null}, s.sets || {});
-  ["att","days","sent","fb"].forEach(k => { if (!s[k] || typeof s[k] !== "object") s[k] = {}; });
-  ["hist","outbox"].forEach(k => { if (!Array.isArray(s[k])) s[k] = []; });
-  if (!s.sets[s.setId] || (s.setId !== "custom" && !PAPER_IDS.includes(s.setId))) s.setId = "p1";
+  const s = fresh();
+  if (!o || typeof o !== "object") return s;
+  if (typeof o.cid === "string" && /^[A-Za-z0-9-]{8,64}$/.test(o.cid)) s.cid = o.cid;
+  s.share = o.share !== false;
+  s.ts = num(o.ts, 1e14);
+  s.view = ["practice", "results", "guide", "settings"].includes(o.view) ? o.view : "practice";
+  const sets = o.sets || {};
+  for (const id of Object.keys(PAPERS)) s.sets[id] = cleanSet(sets[id], range(PAPERS[id].from, PAPERS[id].to));
+  const c = sets.custom;
+  if (c && Array.isArray(c.list)) {
+    const list = [...new Set(c.list.map(Number))].filter(isQi);
+    if (list.length) {
+      s.sets.custom = Object.assign(cleanSet(c, list), {list, name: typeof c.name === "string" ? c.name.slice(0, 60) : "Quiz",
+        kind: typeof c.kind === "string" ? c.kind.slice(0, 10) : "quick", created: num(c.created, 1e14)});
+    }
+  }
+  s.setId = s.sets[o.setId] && (o.setId === "custom" || PAPER_IDS.includes(o.setId)) ? o.setId : "p1";
+  for (const k of Object.keys(o.att || {})) { const i = +k; if (isQi(i) && Array.isArray(o.att[k])) s.att[i] = o.att[k].slice(-50).map(a => ({g: num(a && a.g, 20), m: num(a && a.m, 20) || 20, t: num(a && a.t, 1e14)})); }
+  for (const d of Object.keys(o.days || {})) { const x = o.days[d]; if (/^\d{4}-\d{2}-\d{2}$/.test(d) && x) s.days[d] = {g: num(x.g), m: num(x.m), n: num(x.n)}; }
+  s.hist = (Array.isArray(o.hist) ? o.hist : []).slice(-200).filter(h => h && typeof h === "object").map(h => ({t: num(h.t, 1e14), name: String(h.name || "Set").slice(0, 80), g: num(h.g), m: num(h.m) || 1, n: num(h.n), total: num(h.total), mode: h.mode === "exam" ? "exam" : "practice"}));
+  for (const k of Object.keys(o.sent || {})) { const i = +k; if (isQi(i)) s.sent[i] = 1; }
+  for (const k of Object.keys(o.fb || {})) { const i = +k; if (isQi(i)) s.fb[i] = 1; }
+  s.outbox = (Array.isArray(o.outbox) ? o.outbox : []).filter(x => x && Number.isInteger(x.q) && x.q >= 1 && x.q <= Q.length && typeof x.a === "string" && /^[0-7]{3,5}$/.test(x.a)).slice(-300);
   return s;
 }
 // The question bank was rewritten in September 2026, so saved answers from v4 no longer match the options.
@@ -49,12 +91,19 @@ const ui0 = {rewritten:false};
 let timerOn = false;
 // Progress lives in localStorage, with a debounced backup copy in IndexedDB in case one store is cleared.
 let storageOk = true, savedAt = 0, idbTimer = null;
-function save(){
+function save(now){
+  S.ts = Date.now();
   const json = JSON.stringify(S);
   try { localStorage.setItem(STORE, json); storageOk = true; } catch(e) { storageOk = false; }
   savedAt = Date.now();
-  clearTimeout(idbTimer); idbTimer = setTimeout(() => idbPut(json), 800);
+  clearTimeout(idbTimer);
+  if (now) idbPut(json); else idbTimer = setTimeout(() => idbPut(json), 800);
 }
+window.addEventListener("storage", e => {
+  if (e.key !== STORE || !e.newValue || document.querySelector(".dragging")) return;
+  try { const n = normalise(JSON.parse(e.newValue)); if (n.ts >= S.ts) { S = n; render(); } } catch(err) {}
+});
+window.addEventListener("pagehide", () => { clearTimeout(idbTimer); idbPut(JSON.stringify(S)); });
 function idb(){
   return new Promise((res, rej) => {
     if (!window.indexedDB) return rej(new Error("no idb"));
@@ -74,7 +123,7 @@ const curSet = () => S.sets[S.setId];
 const curList = () => listOf(S.setId);
 function curQi(){ const l = curList(), set = curSet(); set.cur = Math.max(0, Math.min(l.length - 1, set.cur || 0)); return l[set.cur]; }
 
-const revealed = (set, qi) => set.mode === "practice" ? !!set.chk[qi] : !!set.marked;
+const revealed = (set, qi) => !!set.chk[qi] || (set.mode === "exam" && !!set.marked);
 function ansOf(set, qi){ if (!set.ans[qi]) set.ans[qi] = isRank(Q[qi]) ? {ord:[0,1,2,3,4], set:false} : {p:[]}; return set.ans[qi]; }
 function complete(set, qi){ const a = set.ans[qi]; if (!a) return false; return isRank(Q[qi]) ? !!a.set : a.p.length === 3; }
 function started(set, qi){ const a = set.ans[qi]; if (!a) return false; return isRank(Q[qi]) ? !!a.set : a.p.length > 0; }
@@ -103,8 +152,10 @@ function addAttempt(s, set, qi, submit = true){
   }
 }
 // Load saved progress (after the helpers above exist).
+let hadLocal = false;
 try {
   const raw = localStorage.getItem(STORE);
+  hadLocal = !!raw;
   if (raw) S = normalise(JSON.parse(raw));
   else { const old = localStorage.getItem(V4); if (old) { S = carryOver(JSON.parse(old)); ui0.rewritten = true; } }
 } catch(e) {}
@@ -205,8 +256,8 @@ function renderTabs(){
   }).join("");
   const c = S.sets.custom;
   if (c) { const done = c.list.filter(qi => complete(c, qi)).length; h += `<button type="button" class="ptab quiz" role="tab" data-act="set" data-id="custom" aria-selected="${S.setId === "custom"}">${esc(c.name)}<small>${done}/${c.list.length}</small></button>`; }
-  h += `<button type="button" class="ptab new" data-act="new" aria-pressed="${ui.building}">+ New quiz</button>`;
   document.getElementById("ptabs").innerHTML = h;
+  document.getElementById("newquiz").setAttribute("aria-pressed", String(ui.building));
 }
 
 function cellHtml(set, qi, k, lower){
@@ -214,7 +265,7 @@ function cellHtml(set, qi, k, lower){
   if (revealed(set, qi)) { const s = qScore(set, qi); cls += " " + band(s.got, s.max); status = s.got + " of " + s.max + " marks"; }
   else if (started(set, qi)) { cls += " done"; status = complete(set, qi) ? "answered" : "in progress"; }
   if (k === set.cur && !ui.building) cls += " cur";
-  const label = S.setId === "custom" ? k + 1 : qi + 1;
+  const label = k + 1;
   return `<button type="button" class="${cls}" data-act="go" data-k="${k}" aria-label="Question ${label}, ${status}"${k === set.cur ? ' aria-current="step"' : ""}>${label}</button>`;
 }
 function renderGrid(){
@@ -222,7 +273,7 @@ function renderGrid(){
   let h = "";
   if (PAPERS[S.setId] && list.length === 32) {
     const P = PAPERS[S.setId];
-    title.textContent = `${P.name} map · upper arch Q${P.from + 1}–${P.from + 16} · lower arch Q${P.from + 17}–${P.to}`;
+    title.textContent = `${P.name} · questions 1–32`;
     const arch = (from, lower) => { let a = ""; for (let k = from; k < from + 16; k++) { if (k === from + 8) a += '<span class="mid" aria-hidden="true"></span>'; a += cellHtml(set, list[k], k, lower); } return a; };
     h = `<div class="arch">${arch(0, false)}</div><div class="occl" aria-hidden="true"></div><div class="arch">${arch(16, true)}</div>`;
   } else {
@@ -241,9 +292,9 @@ function renderCard(){
   if (ui.building) { card.innerHTML = builderHtml(); destroyDrag(); return; }
   const set = curSet(), list = curList(), k = set.cur, qi = curQi(), q = Q[qi], a = set.ans[qi], rev = revealed(set, qi), rank = isRank(q);
   const word = q.t === "consider" ? "important" : "appropriate";
-  const where = S.setId === "custom" ? ` <span class="qfrom">· Paper ${q.p}, Q${q.n}</span>` : "";
+  const where = S.setId === "custom" ? ` <span class="qfrom">· Paper ${q.p}, question ${localNum(q)}</span>` : "";
   let h = ui0.rewritten ? `<div class="notice"><b>The questions have been rewritten to be harder.</b> Every option is now plausible, so your earlier answers have been cleared. Your progress chart and visit history are kept. <button type="button" class="btn small" data-act="dismiss-notice">OK</button></div>` : "";
-  h += `<div class="qhead"><span class="qnum">Question ${k + 1} of ${list.length}${where}</span><div class="chips"><span class="chip type">${TYPES[q.t]}</span><span class="chip">${DOMAINS[q.d]}</span></div></div>`;
+  h += `<div class="qhead"><span class="qnum" tabindex="-1">Question ${k + 1} of ${list.length}${where}</span><div class="chips"><span class="chip type">${TYPES[q.t]}</span><span class="chip">${DOMAINS[q.d]}</span></div></div>`;
   h += `<p class="scenario">${q.s}</p><p class="instr">${PROMPTS[q.t]}</p>`;
   if (!rev) {
     if (rank) {
@@ -255,7 +306,7 @@ function renderCard(){
           `<button type="button" class="mvb" id="mv-${qi}-${o}-down" data-act="mv" data-o="${o}" data-d="1" aria-label="Move option ${L[o]} down"${pos === 4 ? " disabled" : ""}>↓</button></span></li>`;
       });
       h += `</ol><p class="rend bottom">Least ${word}</p>`;
-      if (!isSet) h += `<div class="setrow"><span>Drag the options into order, or use the arrows. If you agree with the order shown, keep it as it is.</span><button type="button" class="btn small" data-act="keep">Keep this order</button></div>`;
+      if (!isSet) h += `<div class="setrow"><span>Drag the options into order, or use the arrows. If the order shown is already your answer, press Keep this order${set.mode === "exam" ? " (unconfirmed rankings score 0)" : ""}.</span><button type="button" class="btn small" data-act="keep">Keep this order</button></div>`;
     } else {
       const n = a ? a.p.length : 0;
       h += `<p class="scale${ui.warn ? " warn" : ""}"><span>${n} of 3 chosen</span><span>${ui.warn ? "Untick one first: only three can be chosen" : ""}</span></p><div class="opts">`;
@@ -343,7 +394,7 @@ function buildQuiz(kind, arg){
   else if (kind === "theme") { list = shuffle(all.filter(i => Q[i].g === arg)); name = THEMES[arg]; }
   if (!list.length) return;
   S.sets.custom = newSet({name, kind, list, mode, created:Date.now()});
-  S.setId = "custom"; S.view = "practice"; ui.building = false;
+  S.setId = "custom"; S.view = "practice"; ui.building = false; ui.warn = false; timerOn = false;
   save(); location.hash = "practice"; render(); scrollToCard();
 }
 
@@ -490,7 +541,7 @@ const b64u = bytes => { let s = ""; bytes.forEach(b => s += String.fromCharCode(
 const unb64u = str => { const s = atob(str.replace(/-/g, "+").replace(/_/g, "/")); return Uint8Array.from(s, c => c.charCodeAt(0)); };
 async function pipe(bytes, stream){ return new Uint8Array(await new Response(new Blob([bytes]).stream().pipeThrough(stream)).arrayBuffer()); }
 async function makeCode(){
-  const data = Object.assign({}, S, {outbox:[]});
+  const data = S;
   const bytes = new TextEncoder().encode(JSON.stringify(data));
   if (window.CompressionStream) { try { return "SJT1." + b64u(await pipe(bytes, new CompressionStream("deflate-raw"))); } catch(e) {} }
   return "SJT0." + b64u(bytes);
@@ -502,17 +553,21 @@ async function readCode(code){
   if (tag === "SJT1.") bytes = await pipe(bytes, new DecompressionStream("deflate-raw"));
   else if (tag !== "SJT0.") throw new Error("tag");
   const o = JSON.parse(new TextDecoder().decode(bytes));
-  if (!o || o.v !== 4 || !o.sets) throw new Error("shape");
+  if (!o || !o.sets || !o.cid) throw new Error("shape");
+  if (o.v === 4) return carryOver(o); // a code made before the question rewrite: keep history, not answers
+  if (o.v !== 5) throw new Error("version");
   return normalise(o);
 }
 
 // ---------- navigation ----------
 function scrollToCard(){ const c = document.getElementById("card"); if (c) c.scrollIntoView({block:"nearest"}); }
+function focusCard(){ const el = document.querySelector("#card .qnum, #card .bh"); if (el) el.focus({preventScroll: true}); }
+function announce(msg){ const el = document.getElementById("status"); if (el) el.textContent = msg; }
 function go(k){
   const set = curSet(), list = curList();
   set.cur = Math.max(0, Math.min(list.length - 1, k));
   ui.warn = false; ui.confirmMark = false; ui.confirmReset = false; ui.fbOpen = null; ui.building = false;
-  save(); render(); scrollToCard();
+  save(); render(); scrollToCard(); focusCard();
 }
 function fromHash(){
   const h = decodeURIComponent(location.hash.slice(1));
@@ -522,7 +577,7 @@ function fromHash(){
     if (target) setTimeout(() => target.scrollIntoView({block:"start"}), 0);
     return;
   }
-  if (["practice", "results", "settings"].includes(h)) { S.view = h; save(); render(); window.scrollTo(0, 0); }
+  if (!h || ["practice", "results", "settings"].includes(h)) { S.view = h || "practice"; save(); render(); window.scrollTo(0, 0); }
 }
 window.addEventListener("hashchange", fromHash);
 
@@ -534,7 +589,7 @@ document.addEventListener("click", async e => {
   switch (act) {
     case "dismiss-notice": ui0.rewritten = false; render(); break;
     case "view": if (location.hash === "#" + b.dataset.v) fromHash(); else location.hash = b.dataset.v; break;
-    case "set": S.setId = b.dataset.id; ui.building = false; ui.confirmMark = ui.confirmReset = false; timerOn = false; save(); render(); break;
+    case "set": S.setId = b.dataset.id; ui.building = false; ui.warn = false; ui.confirmMark = ui.confirmReset = false; timerOn = false; save(); render(); break;
     case "new": ui.building = !ui.building; render(); scrollToCard(); break;
     case "cancel-build": ui.building = false; render(); break;
     case "build": buildQuiz(b.dataset.kind, b.dataset.arg); break;
@@ -544,7 +599,7 @@ document.addEventListener("click", async e => {
     case "mv": {
       const a = ansOf(set, qi), o = +b.dataset.o, d = +b.dataset.d, pos = a.ord.indexOf(o), np = pos + d;
       if (np < 0 || np > 4) return;
-      [a.ord[pos], a.ord[np]] = [a.ord[np], a.ord[pos]]; a.set = true; save(); render();
+      [a.ord[pos], a.ord[np]] = [a.ord[np], a.ord[pos]]; a.set = true; save(); render(); announce(`Option ${L[o]} moved to position ${np + 1}.`);
       const f = document.getElementById(`mv-${qi}-${o}-${d < 0 ? "up" : "down"}`), alt = document.getElementById(`mv-${qi}-${o}-${d < 0 ? "down" : "up"}`);
       (f && !f.disabled ? f : alt)?.focus();
       break;
@@ -559,8 +614,10 @@ document.addEventListener("click", async e => {
     case "check":
       if (!complete(set, qi)) return;
       set.chk[qi] = true; addAttempt(S, set, qi); logSetIfDone(S.setId); save(); render(); flush();
+      { const sc = qScore(set, qi); announce(`${sc.got} out of ${sc.max} marks. The correct answer is shown below the explanations.`); }
+      document.querySelector("#card .scoreline")?.setAttribute("tabindex", "-1"); document.querySelector("#card .scoreline")?.focus({preventScroll: true});
       break;
-    case "retry": delete set.ans[qi]; delete set.chk[qi]; set.logged = false; ui.fbOpen = null; save(); render(); break;
+    case "retry": delete set.ans[qi]; delete set.chk[qi]; ui.fbOpen = null; ui.warn = false; save(); render(); focusCard(); break;
     case "mode": if (b.dataset.mode !== set.mode) { set.mode = b.dataset.mode; ui.confirmMark = false; save(); render(); } break;
     case "mark": { const n = curList().filter(i => complete(set, i)).length; if (n < curList().length) { ui.confirmMark = true; renderPanel(); } else markSet(); break; }
     case "mark-yes": markSet(); break;
@@ -594,13 +651,13 @@ document.addEventListener("click", async e => {
     case "load-code": { const v = (document.getElementById("code-in") || {}).value || ""; if (!v.trim()) { ui.codeMsg = "Paste a code first."; renderSettings(); break; } ui.pending = v; ui.confirmLoad = true; ui.codeMsg = ""; renderSettings(); document.getElementById("code-in").value = v; break; }
     case "load-no": ui.confirmLoad = false; renderSettings(); break;
     case "load-yes":
-      try { S = await readCode(ui.pending || ""); S.view = "settings"; save(); ui.codeMsg = "Progress loaded."; flush(); }
+      try { S = await readCode(ui.pending || ""); S.view = "settings"; timerOn = false; save(true); ui.codeMsg = "Progress loaded."; flush(); }
       catch(err) { ui.codeMsg = "That code couldn’t be read. Check you copied all of it."; }
       ui.confirmLoad = false; ui.pending = ""; render(); break;
     case "install": if (installPrompt) { installPrompt.prompt(); installPrompt = null; renderSettings(); } break;
     case "wipe": ui.confirmWipe = true; renderSettings(); break;
     case "wipe-no": ui.confirmWipe = false; renderSettings(); break;
-    case "wipe-yes": { const cid = S.cid; S = fresh(); S.cid = cid; S.view = "settings"; ui.confirmWipe = false; save(); render(); break; }
+    case "wipe-yes": { const cid = S.cid; S = fresh(); S.cid = cid; S.view = "settings"; ui.confirmWipe = false; timerOn = false; save(true); render(); break; }
   }
 });
 document.addEventListener("change", e => {
@@ -610,7 +667,7 @@ function refreshStats(qi){ const box = document.getElementById("stats-" + qi); i
 function markSet(){
   const set = curSet(), list = curList();
   set.marked = true; timerOn = false; ui.confirmMark = false;
-  list.forEach(qi => { if (started(set, qi)) { set.chk[qi] = true; addAttempt(S, set, qi); } });
+  list.forEach(qi => { if (started(set, qi) && !set.chk[qi]) { set.chk[qi] = true; addAttempt(S, set, qi); } });
   logSetIfDone(S.setId); save(); render(); flush();
 }
 
@@ -651,7 +708,16 @@ function countVisit(){
 
 // ---------- start ----------
 window.addEventListener("online", flush);
-if ("serviceWorker" in navigator && location.protocol !== "file:") navigator.serviceWorker.register("sw.js").catch(() => {});
+if ("serviceWorker" in navigator && location.protocol !== "file:") {
+  // When a new version installs, reload once so visitors see it straight away (progress is already saved).
+  const hadController = !!navigator.serviceWorker.controller;
+  let reloading = false;
+  navigator.serviceWorker.addEventListener("controllerchange", () => {
+    if (!hadController || reloading || ui.building || document.querySelector(".dragging, textarea:focus")) return;
+    reloading = true; save(); location.reload();
+  });
+  navigator.serviceWorker.register("sw.js").catch(() => {});
+}
 if (location.hash) fromHash(); else render();
 flush();
 countVisit();
@@ -660,7 +726,7 @@ countVisit();
   if (backup) {
     try {
       const b = normalise(JSON.parse(backup));
-      if (answeredCount(b) > answeredCount(S)) { S = b; save(); render(); }
+      if (!hadLocal || b.ts > S.ts) { S = b; save(true); render(); }
     } catch(e) {}
   } else if (answeredCount(S)) idbPut(JSON.stringify(S));
   try { if (navigator.storage && navigator.storage.persist && !(await navigator.storage.persisted())) await navigator.storage.persist(); } catch(e) {}

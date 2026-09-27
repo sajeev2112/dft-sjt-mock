@@ -42,6 +42,8 @@ jobs:
           code=$(fetch "$SITE/api/health")
           if [ "$code" != "200" ]; then
             add "Stats API health check returned HTTP $code"
+          elif ! jq -e '.errors' body.txt >/dev/null 2>&1; then
+            add "Stats API health check returned an unexpected response"
           else
             s1=$(jq -r '.errors.server_1h // 0' body.txt); c1=$(jq -r '.errors.client_1h // 0' body.txt)
             s24=$(jq -r '.errors.server_24h // 0' body.txt); c24=$(jq -r '.errors.client_24h // 0' body.txt)
