@@ -5,6 +5,7 @@
 //   POST /api/feedback  "I disagree with this key", with an optional comment
 //   POST /api/visit     one anonymous visit per page load (private visitor stats, read in the D1 console)
 //   POST /api/error     a browser error report (message only)
+//   GET  /api/admin     private dashboard data; needs "Authorization: Bearer <ADMIN_KEY>" (a Worker secret)
 //   GET  /api/health    uptime check used by the GitHub Actions alert workflow (counts only, no messages)
 // Answers and feedback use the _v2 tables since the question bank was rewritten (Sept 2026); the old tables are kept but unused.
 // No names, emails or IP addresses are stored. IPs are only hashed into hourly rate-limit buckets.
@@ -16,7 +17,7 @@ const QTYPES = "rbrrbrrbrbrbrbrrrbrbrbrbrbrrrbbrrbrbrrbrbrbrbrbrbrrbrbrbrbrbrrbr
 
 const CORS_ORIGINS = ["https://sajeev2112.github.io"];
 // Hourly limits per network and endpoint. Generous enough for a whole class on shared Wi-Fi.
-const LIMITS = {answers: 3000, feedback: 100, visit: 600, error: 200};
+const LIMITS = {answers: 3000, feedback: 100, visit: 600, error: 200, admin: 60};
 const MIN_STATS = 3;
 
 let schemaReady = false;
@@ -48,6 +49,7 @@ export default {
       if (url.pathname === "/api/visit" && request.method === "POST") return await visit(request, env, ctx, cors);
       if (url.pathname === "/api/error" && request.method === "POST") return await clientError(request, env, ctx, cors);
       if (url.pathname === "/api/health" && request.method === "GET") return await health(env, cors);
+      if (url.pathname === "/api/admin" && request.method === "GET") return await admin(request, env, ctx, cors);
       return json({error: "not_found"}, 404, cors);
     } catch (err) {
       console.error(err);
@@ -150,6 +152,34 @@ async function health(env, cors) {
   return json({ok: true, db: true, errors: {server_1h: r?.s1 || 0, client_1h: r?.c1 || 0, server_24h: r?.s24 || 0, client_24h: r?.c24 || 0}}, 200, {...cors, "Cache-Control": "no-store"});
 }
 
+// Private dashboard data. The password is the ADMIN_KEY secret set in the Cloudflare dashboard.
+async function admin(request, env, ctx, cors) {
+  const noStore = {...cors, "Cache-Control": "no-store"};
+  if (!env.ADMIN_KEY) return json({error: "admin_not_configured"}, 503, noStore);
+  if (!(await allow(request, env, ctx, 1, "admin"))) return json({error: "rate_limited"}, 429, noStore);
+  const given = (request.headers.get("Authorization") || "").replace(/^Bearer\s+/i, "");
+  if (!(await sameSecret(given, env.ADMIN_KEY))) return json({error: "unauthorised"}, 401, noStore);
+  const q = sql => env.DB.prepare(sql);
+  const [visits, totals, answersByDay, dist, feedback, errors] = await env.DB.batch([
+    q("SELECT day, COUNT(*) AS visitors, SUM(views) AS views, SUM(app) AS app FROM visits GROUP BY day ORDER BY day DESC LIMIT 120"),
+    q("SELECT (SELECT COUNT(DISTINCT client) FROM visits) AS visitors, (SELECT COUNT(*) FROM (SELECT client FROM visits GROUP BY client HAVING COUNT(*) > 1)) AS returning_visitors, (SELECT COUNT(DISTINCT client) FROM visits WHERE app = 1) AS app_users, (SELECT COUNT(DISTINCT client) FROM answers_v2) AS answering, (SELECT COUNT(*) FROM answers_v2) AS answers, (SELECT COUNT(*) FROM feedback_v2) AS feedback"),
+    q("SELECT date(t / 1000, 'unixepoch') AS day, COUNT(*) AS answers, COUNT(DISTINCT client) AS people FROM answers_v2 GROUP BY day ORDER BY day DESC LIMIT 120"),
+    q("SELECT q, a, COUNT(*) AS c FROM answers_v2 GROUP BY q, a"),
+    q("SELECT q, comment, t FROM feedback_v2 ORDER BY t DESC LIMIT 300"),
+    q("SELECT t, kind, msg FROM errors ORDER BY t DESC LIMIT 50")
+  ]);
+  return json({generated: Date.now(), totals: totals.results[0], visits: visits.results.reverse(), answersByDay: answersByDay.results.reverse(),
+    distributions: dist.results, feedback: feedback.results, errors: errors.results}, 200, noStore);
+}
+// Compares secrets via their SHA-256 digests so the check takes the same time whatever is typed.
+async function sameSecret(a, b) {
+  const enc = new TextEncoder();
+  const [x, y] = await Promise.all([crypto.subtle.digest("SHA-256", enc.encode(a)), crypto.subtle.digest("SHA-256", enc.encode(b))]);
+  const u = new Uint8Array(x), v = new Uint8Array(y); let diff = 0;
+  for (let i = 0; i < u.length; i++) diff |= u[i] ^ v[i];
+  return a.length > 0 && diff === 0;
+}
+
 // Hourly rate limit per hashed IP. Old buckets are pruned occasionally.
 // IPv6 addresses are grouped by /64 (one home or device network) so rotating addresses doesn’t bypass the limit.
 function network(ip) {
@@ -191,7 +221,7 @@ async function readJson(request, max) {
 function corsHeaders(request) {
   const origin = request.headers.get("Origin");
   if (!origin || !CORS_ORIGINS.includes(origin)) return {};
-  return {"Access-Control-Allow-Origin": origin, "Access-Control-Allow-Methods": "GET, POST, OPTIONS", "Access-Control-Allow-Headers": "Content-Type", "Vary": "Origin"};
+  return {"Access-Control-Allow-Origin": origin, "Access-Control-Allow-Methods": "GET, POST, OPTIONS", "Access-Control-Allow-Headers": "Content-Type, Authorization", "Vary": "Origin"};
 }
 function json(data, status, headers) {
   return new Response(JSON.stringify(data), {status, headers: {"Content-Type": "application/json; charset=utf-8", "X-Content-Type-Options": "nosniff", ...headers}});

@@ -5,3 +5,11 @@
 
 /sw.js
   Cache-Control: no-cache
+
+/admin.html
+  X-Robots-Tag: noindex, nofollow
+  Cache-Control: no-cache
+
+/admin
+  X-Robots-Tag: noindex, nofollow
+  Cache-Control: no-cache

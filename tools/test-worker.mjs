@@ -64,3 +64,14 @@ const [otherNet] = await call("POST", "/api/answers", {client: "v6-other-abcdefg
 console.log(JSON.stringify(["different /64 still allowed", otherNet]));
 const [fbOk] = await call("POST", "/api/feedback", {client: "v6-0-abcdefgh", q: 1, comment: "x"}, {"CF-Connecting-IP": "2001:db8:1:2::5"});
 console.log(JSON.stringify(["feedback has its own limit", fbOk]));
+
+// Private dashboard endpoint
+const envAdmin = { ...env, ADMIN_KEY: "correct horse battery staple" };
+const adminCall = async (auth, ip = "9.9.9.9") => { const r = await worker.fetch(new Request("https://x.dev/api/admin", {headers: {"CF-Connecting-IP": ip, ...(auth ? {Authorization: auth} : {})}}), envAdmin, ctx); return [r.status, await r.json()]; };
+console.log(JSON.stringify(["admin not configured", (await worker.fetch(new Request("https://x.dev/api/admin"), env, ctx)).status]));
+console.log(JSON.stringify(["admin no password", (await adminCall(null))[0]]));
+console.log(JSON.stringify(["admin wrong password", (await adminCall("Bearer nope"))[0]]));
+const [ok, data] = await adminCall("Bearer correct horse battery staple");
+console.log(JSON.stringify(["admin ok", ok, Object.keys(data), data.totals]));
+let lim = 0; for (let i = 0; i < 70; i++) { const [s] = await adminCall("Bearer guess" + i, "8.8.8.8"); if (s === 429) { lim = i + 1; break; } }
+console.log(JSON.stringify(["admin guesses rate limited at attempt", lim]));

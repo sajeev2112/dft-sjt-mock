@@ -35,6 +35,18 @@ SELECT (q - 1) / 32 + 1 AS paper, (q - 1) % 32 + 1 AS question, comment, datetim
 FROM feedback_v2 ORDER BY t DESC;
 ```
 
+## Private dashboard
+
+Open `/admin` on the site (for example https://dft-sjt-mock.sajeev-r13.workers.dev/admin) and sign in with the dashboard password. It shows:
+
+- visitors, returning visitors and home-screen app users
+- answers per day
+- **keys to recheck**: questions where people's answers disagree with the key, scored with the live test's marking
+- "I disagree" comments
+- recent errors
+
+The page itself holds no data. Everything comes from `/api/admin`, which only answers with the password. To set the password, add a **secret** named `ADMIN_KEY` under the Worker's Settings → Variables and Secrets in the Cloudflare dashboard. Password attempts are rate-limited, and the page is marked noindex.
+
 ## Private visitor stats
 
 Visits are counted anonymously in D1, one row per browser per day. They're never shown on the site. Run these queries in the D1 console:
