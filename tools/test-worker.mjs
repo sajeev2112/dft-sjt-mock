@@ -75,3 +75,18 @@ const [ok, data] = await adminCall("Bearer correct horse battery staple");
 console.log(JSON.stringify(["admin ok", ok, Object.keys(data), data.totals]));
 let lim = 0; for (let i = 0; i < 70; i++) { const [s] = await adminCall("Bearer guess" + i, "8.8.8.8"); if (s === 429) { lim = i + 1; break; } }
 console.log(JSON.stringify(["admin guesses rate limited at attempt", lim]));
+
+// Cross-device sync (username + PIN)
+const sy = async (body, ip = "7.7.7.7") => { const r = await worker.fetch(new Request("https://x.dev/api/sync", {method: "POST", body: JSON.stringify(body), headers: {"CF-Connecting-IP": ip}}), env, ctx); return [r.status, await r.json()]; };
+console.log(JSON.stringify(["sync bad name", (await sy({action: "save", name: "a", pin: "1234", data: "{}"}))[0]]));
+console.log(JSON.stringify(["sync load unknown", (await sy({action: "load", name: "sajeev", pin: "1234"}))[0]]));
+console.log(JSON.stringify(["sync create", await sy({action: "save", name: "Sajeev", pin: "1234", data: "{\"v\":5}", ts: 100})]));
+console.log(JSON.stringify(["sync load (case-insensitive)", await sy({action: "load", name: "sajeev", pin: "1234"})]));
+console.log(JSON.stringify(["sync wrong pin", await sy({action: "load", name: "sajeev", pin: "0000"})]));
+console.log(JSON.stringify(["sync save up to date", await sy({action: "save", name: "sajeev", pin: "1234", data: "{\"v\":5,\"x\":1}", ts: 200, base: 100})]));
+console.log(JSON.stringify(["sync stale device gets conflict", await sy({action: "save", name: "sajeev", pin: "1234", data: "{}", ts: 150, base: 100})]));
+console.log(JSON.stringify(["sync forced save", (await sy({action: "save", name: "sajeev", pin: "1234", data: "{\"v\":5}", ts: 300, base: 100, force: true}))[1]]));
+let lockedAt = 0; for (let i = 0; i < 6; i++) { const [s, b] = await sy({action: "load", name: "sajeev", pin: String(1000 + i)}); if (s === 423 || b.locked) { lockedAt = i + 1; break; } }
+console.log(JSON.stringify(["sync locks after wrong PINs", lockedAt, (await sy({action: "load", name: "sajeev", pin: "1234"}))[0]]));
+console.log(JSON.stringify(["pin stored hashed", !db.prepare("SELECT pin FROM sync").get().pin.includes("1234")]));
+console.log(JSON.stringify(["sync delete (other name)", (await sy({action: "save", name: "friend1", pin: "4321", data: "{}"}))[0], (await sy({action: "delete", name: "friend1", pin: "4321"}))[1], (await sy({action: "load", name: "friend1", pin: "4321"}))[0]]));

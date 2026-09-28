@@ -98,6 +98,13 @@ function save(now){
   savedAt = Date.now();
   clearTimeout(idbTimer);
   if (now) idbPut(json); else idbTimer = setTimeout(() => idbPut(json), 800);
+  if (typeof scheduleSync === "function") scheduleSync();
+}
+// Writes the current state without changing its timestamp (used when adopting a synced copy).
+function persistAsIs(){
+  const json = JSON.stringify(S);
+  try { localStorage.setItem(STORE, json); } catch(e) {}
+  idbPut(json);
 }
 window.addEventListener("storage", e => {
   if (e.key !== STORE || !e.newValue || document.querySelector(".dragging")) return;
@@ -523,7 +530,7 @@ function renderSettings(){
   const standalone = window.matchMedia && window.matchMedia("(display-mode: standalone)").matches;
   let h = `<div class="card"><h2 class="bh">Settings</h2>`;
   h += `<section class="sset"><h3>Community stats</h3><label class="toggle"><input type="checkbox" id="share" ${S.share ? "checked" : ""}> <span>Share anonymous answers and usage</span></label><p class="muted">When on, the site sends your first attempt at each question, a count of your visits, and any error reports. None of it includes your name, email or IP address; it’s linked only to a random code stored in this browser. Answers power the community stats. Visit counts and error reports are only seen by the site owner, to keep the site running. Turning this off stops all sending; data already sent stays in the totals.</p></section>`;
-  h += `<section class="sset"><h3>How your progress is saved</h3><p class="muted">Your answers, scores and settings are saved automatically in this browser, with a backup copy, so they’re still here when you come back. There’s no account, and nothing leaves your device apart from anonymous answers for the community stats. Progress can be lost if you clear your browsing data, use a private window, or (in Safari) don’t visit for 7 days. Adding the site to your home screen avoids the Safari limit. For extra safety, keep a progress code.</p></section>`;
+  h += `<section class="sset"><h3>How your progress is saved</h3><p class="muted">Your answers, scores and settings are saved automatically in this browser, with a backup copy, so they’re still here when you come back. There’s no account, and nothing leaves your device apart from anonymous answers for the community stats. Progress can be lost if you clear your browsing data, use a private window, or (in Safari) don’t visit for 7 days. Adding the site to your home screen avoids the Safari limit. To carry on across devices automatically, use <b>Sync</b> in the top bar: pick a username and PIN, and your progress saves to the site’s server and loads on any device with the same pair.</p></section>`;
   h += `<section class="sset"><h3>Move your progress to another device</h3><p class="muted">Copy a progress code here, then paste it into Settings on your other device. It replaces the progress there.</p><div class="row"><button type="button" class="btn small primary" data-act="copy-code">Create progress code</button></div>`;
   if (ui.code) h += `<textarea class="code" id="code-out" rows="3" readonly>${ui.code}</textarea>`;
   h += `<label class="lbl" for="code-in">Paste a progress code</label><textarea class="code" id="code-in" rows="3" placeholder="SJT1.…"></textarea>`;
@@ -594,6 +601,7 @@ window.addEventListener("hashchange", fromHash);
 document.addEventListener("click", async e => {
   const b = e.target.closest("[data-act]"); if (!b || b.disabled) return;
   const act = b.dataset.act, set = curSet();
+  if (act.startsWith("sync-")) { syncAction(act); return; }
   const qi = S.view === "practice" && !ui.building ? curQi() : null;
   switch (act) {
     case "dismiss-notice": ui0.rewritten = false; render(); break;
@@ -692,6 +700,162 @@ setInterval(() => {
   if (tick % 5 === 0) save();
 }, 1000);
 
+// ---------- cross-device sync (username + PIN, optional) ----------
+// Progress is saved under a username and PIN so it can be continued on another device. There's no account.
+// The link lives in its own localStorage key, so it's never uploaded with the progress itself.
+const SYNC_STORE = "dft-sjt-sync";
+let SY = (() => { try { return JSON.parse(localStorage.getItem(SYNC_STORE) || "null"); } catch(e) { return null; } })();
+const syncUi = {open: false, status: "", error: "", busy: false, conflict: null, confirmDelete: false, pendingLink: null};
+let syncTimer = null;
+function saveLink(){ try { if (SY) localStorage.setItem(SYNC_STORE, JSON.stringify(SY)); else localStorage.removeItem(SYNC_STORE); } catch(e) {} }
+async function syncCall(action, extra){
+  const r = await fetch(API + "/api/sync", {method: "POST", headers: {"Content-Type": "application/json"}, cache: "no-store",
+    body: JSON.stringify(Object.assign({action}, extra))});
+  let body = {}; try { body = await r.json(); } catch(e) {}
+  return {status: r.status, body};
+}
+const SYNC_ERRORS = {
+  bad_name: "Usernames are 3–30 characters: letters, numbers, dots, dashes or underscores.",
+  bad_pin: "The PIN must be 4 to 8 digits.",
+  wrong_pin: "That username is taken, or the PIN is wrong.",
+  not_found: "No saved progress with that username. Use “Save and link” to create it.",
+  rate_limited: "Too many tries from this network. Please wait a while and try again.",
+  bad_data: "This progress is too large to sync.",
+};
+function syncErr(res){ if (res.body.error === "locked") return `Too many wrong PINs for that username. Try again in ${res.body.retry_after} minute${res.body.retry_after === 1 ? "" : "s"}.`; return SYNC_ERRORS[res.body.error] || "Couldn’t reach the server. Check your connection and try again."; }
+function adopt(data, ts){
+  const view = S.view, n = normalise(JSON.parse(data));
+  S = n; S.view = view; S.ts = ts; persistAsIs();
+  SY.lastTs = ts; SY.at = Date.now(); saveLink(); render();
+}
+function scheduleSync(){
+  if (!SY || syncUi.conflict) return;
+  clearTimeout(syncTimer); syncTimer = setTimeout(pushSync, 4000);
+}
+async function pushSync(force){
+  if (!SY || (!force && S.ts <= (SY.lastTs || 0))) return;
+  clearTimeout(syncTimer);
+  syncUi.status = "saving"; renderSyncButton();
+  try {
+    const res = await syncCall("save", {name: SY.name, pin: SY.pin, data: JSON.stringify(S), ts: S.ts, base: SY.lastTs || 0, force: !!force});
+    if (res.status === 200) { SY.lastTs = res.body.ts; SY.at = Date.now(); saveLink(); syncUi.status = "saved"; syncUi.error = ""; syncUi.conflict = null; }
+    else if (res.status === 409) await resolveRemoteNewer();
+    else if (res.status === 401 || res.status === 404) { syncUi.error = res.status === 404 ? "Your saved progress was deleted on another device, so this device has stopped syncing." : "The PIN for this username has changed, so this device has stopped syncing."; SY = null; saveLink(); syncUi.status = ""; }
+    else { syncUi.status = "offline"; syncUi.error = syncErr(res); }
+  } catch(e) { syncUi.status = "offline"; }
+  renderSyncButton(); if (syncUi.open) renderSyncPanel();
+}
+// The server copy is newer than our last sync: take it if this device hasn't changed since, otherwise ask.
+async function resolveRemoteNewer(){
+  const res = await syncCall("load", {name: SY.name, pin: SY.pin});
+  if (res.status !== 200) { syncUi.status = "offline"; syncUi.error = syncErr(res); return; }
+  if (S.ts <= (SY.lastTs || 0)) { adopt(res.body.data, res.body.ts); syncUi.status = "saved"; announce("Loaded your latest progress from another device."); }
+  else { syncUi.conflict = {data: res.body.data, ts: res.body.ts, updated: res.body.updated}; syncUi.status = "conflict"; syncUi.open = true; }
+}
+async function syncOnStart(){
+  if (!SY) return;
+  try {
+    const res = await syncCall("load", {name: SY.name, pin: SY.pin});
+    if (res.status === 200) {
+      if (res.body.ts > (SY.lastTs || 0)) { if (S.ts <= (SY.lastTs || 0)) { adopt(res.body.data, res.body.ts); syncUi.status = "saved"; } else { syncUi.conflict = {data: res.body.data, ts: res.body.ts, updated: res.body.updated}; syncUi.status = "conflict"; } }
+      else if (S.ts > (SY.lastTs || 0)) await pushSync();
+      else syncUi.status = "saved";
+    } else if (res.status === 401 || res.status === 404) { syncUi.error = res.status === 404 ? "Your saved progress was deleted, so this device has stopped syncing." : "The PIN for this username has changed, so this device has stopped syncing."; SY = null; saveLink(); }
+    else syncUi.status = "offline";
+  } catch(e) { syncUi.status = "offline"; }
+  renderSyncButton(); if (syncUi.open || syncUi.conflict) renderSyncPanel();
+}
+window.addEventListener("pagehide", () => {
+  if (!SY || syncUi.conflict || S.ts <= (SY.lastTs || 0)) return;
+  const body = JSON.stringify({action: "save", name: SY.name, pin: SY.pin, data: JSON.stringify(S), ts: S.ts, base: SY.lastTs || 0});
+  try { navigator.sendBeacon(API + "/api/sync", new Blob([body], {type: "text/plain"})); } catch(e) {}
+});
+window.addEventListener("online", () => { if (SY) pushSync(); });
+const ago = t => { const m = Math.round((Date.now() - t) / 60000); return m < 1 ? "just now" : m < 60 ? `${m} min ago` : m < 1440 ? `${Math.round(m / 60)} h ago` : new Date(t).toLocaleDateString("en-GB", {day: "numeric", month: "short"}); };
+function renderSyncButton(){
+  const b = document.getElementById("syncbtn"); if (!b) return;
+  const state = !SY ? "off" : syncUi.conflict ? "conflict" : syncUi.status === "offline" ? "offline" : "on";
+  b.dataset.state = state; b.setAttribute("aria-expanded", String(syncUi.open));
+  b.querySelector(".slabel").textContent = SY ? SY.name : "Sync";
+  b.title = {off: "Save and continue on another device", on: "Syncing as " + (SY && SY.name), conflict: "Sync needs your attention", offline: "Offline: will sync when you’re back online"}[state];
+}
+function renderSyncPanel(){
+  const p = document.getElementById("syncpanel"); if (!p) return;
+  p.hidden = !syncUi.open;
+  if (!syncUi.open) return;
+  let h = `<div class="sphead"><h2>Continue on another device</h2><button type="button" class="btn small" data-act="sync-close" aria-label="Close">Close</button></div>`;
+  if (syncUi.error) h += `<p class="err" role="alert">${esc(syncUi.error)}</p>`;
+  if (SY && syncUi.conflict) {
+    h += `<p>Your progress changed on this device <b>and</b> on another device (saved ${ago(syncUi.conflict.updated)}) since they last synced. Which copy do you want to keep?</p>
+      <div class="row"><button type="button" class="btn primary" data-act="sync-use-remote">Use the other device’s progress</button><button type="button" class="btn" data-act="sync-keep-local">Keep this device’s progress</button></div>
+      <p class="muted">The copy you don’t choose is replaced.</p>`;
+  } else if (SY) {
+    const st = syncUi.status === "saving" ? "Saving…" : syncUi.status === "offline" ? "Offline. Changes will sync when you’re back online." : SY.at ? `Last synced ${ago(SY.at)}.` : "";
+    h += `<p>Syncing as <b>${esc(SY.name)}</b>. ${st} Your progress saves automatically a few seconds after each change, and the newest copy loads when you open the site on any device.</p>
+      <div class="row"><button type="button" class="btn small primary" data-act="sync-now"${syncUi.busy ? " disabled" : ""}>Sync now</button><button type="button" class="btn small" data-act="sync-unlink">Stop syncing on this device</button><button type="button" class="btn small danger" data-act="sync-delete">Delete saved progress</button></div>`;
+    if (syncUi.confirmDelete) h += `<div class="confirm"><span>Delete the progress saved under “${esc(SY.name)}” from the server? This device keeps its own copy.</span><div class="row"><button type="button" class="btn small danger" data-act="sync-delete-yes">Delete it</button><button type="button" class="btn small" data-act="sync-delete-no">Cancel</button></div></div>`;
+  } else if (syncUi.pendingLink) {
+    h += `<p>“${esc(syncUi.pendingLink.name)}” already has saved progress. Load it onto this device, or replace it with this device’s progress?</p>
+      <div class="row"><button type="button" class="btn primary" data-act="sync-link-load">Load the saved progress</button><button type="button" class="btn" data-act="sync-link-replace">Replace it with this device’s</button><button type="button" class="btn" data-act="sync-link-cancel">Cancel</button></div>`;
+  } else {
+    h += `<p>Pick a username and a 4–8 digit PIN, then use the same pair on any device to carry on where you left off. There’s no email or account.</p>
+      <form class="syncform" id="syncform"><div class="sf"><label for="sync-name">Username</label><input id="sync-name" autocomplete="username" autocapitalize="none" spellcheck="false" maxlength="30" required></div>
+      <div class="sf"><label for="sync-pin">PIN</label><input id="sync-pin" type="password" inputmode="numeric" pattern="[0-9]{4,8}" maxlength="8" autocomplete="current-password" required></div>
+      <div class="row"><button type="submit" class="btn primary" data-mode="save"${syncUi.busy ? " disabled" : ""}>Save and link this device</button><button type="submit" class="btn" data-mode="load"${syncUi.busy ? " disabled" : ""}>Load my progress</button></div></form>
+      <p class="muted">Your username and progress are stored on the site’s server. Choose a name that doesn’t identify you if you prefer. You can delete it at any time.</p>`;
+  }
+  p.innerHTML = h;
+}
+async function linkDevice(mode, name, pin){
+  syncUi.busy = true; syncUi.error = ""; renderSyncPanel();
+  try {
+    if (mode === "load") {
+      const res = await syncCall("load", {name, pin});
+      if (res.status === 200) { SY = {name: name.trim().toLowerCase(), pin, lastTs: 0}; adopt(res.body.data, res.body.ts); syncUi.status = "saved"; announce("Progress loaded."); }
+      else syncUi.error = syncErr(res);
+    } else {
+      const res = await syncCall("save", {name, pin, data: JSON.stringify(S), ts: S.ts, base: 0});
+      if (res.status === 200) { SY = {name: name.trim().toLowerCase(), pin, lastTs: res.body.ts, at: Date.now()}; saveLink(); syncUi.status = "saved"; announce("This device is now syncing."); }
+      else if (res.status === 409) syncUi.pendingLink = {name, pin};
+      else syncUi.error = syncErr(res);
+    }
+  } catch(e) { syncUi.error = "Couldn’t reach the server. Check your connection and try again."; }
+  syncUi.busy = false; renderSyncButton(); renderSyncPanel();
+}
+document.addEventListener("submit", e => {
+  if (e.target.id !== "syncform") return;
+  e.preventDefault();
+  const mode = (e.submitter && e.submitter.dataset.mode) || "save";
+  linkDevice(mode, document.getElementById("sync-name").value, document.getElementById("sync-pin").value);
+});
+async function syncAction(act){
+  switch (act) {
+    case "sync-open": syncUi.open = !syncUi.open; syncUi.confirmDelete = false; syncUi.error = ""; renderSyncButton(); renderSyncPanel(); if (syncUi.open) document.getElementById(SY ? "syncpanel" : "sync-name")?.focus(); break;
+    case "sync-close": syncUi.open = false; syncUi.error = ""; renderSyncButton(); renderSyncPanel(); document.getElementById("syncbtn")?.focus(); break;
+    case "sync-now": // send this device’s changes if it has any, otherwise fetch the latest copy
+      syncUi.busy = true; renderSyncPanel();
+      if (S.ts > (SY.lastTs || 0)) await pushSync(); else await syncOnStart();
+      syncUi.busy = false; renderSyncPanel(); break;
+    case "sync-unlink": SY = null; saveLink(); syncUi.status = ""; syncUi.conflict = null; renderSyncButton(); renderSyncPanel(); announce("This device has stopped syncing. Its progress is kept."); break;
+    case "sync-delete": syncUi.confirmDelete = true; renderSyncPanel(); break;
+    case "sync-delete-no": syncUi.confirmDelete = false; renderSyncPanel(); break;
+    case "sync-delete-yes": {
+      const res = await syncCall("delete", {name: SY.name, pin: SY.pin}).catch(() => ({status: 0, body: {}}));
+      if (res.status === 200 || res.status === 404) { SY = null; saveLink(); syncUi.confirmDelete = false; syncUi.status = ""; announce("Saved progress deleted from the server."); }
+      else syncUi.error = syncErr(res);
+      renderSyncButton(); renderSyncPanel(); break;
+    }
+    case "sync-use-remote": { const c = syncUi.conflict; syncUi.conflict = null; adopt(c.data, c.ts); syncUi.status = "saved"; renderSyncButton(); renderSyncPanel(); break; }
+    case "sync-keep-local": syncUi.conflict = null; await pushSync(true); break;
+    case "sync-link-load": { const {name, pin} = syncUi.pendingLink; syncUi.pendingLink = null; await linkDevice("load", name, pin); break; }
+    case "sync-link-replace": {
+      const {name, pin} = syncUi.pendingLink; syncUi.pendingLink = null;
+      SY = {name: name.trim().toLowerCase(), pin, lastTs: 0}; saveLink(); await pushSync(true); break;
+    }
+    case "sync-link-cancel": syncUi.pendingLink = null; renderSyncPanel(); break;
+  }
+}
+
 // ---------- private usage stats and error reports ----------
 // One anonymous visit per page load (random browser code only), and up to 3 error reports per visit.
 // Both respect the anonymous-sharing setting and are never shown on the site.
@@ -730,6 +894,8 @@ if ("serviceWorker" in navigator && location.protocol !== "file:") {
 if (location.hash) fromHash(); else render();
 flush();
 countVisit();
+renderSyncButton();
+syncOnStart();
 (async () => {
   const backup = await idbGet();
   if (backup) {

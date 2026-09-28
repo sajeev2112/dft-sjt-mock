@@ -342,3 +342,23 @@ textarea:focus{border-color:var(--accent)}
 .setbar .ptabs{margin-bottom:0}
 .sr-only{position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; border:0}
 .qnum:focus,.scoreline:focus{outline:none}
+
+/* cross-device sync */
+.syncbtn{display:inline-flex; align-items:center; gap:7px; max-width:12em}
+.syncbtn .slabel{overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.sdot{width:8px; height:8px; border-radius:50%; background:var(--ink-3); flex:none}
+.syncbtn[data-state="on"] .sdot{background:var(--good)}
+.syncbtn[data-state="conflict"] .sdot{background:var(--near)}
+.syncbtn[data-state="offline"] .sdot{background:var(--ink-3); box-shadow:0 0 0 2px var(--near-soft)}
+.syncpanel{margin:0 0 18px; display:grid; gap:10px; max-width:720px}
+.syncpanel p{margin:0; max-width:66ch}
+.sphead{display:flex; justify-content:space-between; align-items:center; gap:10px}
+.sphead h2{margin:0; font:600 19px/1.3 var(--serif)}
+.syncform{display:grid; grid-template-columns:1fr 1fr; gap:10px 12px; align-items:end}
+.syncform .row{grid-column:1/-1}
+.sf{display:grid; gap:4px}
+.sf label{font-size:13px; color:var(--ink-2)}
+.sf input{font:15px var(--sans); padding:10px 12px; border:1px solid var(--line); border-radius:8px; background:var(--surface); color:var(--ink); width:100%}
+.sf input:focus{outline:2px solid var(--accent); outline-offset:1px}
+.syncpanel .err{color:var(--bad); font-size:14px}
+@media (max-width:640px){ .syncform{grid-template-columns:1fr} }

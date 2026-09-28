@@ -29,8 +29,10 @@
       <button type="button" data-act="view" data-v="results">Results</button>
       <button type="button" data-act="view" data-v="guide">Guide</button>
       <button type="button" data-act="view" data-v="settings">Settings</button>
+      <button type="button" class="syncbtn" id="syncbtn" data-act="sync-open" data-state="off" aria-controls="syncpanel" aria-expanded="false"><span class="sdot" aria-hidden="true"></span><span class="slabel">Sync</span></button>
     </nav>
   </header>
+  <section class="card syncpanel" id="syncpanel" tabindex="-1" aria-label="Continue on another device" hidden></section>
 
   <section data-view-panel="practice" id="view-practice">
     <p class="sub">Original practice questions in three papers, plus quick quizzes and a full-length mock. Drag ranking items into order; everything is marked with the live test’s near-miss scoring.</p>

@@ -5,6 +5,7 @@
 //   POST /api/feedback  "I disagree with this key", with an optional comment
 //   POST /api/visit     one anonymous visit per page load (private visitor stats, read in the D1 console)
 //   POST /api/error     a browser error report (message only)
+//   POST /api/sync      save, load or delete progress under a username + PIN (optional cross-device sync; no accounts)
 //   GET  /api/admin     private dashboard data; needs "Authorization: Bearer <ADMIN_KEY>" (a Worker secret)
 //   GET  /api/health    uptime check used by the GitHub Actions alert workflow (counts only, no messages)
 // Answers and feedback use the _v2 tables since the question bank was rewritten (Sept 2026); the old tables are kept but unused.
@@ -17,7 +18,7 @@ const QTYPES = "rbrrbrrbrbrbrbrrrbrbrbrbrbrrrbbrrbrbrrbrbrbrbrbrbrrbrbrbrbrbrrbr
 
 const CORS_ORIGINS = ["https://sajeev2112.github.io"];
 // Hourly limits per network and endpoint. Generous enough for a whole class on shared Wi-Fi.
-const LIMITS = {answers: 3000, feedback: 100, visit: 600, error: 200, admin: 60};
+const LIMITS = {answers: 3000, feedback: 100, visit: 600, error: 200, admin: 60, sync: 600};
 const MIN_STATS = 3;
 
 let schemaReady = false;
@@ -29,7 +30,8 @@ const SCHEMA = [
   "CREATE TABLE IF NOT EXISTS hits (k TEXT PRIMARY KEY, h INTEGER NOT NULL, n INTEGER NOT NULL)",
   "CREATE TABLE IF NOT EXISTS visits (day TEXT NOT NULL, client TEXT NOT NULL, views INTEGER NOT NULL, app INTEGER NOT NULL DEFAULT 0, PRIMARY KEY (day, client))",
   "CREATE TABLE IF NOT EXISTS errors (t INTEGER NOT NULL, kind TEXT NOT NULL, msg TEXT)",
-  "CREATE INDEX IF NOT EXISTS errors_t ON errors (t)"
+  "CREATE INDEX IF NOT EXISTS errors_t ON errors (t)",
+  "CREATE TABLE IF NOT EXISTS sync (name TEXT PRIMARY KEY, salt TEXT NOT NULL, pin TEXT NOT NULL, data TEXT, ts INTEGER NOT NULL DEFAULT 0, updated INTEGER NOT NULL, fails INTEGER NOT NULL DEFAULT 0, locked_until INTEGER NOT NULL DEFAULT 0)"
 ];
 
 export default {
@@ -49,6 +51,7 @@ export default {
       if (url.pathname === "/api/visit" && request.method === "POST") return await visit(request, env, ctx, cors);
       if (url.pathname === "/api/error" && request.method === "POST") return await clientError(request, env, ctx, cors);
       if (url.pathname === "/api/health" && request.method === "GET") return await health(env, cors);
+      if (url.pathname === "/api/sync" && request.method === "POST") return await sync(request, env, ctx, cors);
       if (url.pathname === "/api/admin" && request.method === "GET") return await admin(request, env, ctx, cors);
       return json({error: "not_found"}, 404, cors);
     } catch (err) {
@@ -151,6 +154,58 @@ async function health(env, cors) {
   if (Math.random() < 0.05) await env.DB.prepare("DELETE FROM errors WHERE t < ?").bind(now - 30 * 86400000).run();
   return json({ok: true, db: true, errors: {server_1h: r?.s1 || 0, client_1h: r?.c1 || 0, server_24h: r?.s24 || 0, client_24h: r?.c24 || 0}}, 200, {...cors, "Cache-Control": "no-store"});
 }
+
+// Optional cross-device sync. A username plus a 4–8 digit PIN; the PIN is stored salted and hashed.
+// Wrong PINs lock the name for 15 minutes after every 5 failures, doubling each time.
+const SYNC_MAX = 262144;
+async function sync(request, env, ctx, cors) {
+  const noStore = {...cors, "Cache-Control": "no-store"};
+  const body = await readJson(request, SYNC_MAX + 2048);
+  if (!body) return json({error: "bad_request"}, 400, noStore);
+  const name = typeof body.name === "string" ? body.name.trim().toLowerCase() : "";
+  const pin = typeof body.pin === "string" ? body.pin : "";
+  if (!/^[a-z0-9][a-z0-9_.-]{2,29}$/.test(name)) return json({error: "bad_name"}, 400, noStore);
+  if (!/^\d{4,8}$/.test(pin)) return json({error: "bad_pin"}, 400, noStore);
+  if (!["save", "load", "delete"].includes(body.action)) return json({error: "bad_action"}, 400, noStore);
+  if (!(await allow(request, env, ctx, 1, "sync"))) return json({error: "rate_limited"}, 429, noStore);
+  const now = Date.now();
+  const row = await env.DB.prepare("SELECT * FROM sync WHERE name = ?").bind(name).first();
+
+  if (!row) {
+    if (body.action !== "save") return json({error: "not_found"}, 404, noStore);
+    const data = typeof body.data === "string" ? body.data : "";
+    if (!data || data.length > SYNC_MAX) return json({error: "bad_data"}, 400, noStore);
+    const salt = randomHex(16);
+    await env.DB.prepare("INSERT INTO sync (name, salt, pin, data, ts, updated) VALUES (?, ?, ?, ?, ?, ?)")
+      .bind(name, salt, await pinHash(salt, pin), data, Number(body.ts) || now, now).run();
+    return json({ok: true, created: true, ts: Number(body.ts) || now}, 200, noStore);
+  }
+
+  if (row.locked_until > now) return json({error: "locked", retry_after: Math.ceil((row.locked_until - now) / 60000)}, 423, noStore);
+  if (!(await sameSecret(await pinHash(row.salt, pin), row.pin))) {
+    const fails = row.fails + 1, lock = fails % 5 === 0 ? now + 15 * 60000 * Math.pow(2, Math.min(6, fails / 5 - 1)) : 0;
+    await env.DB.prepare("UPDATE sync SET fails = ?, locked_until = ? WHERE name = ?").bind(fails, lock, name).run();
+    return json({error: "wrong_pin", locked: !!lock}, 401, noStore);
+  }
+  if (row.fails) await env.DB.prepare("UPDATE sync SET fails = 0, locked_until = 0 WHERE name = ?").bind(name).run();
+
+  if (body.action === "load") return json({ok: true, data: row.data, ts: row.ts, updated: row.updated}, 200, noStore);
+  if (body.action === "delete") { await env.DB.prepare("DELETE FROM sync WHERE name = ?").bind(name).run(); return json({ok: true, deleted: true}, 200, noStore); }
+
+  // save: refuse to overwrite a copy that another device saved after this one last synced, unless forced
+  const data = typeof body.data === "string" ? body.data : "";
+  if (!data || data.length > SYNC_MAX) return json({error: "bad_data"}, 400, noStore);
+  const base = Number(body.base) || 0;
+  if (!body.force && row.ts > base) return json({error: "conflict", ts: row.ts, updated: row.updated}, 409, noStore);
+  const ts = Number(body.ts) || now;
+  await env.DB.prepare("UPDATE sync SET data = ?, ts = ?, updated = ? WHERE name = ?").bind(data, ts, now, name).run();
+  return json({ok: true, ts}, 200, noStore);
+}
+async function pinHash(salt, pin) {
+  const d = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(salt + "|dft-sjt-sync|" + pin));
+  return [...new Uint8Array(d)].map(b => b.toString(16).padStart(2, "0")).join("");
+}
+function randomHex(n) { const a = new Uint8Array(n); crypto.getRandomValues(a); return [...a].map(b => b.toString(16).padStart(2, "0")).join(""); }
 
 // Private dashboard data. The password is the ADMIN_KEY secret set in the Cloudflare dashboard.
 async function admin(request, env, ctx, cors) {

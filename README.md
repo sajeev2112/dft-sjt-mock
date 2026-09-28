@@ -35,6 +35,15 @@ SELECT (q - 1) / 32 + 1 AS paper, (q - 1) % 32 + 1 AS question, comment, datetim
 FROM feedback_v2 ORDER BY t DESC;
 ```
 
+## Cross-device sync
+
+The **Sync** button in the top bar lets anyone save their progress under a username and a 4–8 digit PIN, then continue on another device. There's no account or email.
+
+- **Automatic:** a linked device saves a few seconds after each change and loads the newest copy on start-up. If two devices changed at once, it asks which copy to keep.
+- **Protected:** PINs are salted and hashed. Every 5 wrong PINs lock the name for 15 minutes, doubling each time, and the endpoint is rate-limited.
+- **Deletable:** you can stop syncing on a device, or delete your saved copy, at any time.
+- **Stored in D1:** saved copies live in the `sync` table.
+
 ## Private dashboard
 
 Open `/admin` on the site (for example https://dft-sjt-mock.sajeev-r13.workers.dev/admin) and sign in with the dashboard password. It shows:
