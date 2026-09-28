@@ -18,34 +18,34 @@ const THEMES = {
   H:"Health & wellbeing", I:"Probity: honesty, records & rules", N:"Money, NHS & private care"
 };
 
-// ---- Rewritten September 2026: every option is plausible; the key turns on timing, proportionality and who acts. Paper 3 keys reviewed by an expert panel (28 Sept 2026). ----
+// ---- Rewritten September 2026 so every option is plausible. All 96 keys reviewed by an expert panel (28 Sept 2026): three blind panellists, a challenger, a defender and a chair. ----
 const RW_1_1 = [
  {
   "t": "rank",
   "d": "I",
   "a": "Colleague dishonesty",
-  "k": "ACBED",
+  "k": "ABECD",
   "s": "The evening before a mandatory study day, Tom, a fellow FD on your scheme, messages you. He has just remembered a family wedding and asks you to sign the attendance register for him. He says ‘everyone does it’ and he’ll catch up from your notes. You get on well and sit next to each other at study days.",
   "o": [
    [
     "Say you can’t sign for him, and suggest he emails the TPD tonight to explain and ask what he can do.",
-    "Declines to collude and points Tom to the person who can authorise the absence, so he can put it right himself."
+    "Declines to collude (Standard 9.1) and points Tom to the TPD, who can authorise the absence, so he can put it right himself."
    ],
    [
     "Say you can’t sign for him, and offer to share your notes and the slides with him after the day.",
-    "Clear and kind, but it only covers the content. Tom still has no authorised absence and may ask someone else to sign."
+    "A clear refusal that supports his learning, though it does nothing about the unauthorised absence itself, which D addresses."
    ],
    [
     "Offer to tell the course lead when you sign in that Tom is away for a family event, so it is recorded.",
-    "Honest and keeps the register accurate, but it takes on Tom’s responsibility and bypasses the TPD, who should hear from him."
+    "Truthful, but it speaks for Tom to the course lead rather than the TPD and takes over a matter he should raise himself."
    ],
    [
     "Let the TPD know at the study day that Tom asked you to sign the register on his behalf.",
-    "Honest, but it escalates before Tom has had the chance to reconsider and sort it out properly himself."
+    "Honest, but reporting his request before Tom has had any chance to reconsider is disproportionate when a clear refusal would do."
    ],
    [
     "Say you’d rather not be involved, and that he needs to arrange his attendance himself.",
-    "Protects your own integrity but offers him no route forward, so it sits below options that also steer Tom."
+    "Refuses cleanly and hands the responsibility back to Tom, but unlike D and B it gives him no route forward or support."
    ]
   ],
   "tk": "Integrity items: decline to collude, then point the person to the right route so they can fix it themselves before anyone escalates."
@@ -54,7 +54,7 @@ const RW_1_1 = [
   "t": "best3",
   "d": "E",
   "a": "Unhappy patient",
-  "k": "ACF",
+  "k": "ACG",
   "s": "Mrs Kaur, 78, comes back two weeks after you fitted her new upper complete denture. She says it keeps dropping, she’s too embarrassed to eat in front of her family, and ‘the old one was better’. She becomes tearful. This is only the third complete denture you have made.",
   "o": [
    [
@@ -67,7 +67,7 @@ const RW_1_1 = [
    ],
    [
     "Check the denture’s fit, extension and bite in her mouth before deciding anything.",
-    "It is your treatment, so own the assessment and find the cause before acting."
+    "It is your treatment, so own the assessment and find the cause in her mouth before deciding anything."
    ],
    [
     "Ask her to bring her old denture next time so you can compare the two designs.",
@@ -78,12 +78,12 @@ const RW_1_1 = [
     "Generous, but it commits to a solution before you know what is wrong."
    ],
    [
-    "Explain what you find and agree a plan with her, such as adjusting or relining it.",
-    "An honest explanation and a shared, practical plan that addresses her concern."
+    "Tell her you will reline the denture next week, so that she goes home with a clear plan.",
+    "Gives her a clear plan, but it commits to a treatment before you have examined the denture or taken advice on it."
    ],
    [
     "Ask your ES to look at the denture with you, as complete dentures are new to you.",
-    "Advice may help later, but the initial assessment is within your competence."
+    "The stem flags your inexperience, so asking the ES to look at it with you is appropriate supervision (Standard 7.2), not handing over."
    ],
    [
     "Explain how she can give feedback through the practice process if she stays unhappy.",
@@ -96,7 +96,7 @@ const RW_1_1 = [
   "t": "rank",
   "d": "T",
   "a": "Colleague struggling",
-  "k": "ABECD",
+  "k": "ABCED",
   "s": "Your dental nurse, Amira, has seemed withdrawn lately and has arrived late three times this fortnight. Today she mixed the wrong material twice, though you noticed both times before use. Until recently her work has been excellent.",
   "o": [
    [
@@ -109,7 +109,7 @@ const RW_1_1 = [
    ],
    [
     "Mention to the practice manager that Amira doesn’t seem herself and ask if she knows of anything.",
-    "Well meant, but it discusses Amira with a manager before you have spoken to her yourself."
+    "Her line manager is a proper route for wellbeing and attendance concerns, though ideally after speaking to Amira yourself, as A and C do."
    ],
    [
     "Ask the practice manager if Amira could work with another clinician for a while to give her a change.",
@@ -117,7 +117,7 @@ const RW_1_1 = [
    ],
    [
     "Check each material yourself before use for the rest of the day, then see how she is next week.",
-    "Keeps today’s patients safe, but postpones the conversation that would address the cause."
+    "Keeps today’s patients safe, but it passively puts off any conversation for a week while the lateness and withdrawal continue."
    ]
   ],
   "tk": "Struggling-colleague items: a private conversation about how they are comes before performance feedback, managers or workarounds."
@@ -527,7 +527,7 @@ const RW_1_2 = [
     "Well meant, but a group apology before you understand the issue is unfocused and may make colleagues uncomfortable."
    ],
    [
-    "Ask the practice manager whether any of the nurses has raised concerns about your manner.",
+    "Ask the practice manager which of the nurses has mentioned you being abrupt, so that you can talk to them about it.",
     "It seeks context, but it looks like tracing the source of anonymous feedback and goes to the wrong person."
    ],
    [
@@ -582,7 +582,7 @@ const RW_1_3 = [
   "t": "rank",
   "d": "I",
   "a": "Impaired colleague",
-  "k": "ABCED",
+  "k": "ABCDE",
   "s": "At 2pm you notice that an associate, Dr Moss, smells strongly of alcohol after coming back from lunch, and her speech seems slightly slurred. She mentioned earlier that she was going to a family birthday lunch. Her next patient is in the waiting room. Your ES is out today; the practice manager is on site.",
   "o": [
    [
@@ -599,11 +599,11 @@ const RW_1_3 = [
    ],
    [
     "Contact the GDC for advice on how to report a colleague who may be impaired by alcohol at work.",
-    "May be relevant later, but it is premature before local steps, and does nothing to protect this afternoon’s patients."
+    "Premature before local steps and does nothing for this afternoon’s patients, though unlike E it does not let unsafe treatment go ahead."
    ],
    [
     "Ask Dr Moss’s nurse to let you know straight away if anything seems wrong during her next appointment.",
-    "Well meant, but it still leaves a possibly impaired clinician treating patients, and places the responsibility on the nurse."
+    "Knowingly lets a possibly impaired clinician treat and shifts responsibility to the nurse, so harm must happen before anyone acts."
    ]
   ],
   "tk": "Possible impairment: act on the immediate risk yourself, privately and promptly, before seeking advice or reporting further."
@@ -654,16 +654,16 @@ const RW_1_3 = [
   "t": "rank",
   "d": "P",
   "a": "Colleague offloading work",
-  "k": "CEABD",
+  "k": "CEBAD",
   "s": "The other FD at your practice, Sam, often leaves before sorting his lab work and asks you to ‘just make sure it’s gone off’. It now happens most days, and you’ve missed your lunch break twice this week. Sam seems to get on well with everyone and may not realise the effect.",
   "o": [
    [
     "Keep sending it for now so patients aren’t delayed, and raise it with Sam when things are quieter.",
-    "Protects patients’ work, but it costs you your breaks and puts off the conversation that would fix the pattern."
+    "Keeps patients’ work moving, but it postpones the conversation indefinitely at the cost of your breaks, so the pattern continues."
    ],
    [
     "Ask the practice manager to set up a lab checklist so each clinician signs off their own cases.",
-    "A useful system change, but it goes to the manager before Sam has had a chance to put it right himself."
+    "A constructive, blame-free system fix that also improves lab tracking, though it goes to the manager before a direct word with Sam."
    ],
    [
     "Speak to Sam privately, explain the effect on your workload, and agree he’ll send his own lab work.",
@@ -726,12 +726,12 @@ const RW_1_3 = [
   "t": "rank",
   "d": "E",
   "a": "Patient refusing treatment",
-  "k": "DBEAC",
+  "k": "DBAEC",
   "s": "Mr Patel, 50, has a lower molar with irreversible pulpitis. You’ve recommended root canal treatment or extraction. He says he doesn’t want either and would rather ‘just take painkillers and see how it goes’. He seems a little anxious.",
   "o": [
    [
     "Record his decision, the options you discussed and the risks you explained in his notes.",
-    "Essential, but it follows the conversation itself; documenting before exploring and informing gets the order wrong."
+    "Records a properly informed refusal and the risks explained (Standard 4.1), which is more clearly appropriate than B’s misleading offer."
    ],
    [
     "Explain the likely course of the tooth without treatment, and that he can change his mind at any time.",
@@ -747,7 +747,7 @@ const RW_1_3 = [
    ],
    [
     "Offer to remove the nerve today as a first step, to relieve the pain without committing to more.",
-    "A reasonable compromise to offer, but offering it before understanding his reasons may feel like pressure."
+    "Pain relief is a fair aim, but saying it avoids committing to more is misleading, as the tooth would still need root canal treatment or extraction."
    ]
   ],
   "tk": "Refusal of treatment: explore reasons first, then inform and respect; don’t prescribe to fill the gap."
@@ -798,12 +798,12 @@ const RW_1_3 = [
   "t": "rank",
   "d": "T",
   "a": "A colleague’s previous work",
-  "k": "CEADB",
+  "k": "CAEDB",
   "s": "A new patient, who recently moved from another practice, has a crown on UR6 fitted six months ago. It has an open margin with decay underneath. She asks you, ‘Did my last dentist do a bad job?’",
   "o": [
    [
     "Offer, with her consent, to request her records from the previous practice to see the crown’s history.",
-    "Helpful context, but it doesn’t answer her question now and is less central than being clear about today’s findings."
+    "Gets the facts, with her consent, and supports continuity of care, so any later answer rests on evidence rather than speculation."
    ],
    [
     "Explain that open margins usually suggest a problem at fitting, so she may want to raise it with them.",
@@ -819,7 +819,7 @@ const RW_1_3 = [
    ],
    [
     "Suggest that if she has concerns, she raises them with the previous practice, who hold her full records.",
-    "Points her to the right route while you stay neutral, once she understands what you’ve found."
+    "A correct and neutral route, but on its own it leaves her question unanswered and can read as hinting that the previous practice was at fault."
    ]
   ],
   "tk": "Another dentist’s work: be open about what you see now, don’t speculate about how it happened, and point concerns to the right route."
@@ -1326,16 +1326,16 @@ const RW_2_1 = [
   "t": "consider",
   "d": "T",
   "a": "Discriminatory remark by a colleague",
-  "k": "DBEAC",
+  "k": "BDEAC",
   "s": "After a patient leaves, your nurse makes a derogatory remark about the patient’s ethnicity. No patients heard it. The nurse is well liked and has worked at the practice for 20 years; you’ve been there four months and rely on her every day.",
   "o": [
    [
     "Whether the practice has an equality policy, and who handles concerns about staff conduct.",
-    "Useful for choosing the route if a private word isn’t enough, but it follows the reasons to act."
+    "Useful for choosing the route if a private word isn’t enough, but it is procedural and follows the reasons to act."
    ],
    [
     "Your duty to challenge discriminatory behaviour, whatever the nurse’s seniority or popularity.",
-    "A core professional duty, and the main reason you must respond at all."
+    "The duty engaged directly here: discriminatory remarks must be challenged whatever the nurse’s seniority, so this is what makes you respond at all."
    ],
    [
     "How to keep a good working relationship with the nurse for the rest of your year.",
@@ -1343,7 +1343,7 @@ const RW_2_1 = [
    ],
    [
     "Whether attitudes like this could affect how patients from that background are treated.",
-    "Patient care comes first, so the risk to patients matters most."
+    "Important because such attitudes can shape care, but no patient heard this remark, so it reinforces the duty in D rather than replacing it."
    ],
    [
     "Whether this was a one-off remark or part of a pattern that others have noticed.",
@@ -1356,12 +1356,12 @@ const RW_2_1 = [
   "t": "best3",
   "d": "E",
   "a": "Capacity and consent",
-  "k": "ADG",
+  "k": "ACD",
   "s": "Mr Grant, 45, has a learning disability and lives in supported housing. He comes with a support worker to have a painful, unrestorable tooth extracted. When you explain the procedure, Mr Grant says ‘no’. The support worker says, ‘He always says no. Just go ahead, I’ll sign the form.’",
   "o": [
    [
     "Explain that the support worker can’t consent on Mr Grant’s behalf.",
-    "Only the patient, or someone with legal authority, can consent."
+    "Only the patient, or someone with legal authority, can consent, so the support worker’s offer to sign must be declined."
    ],
    [
     "Rebook a longer appointment and send easy-read information before then.",
@@ -1369,15 +1369,15 @@ const RW_2_1 = [
    ],
    [
     "Ask the support worker how Mr Grant usually shows what he wants.",
-    "Helpful background, but the conversation should centre on Mr Grant himself."
+    "Learning how he usually communicates is one of the practicable steps the law expects, and helps you understand what his ‘no’ means."
    ],
    [
     "Explore why Mr Grant is saying no, and explain again simply, using pictures.",
-    "Capacity is presumed, so you take every practical step to help him decide."
+    "Capacity is presumed, so you take every practicable step to help him decide, starting with why he is saying no."
    ],
    [
     "Ask your ES to carry out the capacity assessment for this decision.",
-    "Assessing capacity for treatment you’re providing is part of your own role."
+    "Assessing capacity for treatment you’re providing is part of your own role, so handing it to your ES isn’t needed."
    ],
    [
     "Contact his GP to ask whether anyone holds a health and welfare LPA.",
@@ -1385,11 +1385,11 @@ const RW_2_1 = [
    ],
    [
     "If he lacks capacity, hold a best-interests meeting rather than proceed today.",
-    "The correct process under mental capacity law, not a shortcut."
+    "Premature and conditional: capacity hasn’t been assessed, the law needs a best-interests decision rather than a formal meeting, and waiting prolongs his pain."
    ],
    [
     "Refer him to the special care dental service for extraction under sedation.",
-    "May be right eventually, but capacity and best interests come first."
+    "May be right eventually, but supporting his decision and assessing capacity come first."
    ]
   ],
   "tk": "Capacity items: presume capacity, support the patient to decide and follow the best-interests process; involving carers, GPs, seniors or specialists helps but doesn’t replace those steps."
@@ -1545,12 +1545,12 @@ const RW_2_2 = [
   "t": "rank",
   "d": "E",
   "a": "Discrimination directed at you",
-  "k": "CEABD",
+  "k": "CAEBD",
   "s": "A new patient, on meeting you, says she wants ‘an English dentist’ instead. The other two dentists are fully booked today. She is in considerable pain.",
   "o": [
    [
     "Offer her the next free slot with another dentist, while making clear that you can treat her today.",
-    "Respects her right to decline you, but offers more towards the request than it needs to and leaves her in pain."
+    "Keeps same-day treatment on offer while respecting her right to decline you; the alternative is only the normal next slot, with no special accommodation."
    ],
    [
     "Ask the practice manager to speak to her, so the practice’s position comes from someone senior.",
@@ -1566,7 +1566,7 @@ const RW_2_2 = [
    ],
    [
     "Afterwards, tell your ES what happened, how it affected you, and ask how the practice handles this.",
-    "Gets you support and a consistent practice approach, once her immediate care is dealt with."
+    "Gets you support and a consistent practice approach, but it happens afterwards and does nothing for her pain."
    ]
   ],
   "tk": "When a patient rejects you on discriminatory grounds, offer care calmly yourself and seek support afterwards; handing it to others, however kindly, accommodates the prejudice."
@@ -1866,16 +1866,16 @@ const RW_2_3 = [
   "t": "rank",
   "d": "P",
   "a": "Pressure built into the system",
-  "k": "BDAEC",
+  "k": "BDEAC",
   "s": "The practice manager insists that all new-patient NHS examinations are booked into 20-minute slots to meet demand. At your stage, that isn’t long enough for a thorough examination, radiographs and treatment planning. You’re regularly 30 minutes behind by lunch.",
   "o": [
    [
     "Work through your lunch break so patients get a full examination while the issue is sorted.",
-    "Protects patients, but at the cost of your own wellbeing, and it hides the problem rather than fixing it."
+    "Protects patients for now, but it hides the problem, isn’t sustainable and still leaves patients waiting."
    ],
    [
     "Show the practice manager examples of where 20 minutes fell short, and propose longer slots for now.",
-    "Direct, evidence-based and constructive, giving the manager a practical solution to consider first."
+    "Direct, evidence-based and constructive, giving the manager who set the policy a practical solution to consider first."
    ],
    [
     "Complete the examination in the slot and take routine radiographs at the patient’s next visit.",
@@ -1883,11 +1883,11 @@ const RW_2_3 = [
    ],
    [
     "Ask your ES to help you agree appointment lengths that suit your stage of training.",
-    "Your ES oversees your training environment and is the natural next step, just behind raising it directly."
+    "Your ES oversees your training environment and has the authority to change it, making this a close alternative to raising it directly."
    ],
    [
     "Raise the appointment lengths with your TPD, as they affect the quality of your training.",
-    "A legitimate concern, but it skips the manager and your ES, who can resolve it within the practice."
+    "A legitimate route for a training concern that can bring a lasting fix, though it skips the manager and your ES, who could resolve it sooner."
    ]
   ],
   "tk": "System-pressure items: raise it constructively yourself, then with your ES; giving up your own time is middling, and letting the timetable shape care is worst."
@@ -1896,12 +1896,12 @@ const RW_2_3 = [
   "t": "best3",
   "d": "E",
   "a": "Criticism online",
-  "k": "BDF",
+  "k": "ABD",
   "s": "A patient has posted a one-star online review naming you. It says you were ‘rough and rude’ during an extraction and ‘botched’ it. The details make it clear who the patient is. You believe the review is unfair.",
   "o": [
    [
     "Contact your defence organisation for advice before anyone responds to the review.",
-    "Reasonable if it escalates, but this can be resolved through the practice first."
+    "An allegation of a ‘botched’ extraction could become a claim, and early advice helps avoid a response that breaches confidentiality or prejudices it."
    ],
    [
     "Think back over the appointment and whether anything could have come across as rough.",
@@ -1909,11 +1909,11 @@ const RW_2_3 = [
    ],
    [
     "Post a brief public reply inviting the reviewer to contact the practice, without giving details.",
-    "Taking it offline is right, but a reply from you personally risks implying a relationship and is best left to the practice."
+    "Taking it offline is right, but a public reply from you risks confirming the patient relationship and is best left to the practice after advice."
    ],
    [
     "Tell the practice manager so the practice can manage it through its complaints process.",
-    "Uses the proper channel and means the response is handled consistently."
+    "Uses the proper channel, so the patient is contacted privately and the response is handled consistently."
    ],
    [
     "Ask the review site to take the review down, as it is unfair and identifies the patient.",
@@ -1921,7 +1921,7 @@ const RW_2_3 = [
    ],
    [
     "Arrange for the practice to contact the patient privately and offer to discuss their concerns.",
-    "Treats the review as a complaint; many are resolved simply by listening."
+    "Sound, but the practice’s complaints process in H would make this private contact anyway."
    ],
    [
     "Save a copy of the review alongside your clinical notes in case it becomes a formal complaint.",
@@ -1929,7 +1929,7 @@ const RW_2_3 = [
    ],
    [
     "Offer, through the practice, to refund the patient’s charges as a goodwill gesture.",
-    "Offering a remedy before hearing the concern is premature and may not address what actually upset them."
+    "Offering a remedy before hearing the concern is premature and may be read as an admission."
    ]
   ],
   "tk": "Online-criticism items: take it offline through the practice, treat it as a complaint and reflect; personal public replies and removal requests come second."
@@ -1938,7 +1938,7 @@ const RW_2_3 = [
   "t": "rank",
   "d": "T",
   "a": "Peer dishonesty",
-  "k": "BDEAC",
+  "k": "DBEAC",
   "s": "During an online course assessment that counts towards your DFT requirements, a fellow FD posts photos of the answers in your study group chat. They got them from a previous year’s trainee.",
   "o": [
    [
@@ -1947,7 +1947,7 @@ const RW_2_3 = [
    ],
    [
     "Without opening them, message the FD privately to say you’re uncomfortable and ask them to delete them.",
-    "Protects your own integrity and gives your colleague the chance to put it right before it goes further."
+    "Protects your own integrity and gives your colleague a chance to put it right, but the answers are already with the whole group."
    ],
    [
     "Open the photos first to check what has actually been shared before deciding what to do.",
@@ -1955,7 +1955,7 @@ const RW_2_3 = [
    ],
    [
     "Tell the course organiser the answers are circulating so the assessment’s fairness can be protected.",
-    "Necessary because the assessment is compromised for everyone, but it follows giving your colleague the chance to act."
+    "The only option that protects the fairness of an assessment that is still open, and it does so without naming anyone."
    ],
    [
     "Post in the group that you won’t be using the answers and suggest everyone does it on their own.",
@@ -2259,12 +2259,12 @@ const RW_2_4 = [
   "t": "rank",
   "d": "I",
   "a": "Serious error in the moment",
-  "k": "BDEAC",
+  "k": "BDECA",
   "s": "While treating a child, you realise you have given more local anaesthetic than the maximum recommended dose for their weight. The child seems well at the moment, the treatment is almost finished, and the parent is in the room.",
   "o": [
    [
     "Contact your defence organisation for advice before you speak to the parent about what happened.",
-    "Sensible later, but it delays telling the parent, who should hear promptly."
+    "Deliberately delays telling a parent who is in the room and does nothing to keep the child safe, when advice must never delay candour."
    ],
    [
     "Stop giving anaesthetic, monitor the child closely for toxicity, and call a senior colleague now.",
@@ -2272,7 +2272,7 @@ const RW_2_4 = [
    ],
    [
     "Finish the treatment quickly using the anaesthetic already given, watching closely for any reaction.",
-    "Tempting as it is nearly done, but stopping allows proper monitoring and a faster response."
+    "Poor, as it brings in no senior help and tells the parent nothing, but no more anaesthetic is given and the child stays under close watch."
    ],
    [
     "Tell the parent what has happened, apologise, and explain what you’re doing to keep their child safe.",
