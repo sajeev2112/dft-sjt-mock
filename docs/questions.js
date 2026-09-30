@@ -18,7 +18,7 @@ const THEMES = {
   H:"Health & wellbeing", I:"Probity: honesty, records & rules", N:"Money, NHS & private care"
 };
 
-// ---- Rewritten September 2026 so every option is plausible. All 96 keys reviewed by an expert panel (28 Sept 2026): three blind panellists, a challenger, a defender and a chair. ----
+// ---- Rewritten September 2026 so every option is plausible. All 96 keys reviewed by an expert panel (28 Sept 2026), then re-checked by a panel trained against the official papers (30 Sept 2026). ----
 const RW_1_1 = [
  {
   "t": "rank",
@@ -96,7 +96,7 @@ const RW_1_1 = [
   "t": "rank",
   "d": "T",
   "a": "Colleague struggling",
-  "k": "ABCED",
+  "k": "ABECD",
   "s": "Your dental nurse, Amira, has seemed withdrawn lately and has arrived late three times this fortnight. Today she mixed the wrong material twice, though you noticed both times before use. Until recently her work has been excellent.",
   "o": [
    [
@@ -109,7 +109,7 @@ const RW_1_1 = [
    ],
    [
     "Mention to the practice manager that Amira doesn’t seem herself and ask if she knows of anything.",
-    "Her line manager is a proper route for wellbeing and attendance concerns, though ideally after speaking to Amira yourself, as A and C do."
+    "Her line manager is a proper route for wellbeing concerns, but going to the manager before speaking to Amira goes behind her back and does nothing for today’s safety."
    ],
    [
     "Ask the practice manager if Amira could work with another clinician for a while to give her a change.",
@@ -117,7 +117,7 @@ const RW_1_1 = [
    ],
    [
     "Check each material yourself before use for the rest of the day, then see how she is next week.",
-    "Keeps today’s patients safe, but it passively puts off any conversation for a week while the lateness and withdrawal continue."
+    "Keeps today’s patients safe after two mixing errors, but it puts off the conversation for a week. Still better than raising her with the practice manager before anyone has spoken to her."
    ]
   ],
   "tk": "Struggling-colleague items: a private conversation about how they are comes before performance feedback, managers or workarounds."
@@ -333,7 +333,7 @@ const RW_1_2 = [
   "t": "best3",
   "d": "P",
   "a": "Your own wellbeing",
-  "k": "ADF",
+  "k": "ACF",
   "s": "A long-term relationship has recently ended. You’re sleeping badly and have fallen behind on your e-portfolio. Yesterday your nurse spotted a charting error you’d made, which you corrected straight away.",
   "o": [
    [
@@ -346,11 +346,11 @@ const RW_1_2 = [
    ],
    [
     "Re-check all your own clinical notes at the end of each day until you feel back on form.",
-    "Conscientious, but it treats the symptom and adds to your tiredness without getting you any support."
+    "After errors made while exhausted, checking your own work each day is a direct way to keep patients safe while you get support, alongside telling your ES."
    ],
    [
     "Book time with your TPD to talk about your circumstances and the support available.",
-    "Personal circumstances affecting training are exactly what the TPD can help with, including flexibility."
+    "The TPD can help with personal circumstances, but with your ES already told this largely duplicates that conversation. It becomes the next step if you need more support or flexibility."
    ],
    [
     "Block out time at weekends to bring your e-portfolio back up to date.",
@@ -369,7 +369,7 @@ const RW_1_2 = [
     "Kindly meant, but it places a supervisory role on a colleague instead of your ES."
    ]
   ],
-  "tk": "Personal-pressure items: tell your ES and TPD and get health support. Quietly working harder or leaning on a colleague only postpones the problem."
+  "tk": "Personal-pressure items: tell your ES, protect patients while you are struggling, and get health support. Giving up your rest or leaning on a colleague only postpones the problem."
  },
  {
   "t": "rank",
@@ -519,7 +519,7 @@ const RW_1_2 = [
   "t": "rank",
   "d": "T",
   "a": "Feedback about you",
-  "k": "ECDAB",
+  "k": "CEDAB",
   "s": "Your interim multi-source feedback (MSF) includes an anonymous comment that you ‘can be abrupt with nurses when running late’. You’re surprised; you thought you got on well with everyone.",
   "o": [
    [
@@ -532,7 +532,7 @@ const RW_1_2 = [
    ],
    [
     "Ask your own nurse for honest feedback on how you come across when you’re running late.",
-    "Gets you specific detail to act on, from someone who sees you under pressure."
+    "Owns the problem directly and gets specific detail from someone who sees you under pressure, which is what makes change possible."
    ],
    [
     "Review how you schedule and pace your lists, so that you run late less often.",
@@ -540,10 +540,10 @@ const RW_1_2 = [
    ],
    [
     "Reflect on when you may have seemed abrupt, and discuss the feedback with your ES.",
-    "Accepts the feedback and involves the person best placed to support your development."
+    "Accepts the feedback and involves the person best placed to support your development, a close second to seeking the specifics yourself."
    ]
   ],
-  "tk": "Feedback items: reflect, discuss with your ES and ask for specifics. Fixing only the trigger or apologising broadly comes later; tracing the source comes last."
+  "tk": "Feedback items: seek specifics yourself, then reflect and discuss with your ES. Fixing only the trigger or apologising broadly comes later; tracing the source comes last."
  },
  {
   "t": "consider",
@@ -873,7 +873,7 @@ const RW_1_4 = [
   "t": "rank",
   "d": "E",
   "a": "Angry patient",
-  "k": "ABDEC",
+  "k": "ABDCE",
   "s": "You are part-way through a filling on an anaesthetised patient, with your nurse chairside, when another patient walks into your surgery. He is upset and raises his voice: his bridge has come out for the second time and he wants his money back ‘right now’.",
   "o": [
    [
@@ -886,7 +886,7 @@ const RW_1_4 = [
    ],
    [
     "Step outside with him for a few minutes to understand what has happened, leaving your nurse with your patient.",
-    "Well-meant and it moves the talk out of the surgery, but you leave an anaesthetised patient mid-treatment, which puts their care below his."
+    "Well-meant and it engages with him honestly, but you leave an anaesthetised patient mid-treatment. Still better than promising an outcome nobody can yet justify."
    ],
    [
     "Explain calmly that you can’t discuss refunds, and that he’ll need to put his complaint in writing to the practice manager.",
@@ -894,7 +894,7 @@ const RW_1_4 = [
    ],
    [
     "Reassure him that the practice will sort out a replacement or refund, so he feels heard and leaves the surgery.",
-    "Settles him quickly, but commits the practice to an outcome before anyone knows why the bridge failed. Still better than leaving your patient mid-procedure."
+    "Settles him quickly, but commits the practice to a refund before anyone knows why the bridge failed, and its aim is to get him out of the room rather than to address his concern."
    ]
   ],
   "tk": "With an upset patient mid-treatment, finish safely and commit to hearing him yourself; don’t promise outcomes or leave your patient to calm things down."
@@ -1398,7 +1398,7 @@ const RW_2_1 = [
   "t": "rank",
   "d": "P",
   "a": "Working while infectious",
-  "k": "BEDAC",
+  "k": "BDEAC",
   "s": "You wake up at 6am with vomiting and diarrhoea. You have a full list, including a patient who has taken a day off work for a long appointment. Your ES is already stretched covering a colleague’s leave.",
   "o": [
    [
@@ -1415,11 +1415,11 @@ const RW_2_1 = [
    ],
    [
     "Ask the practice to contact the long-appointment patient first, and offer them a priority slot.",
-    "Considerate, but a refinement once the absence itself has been reported and recorded."
+    "Reaches the patient most affected today and softens the impact on them, which matters more right now than notifying your training structures."
    ],
    [
     "Let your ES and TPD know about your absence, following your scheme’s sickness policy.",
-    "A training requirement that keeps your supervisors informed and your records accurate."
+    "A training requirement that keeps your supervisors informed, but it can wait until the patients affected today have been looked after."
    ]
   ],
   "tk": "Your-health items: report sickness early and properly, then soften the impact on patients; returning too soon or giving up your own time are well-meant but secondary or unsafe."
@@ -2293,7 +2293,7 @@ const RW_3_1 = [
   "d": "I",
   "g": "C",
   "a": "Missed lesion found at review",
-  "k": "BDEAC",
+  "k": "DBEAC",
   "s": "At a check-up you compare today’s bitewings with ones you took eight months ago. You realise that a lesion on the patient’s lower left first molar was visible on the previous radiograph, but you did not record or treat it, and it now looks close to the pulp. She has no symptoms and does not know. Rank these considerations in order of importance.",
   "o": [
    [
@@ -2302,7 +2302,7 @@ const RW_3_1 = [
    ],
    [
     "Her right to a clear and honest account that the lesion was visible before and was not acted on.",
-    "Candour is owed as soon as you recognise the miss, and she cannot give valid consent to the treatment now needed without knowing why. It therefore governs how you respond and sits just above the need to treat."
+    "Candour is owed as soon as you recognise the miss, and she needs the explanation to consent to the treatment now needed. It is a very close second to protecting the tooth itself."
    ],
    [
     "How the treatment now needed will be funded, and whether the practice should offer it at no charge.",
@@ -2310,7 +2310,7 @@ const RW_3_1 = [
    ],
    [
     "The need to treat the tooth promptly to reduce the risk of pain, infection or losing the tooth.",
-    "Prompt treatment matters greatly because the lesion is near the pulp. She has no symptoms, though, so it can follow within days of an honest conversation rather than displacing it."
+    "The immediate clinical need: the lesion is near the pulp, so prompt treatment protects the tooth. She can be told and treated at the same visit, so candour follows closely rather than competing."
    ],
    [
     "Reviewing your radiograph reporting with your ES so the same miss is not repeated with other patients.",
@@ -3027,20 +3027,20 @@ const RW_3_3 = [
   "d": "E",
   "g": "M",
   "a": "Patient recording the consultation",
-  "k": "DBAEC",
+  "k": "DABCE",
   "s": "Halfway through explaining treatment options to a patient who is unhappy with a previous filling, you notice his phone in his shirt pocket with the camera recording. When you ask about it, he says he is recording ‘in case you lot try anything’. Your nurse looks uncomfortable.",
   "o": [
    [
     "Ask whether he would angle the phone away from your nurse, since she has not agreed to be filmed.",
-    "A fair request on your nurse’s behalf that is unlikely to inflame things, but it matters less than restoring his trust and supporting his decision."
+    "A courteous request on your nurse’s behalf that deals with a live privacy concern without challenging his right to record."
    ],
    [
     "Offer him a written summary of the options and a copy of his records to refer back to.",
-    "It meets the anxiety behind the recording and supports informed consent, but it follows engaging with his worry directly."
+    "It meets the anxiety behind the recording and supports informed consent, a helpful addition once you have engaged with his worry."
    ],
    [
     "Pause and ask the practice manager to join you, so there is a witness to the rest of the discussion.",
-    "Defensive and disproportionate: it delays his care and signals mistrust just when he needs reassurance."
+    "Defensive and it delays his care, but it does continue the consultation. Still better than making his care conditional on stopping the recording."
    ],
    [
     "Acknowledge the recording calmly, say you are happy to continue, and ask what has worried him.",
@@ -3048,10 +3048,10 @@ const RW_3_3 = [
    ],
    [
     "Explain the practice’s policy on recording, and ask him to put the phone away before you continue.",
-    "Patients may generally record their own care, so insisting on this risks escalating things and turns the focus away from his concerns."
+    "Patients may lawfully record their own care, and BMA guidance advises against making treatment conditional on stopping. Insisting risks escalating things and turns the focus away from his concerns."
    ]
   ],
-  "tk": "When a patient records a consultation, carry on openly and address the mistrust behind it; requests about recording are secondary and witnesses are defensive."
+  "tk": "When a patient records a consultation, carry on openly and address the mistrust behind it; don’t make his care conditional on stopping the recording."
  },
  {
   "t": "best3",
@@ -3419,7 +3419,7 @@ const RW_3_4 = [
   "d": "I",
   "g": "I",
   "a": "Charged with drink-driving",
-  "k": "ABC",
+  "k": "ACF",
   "s": "Driving home from a colleague’s leaving party, you are stopped by the police, breathalysed and charged with drink-driving. Your court date is next month and your solicitor thinks there may be a procedural defence. Nobody at the practice knows, and you are due at work tomorrow.",
   "o": [
    [
@@ -3428,7 +3428,7 @@ const RW_3_4 = [
    ],
    [
     "Contact your defence organisation today for advice, including on how to word your declaration to the GDC.",
-    "Defence organisations advise contacting them straight away about any criminal charge, and they can help you word your GDC declaration without delaying it."
+    "Sensible and often advised, but secondary here: the duty to tell the GDC is already clear, and seeking advice should not delay the disclosure itself."
    ],
    [
     "Tell the GDC promptly that you have been charged, without waiting for the verdict.",
@@ -3444,7 +3444,7 @@ const RW_3_4 = [
    ],
    [
     "Consider honestly whether your drinking is a concern, and seek support from your GP if so.",
-    "Honest reflection is worthwhile, but one event does not by itself show a health problem, and it does not meet the disclosure duties that come first."
+    "Looking honestly at the cause shows the insight supervisors and the GDC look for, and your GP can support you if drinking is a concern."
    ],
    [
     "Tell the whole team at tomorrow’s huddle, so there are no rumours about it later.",
