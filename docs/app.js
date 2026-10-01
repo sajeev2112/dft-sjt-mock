@@ -870,6 +870,19 @@ let SY = (() => { try { return JSON.parse(localStorage.getItem(SYNC_STORE) || "n
 const syncUi = {open: false, status: "", error: "", busy: false, conflict: null, confirmDelete: false, pendingLink: null};
 let syncTimer = null;
 function saveLink(){ try { if (SY) localStorage.setItem(SYNC_STORE, JSON.stringify(SY)); else localStorage.removeItem(SYNC_STORE); } catch(e) {} }
+// Other tabs on this device may have synced since this one loaded; take the newest record of what the server holds.
+function freshLink(){
+  try { const x = JSON.parse(localStorage.getItem(SYNC_STORE) || "null"); if (SY && x && x.name === SY.name) { SY.lastTs = Math.max(SY.lastTs || 0, x.lastTs || 0); SY.sentTs = Math.max(SY.sentTs || 0, x.sentTs || 0); } } catch(e) {}
+}
+// A server copy is this device's own if its timestamp matches what we last sent from here (the close-of-page save,
+// whose reply never arrives) or the progress we currently hold. Adopting our own copy as "synced" avoids a false conflict.
+function ownCopy(ts){ return !!SY && !!ts && (ts === S.ts || ts === SY.sentTs); }
+function markSynced(ts){ SY.lastTs = ts; SY.at = Date.now(); saveLink(); }
+window.addEventListener("storage", e => {
+  if (e.key !== SYNC_STORE) return;
+  try { const x = JSON.parse(e.newValue || "null"); if (!x) SY = null; else if (!SY || x.name !== SY.name) SY = x; else freshLink(); } catch(err) {}
+  renderSyncButton();
+});
 async function syncCall(action, extra){
   const r = await fetch(API + "/api/sync", {method: "POST", headers: {"Content-Type": "application/json"}, cache: "no-store",
     body: JSON.stringify(Object.assign({action}, extra))});
@@ -895,6 +908,7 @@ function scheduleSync(){
   clearTimeout(syncTimer); syncTimer = setTimeout(pushSync, 4000);
 }
 async function pushSync(force){
+  freshLink();
   if (!SY || (!force && S.ts <= (SY.lastTs || 0))) return;
   clearTimeout(syncTimer);
   syncUi.status = "saving"; renderSyncButton();
@@ -911,15 +925,18 @@ async function pushSync(force){
 async function resolveRemoteNewer(){
   const res = await syncCall("load", {name: SY.name, pin: SY.pin});
   if (res.status !== 200) { syncUi.status = "offline"; syncUi.error = syncErr(res); return; }
+  if (ownCopy(res.body.ts)) { markSynced(res.body.ts); syncUi.status = "saved"; if (S.ts > res.body.ts) await pushSync(); return; }
   if (S.ts <= (SY.lastTs || 0)) { adopt(res.body.data, res.body.ts); syncUi.status = "saved"; announce("Loaded your latest progress from another device."); }
   else { syncUi.conflict = {data: res.body.data, ts: res.body.ts, updated: res.body.updated}; syncUi.status = "conflict"; syncUi.open = true; }
 }
 async function syncOnStart(){
   if (!SY) return;
+  freshLink();
   try {
     const res = await syncCall("load", {name: SY.name, pin: SY.pin});
     if (res.status === 200) {
-      if (res.body.ts > (SY.lastTs || 0)) { if (S.ts <= (SY.lastTs || 0)) { adopt(res.body.data, res.body.ts); syncUi.status = "saved"; } else { syncUi.conflict = {data: res.body.data, ts: res.body.ts, updated: res.body.updated}; syncUi.status = "conflict"; } }
+      if (res.body.ts > (SY.lastTs || 0) && ownCopy(res.body.ts)) { markSynced(res.body.ts); syncUi.status = "saved"; if (S.ts > res.body.ts) await pushSync(); }
+      else if (res.body.ts > (SY.lastTs || 0)) { if (S.ts <= (SY.lastTs || 0)) { adopt(res.body.data, res.body.ts); syncUi.status = "saved"; } else { syncUi.conflict = {data: res.body.data, ts: res.body.ts, updated: res.body.updated}; syncUi.status = "conflict"; syncUi.open = true; } }
       else if (S.ts > (SY.lastTs || 0)) await pushSync();
       else syncUi.status = "saved";
     } else if (res.status === 401 || res.status === 404) { syncUi.error = res.status === 404 ? "Your saved progress was deleted, so this device has stopped syncing." : "The PIN for this username has changed, so this device has stopped syncing."; SY = null; saveLink(); }
@@ -930,7 +947,7 @@ async function syncOnStart(){
 window.addEventListener("pagehide", () => {
   if (!SY || syncUi.conflict || S.ts <= (SY.lastTs || 0)) return;
   const body = JSON.stringify({action: "save", name: SY.name, pin: SY.pin, data: JSON.stringify(S), ts: S.ts, base: SY.lastTs || 0});
-  try { navigator.sendBeacon(API + "/api/sync", new Blob([body], {type: "text/plain"})); } catch(e) {}
+  try { if (navigator.sendBeacon(API + "/api/sync", new Blob([body], {type: "text/plain"}))) { SY.sentTs = S.ts; saveLink(); } } catch(e) {}
 });
 window.addEventListener("online", () => { if (SY) pushSync(); });
 const ago = t => { const m = Math.round((Date.now() - t) / 60000); return m < 1 ? "just now" : m < 60 ? `${m} min ago` : m < 1440 ? `${Math.round(m / 60)} h ago` : new Date(t).toLocaleDateString("en-GB", {day: "numeric", month: "short"}); };
