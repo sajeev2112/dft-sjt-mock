@@ -8,6 +8,8 @@ const PAPERS = {
 };
 const PAPER_IDS = Object.keys(PAPERS).filter(id => Q.length >= PAPERS[id].to);
 const PACE = 112.5; // seconds per item at live-test pace (105 min / 56)
+const MOCK_SECS = 105 * 60; // the live test: 56 questions in 105 minutes
+const calm = () => window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 const WORKER = "https://dft-sjt-mock.sajeev-r13.workers.dev";
 const API = (location.protocol === "file:" || location.hostname.endsWith("github.io")) ? WORKER : "";
 const GRIP = '<svg width="10" height="16" viewBox="0 0 10 16" aria-hidden="true"><g fill="currentColor"><circle cx="2" cy="2" r="1.5"/><circle cx="8" cy="2" r="1.5"/><circle cx="2" cy="8" r="1.5"/><circle cx="8" cy="8" r="1.5"/><circle cx="2" cy="14" r="1.5"/><circle cx="8" cy="14" r="1.5"/></g></svg>';
@@ -24,7 +26,7 @@ function shuffle(a){ a = a.slice(); for (let i = a.length - 1; i > 0; i--) { con
 // ---------- state ----------
 const STORE = "dft-sjt-mock-v5", V4 = "dft-sjt-mock-v4";
 function newSet(extra){ return Object.assign({ans:{}, chk:{}, marked:false, el:0, cur:0, mode:"practice", logged:false}, extra || {}); }
-function fresh(){ return {v:5, ts:0, cid:uid(), share:true, view:"practice", setId:"p1", sets:{p1:newSet(), p2:newSet(), p3:newSet(), custom:null}, att:{}, days:{}, hist:[], sent:{}, outbox:[], fb:{}}; }
+function fresh(){ return {v:5, ts:0, cid:uid(), share:true, view:"practice", setId:"p1", sets:{p1:newSet(), p2:newSet(), p3:newSet(), custom:null}, att:{}, days:{}, hist:[], sent:{}, outbox:[], fb:{}, flags:{}}; }
 let S = fresh();
 // Rebuilds state from untrusted JSON (localStorage, IndexedDB or a pasted progress code),
 // keeping only well-formed values so nothing odd can reach the page or crash rendering.
@@ -63,7 +65,8 @@ function normalise(o){
     const list = [...new Set(c.list.map(Number))].filter(isQi);
     if (list.length) {
       s.sets.custom = Object.assign(cleanSet(c, list), {list, name: typeof c.name === "string" ? c.name.slice(0, 60) : "Quiz",
-        kind: typeof c.kind === "string" ? c.kind.slice(0, 10) : "quick", created: num(c.created, 1e14)});
+        kind: typeof c.kind === "string" ? c.kind.slice(0, 10) : "quick", created: num(c.created, 1e14),
+        limit: Math.floor(num(c.limit, 20000)), started: !!c.started});
     }
   }
   s.setId = s.sets[o.setId] && (o.setId === "custom" || PAPER_IDS.includes(o.setId)) ? o.setId : "p1";
@@ -72,6 +75,7 @@ function normalise(o){
   s.hist = (Array.isArray(o.hist) ? o.hist : []).slice(-200).filter(h => h && typeof h === "object").map(h => ({t: num(h.t, 1e14), name: String(h.name || "Set").slice(0, 80), g: num(h.g), m: num(h.m) || 1, n: num(h.n), total: num(h.total), mode: h.mode === "exam" ? "exam" : "practice"}));
   for (const k of Object.keys(o.sent || {})) { const i = +k; if (isQi(i)) s.sent[i] = 1; }
   for (const k of Object.keys(o.fb || {})) { const i = +k; if (isQi(i)) s.fb[i] = 1; }
+  for (const k of Object.keys(o.flags || {})) { const i = +k; if (isQi(i) && o.flags[k]) s.flags[i] = 1; }
   s.outbox = (Array.isArray(o.outbox) ? o.outbox : []).filter(x => x && Number.isInteger(x.q) && x.q >= 1 && x.q <= Q.length && typeof x.a === "string" && /^[0-7]{3,5}$/.test(x.a)).slice(-300);
   return s;
 }
@@ -138,6 +142,11 @@ const curSet = () => S.sets[S.setId];
 const curList = () => listOf(S.setId);
 function curQi(){ const l = curList(), set = curSet(); set.cur = Math.max(0, Math.min(l.length - 1, set.cur || 0)); return l[set.cur]; }
 
+// A timed mock is the 56-question custom set with a countdown; flags are kept per question across every set.
+const isMock = set => !!set && set.kind === "mock" && set.limit > 0;
+const mockLive = set => isMock(set) && set.started && !set.marked;
+const left = set => Math.max(0, set.limit - set.el);
+const flagged = qi => !!S.flags[qi];
 const revealed = (set, qi) => !!set.chk[qi] || (set.mode === "exam" && !!set.marked);
 function ansOf(set, qi){ if (!set.ans[qi]) set.ans[qi] = isRank(Q[qi]) ? {ord:[0,1,2,3,4], set:false} : {p:[]}; return set.ans[qi]; }
 function complete(set, qi){ const a = set.ans[qi]; if (!a) return false; return isRank(Q[qi]) ? !!a.set : a.p.length === 3; }
@@ -250,7 +259,8 @@ function statsHtml(qi){
 }
 
 // ---------- UI state ----------
-let ui = {warn:false, confirmReset:false, confirmMark:false, building:false, fbOpen:null, code:"", codeMsg:"", confirmLoad:false, confirmWipe:false};
+let ui = {warn:false, confirmReset:false, confirmMark:false, building:false, fbOpen:null, code:"", codeMsg:"", confirmLoad:false, confirmWipe:false, summary:false, popped:null, warned:{}};
+const FLAG = '<svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 1.5v13M3 2.5h8.5l-1.8 3 1.8 3H3" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round"/></svg>';
 let installPrompt = null;
 window.addEventListener("beforeinstallprompt", e => { e.preventDefault(); installPrompt = e; if (S.view === "settings") render(); });
 
@@ -281,6 +291,7 @@ function cellHtml(set, qi, k, lower){
   if (revealed(set, qi)) { const s = qScore(set, qi); cls += " " + band(s.got, s.max); status = s.got + " of " + s.max + " marks"; }
   else if (started(set, qi)) { cls += " done"; status = complete(set, qi) ? "answered" : "in progress"; }
   if (k === set.cur && !ui.building) cls += " cur";
+  if (flagged(qi)) { cls += " flagged"; status += ", flagged"; }
   const label = k + 1;
   return `<button type="button" class="${cls}" data-act="go" data-k="${k}" aria-label="Question ${label}, ${status}"${k === set.cur ? ' aria-current="step"' : ""}>${label}</button>`;
 }
@@ -305,12 +316,17 @@ function crow(pos, o, text, cls, pts){
 
 function renderCard(){
   const card = document.getElementById("card");
-  if (ui.building) { card.innerHTML = builderHtml(); destroyDrag(); return; }
-  const set = curSet(), list = curList(), k = set.cur, qi = curQi(), q = Q[qi], a = set.ans[qi], rev = revealed(set, qi), rank = isRank(q);
+  if (ui.building) { card.innerHTML = builderHtml(); destroyDrag(); animateCard("build"); return; }
+  const set = curSet();
+  if (isMock(set) && !set.started && !set.marked) { card.innerHTML = mockIntroHtml(set); destroyDrag(); animateCard("intro"); return; }
+  if (isMock(set) && set.marked && ui.summary) { card.innerHTML = mockSummaryHtml(set); destroyDrag(); animateCard("summary"); return; }
+  const list = curList(), k = set.cur, qi = curQi(), q = Q[qi], a = set.ans[qi], rev = revealed(set, qi), rank = isRank(q);
   const word = q.t === "consider" ? "important" : "appropriate";
   const where = S.setId === "custom" ? ` <span class="qfrom">· Paper ${q.p}, question ${localNum(q)}</span>` : "";
   let h = ui0.rewritten ? `<div class="notice"><b>The questions have been rewritten to be harder.</b> Every option is now plausible, so your earlier answers have been cleared. Your progress chart and visit history are kept. <button type="button" class="btn small" data-act="dismiss-notice">OK</button></div>` : "";
-  h += `<div class="qhead"><span class="qnum" tabindex="-1">Question ${k + 1} of ${list.length}${where}</span><div class="chips"><span class="chip type">${TYPES[q.t]}</span><span class="chip">${DOMAINS[q.d]}</span></div></div>`;
+  if (mockLive(set)) h += mockBarHtml(set);
+  h += `<div class="qhead"><span class="qnum" tabindex="-1">Question ${k + 1} of ${list.length}${where}</span><div class="chips"><span class="chip type">${TYPES[q.t]}</span><span class="chip">${DOMAINS[q.d]}</span>` +
+    `<button type="button" class="flagbtn" data-act="flag" aria-pressed="${flagged(qi)}" title="Flag this question to come back to (shortcut: F)">${FLAG}<span>${flagged(qi) ? "Flagged" : "Flag"}</span></button></div></div>`;
   h += `<p class="scenario">${q.s}</p><p class="instr">${PROMPTS[q.t]}</p>`;
   if (!rev) {
     if (rank) {
@@ -334,7 +350,7 @@ function renderCard(){
     }
   } else {
     h += `<p class="xhead">${rank ? "Why each option sits where it does" : "Why each option is or isn’t one of the best three"}</p><div class="xlist">`;
-    q.o.forEach(([text, why], idx) => { h += `<div class="xitem"><span class="letter">${L[idx]}</span><div><span class="otext">${text}</span><span class="xwhy"><b>Justification:</b> ${why}</span></div></div>`; });
+    q.o.forEach(([text, why], idx) => { h += `<div class="xitem" style="--i:${idx}"><span class="letter">${L[idx]}</span><div><span class="otext">${text}</span><span class="xwhy"><b>Justification:</b> ${why}</span></div></div>`; });
     h += "</div>";
     const sc = qScore(set, qi);
     h += `<div class="result"><div class="scoreline">${sc.got} / ${sc.max} marks</div><div class="compare"><div class="ccol"><h4>Your answer</h4><div class="crows">`;
@@ -360,8 +376,85 @@ function renderCard(){
   if (set.mode === "practice" && !rev && !complete(set, qi) && !rank) h += `<p class="hint">Choose three options, then check your answer.</p>`;
   if (set.mode === "exam" && !rev) h += `<p class="hint">Exam mode: your answers are saved and the whole set is marked when you press Mark.</p>`;
   card.innerHTML = h;
+  animateCard(`${S.setId}:${qi}:${rev ? 1 : 0}`, k, rev);
   if (rev) { if (stats[qi]) loadStats(qi); else { stats[qi] = {state:"loading"}; flush().then(() => loadStats(qi, true)); } }
   initDrag();
+}
+
+// ---------- motion ----------
+// The card animates only when what it shows changes (a new question, a reveal, the builder), not on every re-render.
+let lastSig = "", lastK = 0, lastSet = "";
+function animateCard(sig, k = 0, rev = false){
+  const card = document.getElementById("card");
+  if (sig === lastSig) return popPicked();
+  const prevSig = lastSig, sameQ = prevSig.split(":").slice(0, 2).join(":") === sig.split(":").slice(0, 2).join(":");
+  let cls = "in-fade";
+  if (sameQ && rev) cls = "in-reveal";
+  else if (lastSet === S.setId && /^\w+:\d+:/.test(prevSig) && /^\w+:\d+:/.test(sig)) cls = k >= lastK ? "in-next" : "in-prev";
+  lastSig = sig; lastK = k; lastSet = S.setId;
+  if (calm() || !prevSig) return;
+  card.classList.remove("in-fade", "in-next", "in-prev", "in-reveal");
+  void card.offsetWidth;
+  card.classList.add(cls);
+  if (cls === "in-reveal") countUp(card.querySelector(".scoreline"));
+}
+function countUp(el){
+  const m = el && el.textContent.match(/^(\d+) \/ (\d+)/); if (!m) return;
+  const end = +m[1], max = m[2], t0 = performance.now(), dur = 650;
+  const step = t => { const p = Math.min(1, (t - t0) / dur), e = 1 - Math.pow(1 - p, 3); el.textContent = `${Math.round(end * e)} / ${max} marks`; if (p < 1) requestAnimationFrame(step); };
+  el.textContent = `0 / ${max} marks`; requestAnimationFrame(step);
+}
+function popPicked(){
+  if (ui.popped == null || calm()) return;
+  const b = document.querySelector(`#card [data-act="pick"][data-o="${ui.popped}"]`); ui.popped = null;
+  if (b) { b.classList.remove("popped"); void b.offsetWidth; b.classList.add("popped"); }
+}
+// FLIP: remember where the ranked options were, re-render, then glide each one from its old place.
+function rankPositions(){ const m = {}; document.querySelectorAll("#rlist .ritem").forEach(li => m[li.dataset.o] = li.getBoundingClientRect().top); return m; }
+function glide(before){
+  if (calm() || !before) return;
+  document.querySelectorAll("#rlist .ritem").forEach(li => {
+    const dy = (before[li.dataset.o] ?? 0) - li.getBoundingClientRect().top;
+    if (dy && li.animate) li.animate([{transform: `translateY(${dy}px)`}, {transform: "none"}], {duration: 240, easing: "cubic-bezier(.2,.8,.2,1)"});
+  });
+}
+
+// ---------- timed mock ----------
+function mockBarHtml(set){
+  const list = curList(), done = list.filter(i => complete(set, i)).length, nf = list.filter(flagged).length, t = left(set);
+  const cls = t <= 300 ? " crit" : t <= 900 ? " low" : "";
+  return `<div class="mockbar${cls}" id="mockbar"><span class="mt" id="mclock" aria-label="Time left">${fmt(Math.floor(t))}</span>` +
+    `<span class="mstat"><b>${done}</b>/${list.length} answered${nf ? ` · <b>${nf}</b> flagged` : ""}</span>` +
+    `<button type="button" class="btn small" data-act="timer">${timerOn ? "Pause" : "Resume"}</button></div>`;
+}
+function mockIntroHtml(set){
+  const n = curList().length, r = curList().filter(i => isRank(Q[i])).length;
+  return `<h2 class="bh" tabindex="-1">Timed mock</h2><p class="lead">${n} questions from across the site in ${fmt(set.limit)}, the same length and timing as the live test.</p>` +
+    `<ul class="mocklist"><li><b>${r}</b> ranking and <b>${n - r}</b> best-three questions, in random order.</li><li>The countdown stays at the top of the question. You get warnings at 15 and 5 minutes left.</li>` +
+    `<li>There’s no feedback until the end. Flag anything you want to come back to, and move freely between questions.</li><li>When time runs out, the mock is marked automatically. You can also finish early.</li><li>Leaving the site pauses the clock; Pause is there if you need it, but the real test has no pause.</li></ul>` +
+    `<div class="actions"><button type="button" class="btn" data-act="new">Choose a different quiz</button><button type="button" class="btn primary" data-act="mock-start">Start the clock</button></div>`;
+}
+function mockSummaryHtml(set){
+  const list = curList(); let got = 0, max = 0, done = 0;
+  const dom = {}, typ = {rank:[0,0], best3:[0,0]};
+  list.forEach(qi => { const s = qScore(set, qi), q = Q[qi], d = dom[q.d] || (dom[q.d] = [0,0]), t = typ[isRank(q) ? "rank" : "best3"];
+    got += s.got; max += s.max; d[0] += s.got; d[1] += s.max; t[0] += s.got; t[1] += s.max; if (complete(set, qi)) done++; });
+  const nf = list.filter(flagged).length, used = Math.min(set.el, set.limit);
+  const bar = (label, g, m) => `<div class="dom"><span>${label}</span><span>${m ? pct(g, m) + "%" : "–"}</span><div class="bar"><i style="width:${pct(g, m)}%"></i></div></div>`;
+  let h = `<h2 class="bh" tabindex="-1">Mock complete</h2><div class="sumtop"><div><p class="plabel">Score</p><div class="big sumscore" data-to="${got}" data-max="${max}">${got}<small> / ${max} · ${pct(got, max)}%</small></div></div>` +
+    `<div><p class="plabel">Time used</p><div class="big">${fmt(Math.floor(used))}<small> of ${fmt(set.limit)}</small></div></div>` +
+    `<div><p class="plabel">Answered</p><div class="big">${done}<small> / ${list.length}</small></div></div></div>`;
+  h += `<h3 class="bsub">By area</h3><div class="doms">` + Object.keys(DOMAINS).filter(d => dom[d]).map(d => bar(DOMAINS[d], dom[d][0], dom[d][1])).join("") + `</div>`;
+  h += `<h3 class="bsub">By question type</h3><div class="doms">${bar("Ranking", ...typ.rank)}${bar("Best three of eight", ...typ.best3)}</div>`;
+  h += `<div class="actions"><button type="button" class="btn" data-act="build" data-kind="mock">New timed mock</button><div class="act-r">` +
+    (nf ? `<button type="button" class="btn" data-act="review-flagged">Review ${nf} flagged</button>` : "") +
+    `<button type="button" class="btn primary" data-act="review">Review answers</button></div></div>`;
+  return h;
+}
+function timeUp(){
+  timerOn = false;
+  markSet(); S.view = "practice"; if (location.hash && location.hash !== "#practice") location.hash = "practice";
+  announce("Time is up. Your mock has been marked."); render();
 }
 
 // ---------- drag to rank ----------
@@ -390,8 +483,10 @@ function builderHtml(){
   const themeCounts = {}; Q.forEach(q => themeCounts[q.g] = (themeCounts[q.g] || 0) + 1);
   let h = `<h2 class="bh">Build a quiz</h2><p class="muted">${c ? `Starting a new quiz replaces “${esc(c.name)}”. Your scores so far are kept in Results.` : "Pick a format. Your scores are saved in Results."}</p><div class="bgrid">`;
   h += `<button type="button" class="bcard" data-act="build" data-kind="quick"><b>Quick 10</b><span>10 random questions from all papers, unseen ones first. Practice mode.</span></button>`;
-  h += `<button type="button" class="bcard" data-act="build" data-kind="mock"><b>Full mock · 56</b><span>The live test’s length and mix (about two-thirds ranking). Exam mode with a 105-minute target.</span></button>`;
+  h += `<button type="button" class="bcard" data-act="build" data-kind="mock"><b>Timed mock · 56 in 105 min</b><span>Random questions from every paper in the live test’s mix, with a countdown, flags and a summary at the end.</span></button>`;
   h += `<button type="button" class="bcard" data-act="build" data-kind="weak"${weak ? "" : " disabled"}><b>Weak spots</b><span>${weak ? `Up to 20 of the ${weak} questions you last scored under 70% on, lowest first.` : "Nothing yet: questions you score under 70% on will appear here."}</span></button>`;
+  const nf = Object.keys(S.flags).length;
+  h += `<button type="button" class="bcard" data-act="build" data-kind="flagged"${nf ? "" : " disabled"}><b>Flagged questions</b><span>${nf ? `The ${nf} question${nf === 1 ? "" : "s"} you’ve flagged to come back to. Practice mode.` : "Nothing flagged yet: use the flag on any question to collect it here."}</span></button>`;
   h += `</div><h3 class="bsub">Focus on an area</h3><div class="chips wrap">` + Object.keys(DOMAINS).map(d => `<button type="button" class="chipbtn" data-act="build" data-kind="area" data-arg="${d}">${DOMAINS[d]}</button>`).join("") + `</div>`;
   h += `<h3 class="bsub">Focus on a theme</h3><div class="chips wrap">` + Object.keys(THEMES).map(g => `<button type="button" class="chipbtn" data-act="build" data-kind="theme" data-arg="${g}">${THEMES[g]} <small>${themeCounts[g] || 0}</small></button>`).join("") + `</div>`;
   h += `<div class="actions"><button type="button" class="btn" data-act="cancel-build">Cancel</button></div>`;
@@ -403,14 +498,15 @@ function buildQuiz(kind, arg){
   if (kind === "quick") { list = pickFresh(all, 10); name = "Quick 10"; }
   else if (kind === "mock") {
     const r = shuffle(all.filter(i => isRank(Q[i]))).slice(0, 37), b = shuffle(all.filter(i => !isRank(Q[i]))).slice(0, 19);
-    list = shuffle(r.concat(b)); name = "Full mock"; mode = "exam";
+    list = shuffle(r.concat(b)); name = "Timed mock"; mode = "exam";
   }
+  else if (kind === "flagged") { list = Object.keys(S.flags).map(Number).filter(isQi).sort((x, y) => x - y); name = "Flagged questions"; }
   else if (kind === "weak") { list = weakList().slice(0, 20); name = "Weak spots"; }
   else if (kind === "area") { list = shuffle(pickFresh(all.filter(i => Q[i].d === arg), 12)); name = DOMAINS[arg]; }
   else if (kind === "theme") { list = shuffle(all.filter(i => Q[i].g === arg)); name = THEMES[arg]; }
   if (!list.length) return;
-  S.sets.custom = newSet({name, kind, list, mode, created:Date.now()});
-  S.setId = "custom"; S.view = "practice"; ui.building = false; ui.warn = false; timerOn = false;
+  S.sets.custom = newSet(Object.assign({name, kind, list, mode, created:Date.now()}, kind === "mock" ? {limit: MOCK_SECS, started: false} : {}));
+  S.setId = "custom"; S.view = "practice"; ui.building = false; ui.warn = false; ui.summary = false; ui.warned = {}; timerOn = false;
   save(); location.hash = "practice"; render(); scrollToCard();
 }
 
@@ -423,7 +519,10 @@ function renderPanel(){
     if (complete(set, qi)) nans++;
     if (revealed(set, qi)) { const s = qScore(set, qi); got += s.got; max += s.max; dom[Q[qi].d][0] += s.got; dom[Q[qi].d][1] += s.max; nrev++; }
   });
-  let h = `<div><p class="plabel">Mode · ${esc(name)}</p><div class="seg" role="group" aria-label="Mode">
+  const mock = isMock(set);
+  let h = mock
+    ? `<div><p class="plabel">Mode · ${esc(name)}</p><p class="muted">${set.marked ? "Marked. Review each question’s key and reasoning." : "Exam conditions: no feedback until the mock is marked."}</p>${set.marked && !ui.summary ? `<button type="button" class="btn small" data-act="summary">View summary</button>` : ""}</div>`
+    : `<div><p class="plabel">Mode · ${esc(name)}</p><div class="seg" role="group" aria-label="Mode">
     <button type="button" data-act="mode" data-mode="practice" aria-pressed="${set.mode === "practice"}">Practice</button>
     <button type="button" data-act="mode" data-mode="exam" aria-pressed="${set.mode === "exam"}">Exam</button></div>
     <p class="muted">${set.mode === "practice" ? "See the key and reasoning after each question." : "No feedback until you mark the whole set."}</p></div>`;
@@ -435,19 +534,32 @@ function renderPanel(){
     h += '<div class="doms">' + Object.keys(DOMAINS).map(d => { const [g, m] = dom[d]; return `<div class="dom"><span>${DOMAINS[d]}</span><span>${m ? pct(g, m) + "%" : "–"}</span><div class="bar"><i style="width:${pct(g, m)}%"></i></div></div>`; }).join("") + '</div>';
   }
   if (set.mode === "exam" && !set.marked) {
-    const blanks = list.length - nans;
-    if (ui.confirmMark) h += `<div class="confirm"><span>${blanks} question${blanks === 1 ? " is" : "s are"} not fully answered and will score only what’s filled in. Mark anyway?</span><div class="row"><button type="button" class="btn small primary" data-act="mark-yes">Mark ${esc(name)}</button><button type="button" class="btn small" data-act="mark-no">Keep going</button></div></div>`;
-    else h += `<button type="button" class="btn primary" data-act="mark">Mark ${esc(name)}</button>`;
+    const blanks = list.length - nans, nfl = list.filter(flagged).length;
+    const what = [blanks ? `${blanks} question${blanks === 1 ? " is" : "s are"} not fully answered and will score only what’s filled in.` : "", nfl ? `${nfl} ${nfl === 1 ? "is" : "are"} still flagged.` : ""].filter(Boolean).join(" ");
+    if (mock && !set.started) {}
+    else if (ui.confirmMark) h += `<div class="confirm"><span>${what || "Everything is answered."} ${mock ? "Finish the mock now?" : "Mark anyway?"}</span><div class="row"><button type="button" class="btn small primary" data-act="mark-yes">${mock ? "Finish and mark" : "Mark " + esc(name)}</button><button type="button" class="btn small" data-act="mark-no">Keep going</button></div></div>`;
+    else h += `<button type="button" class="btn primary" data-act="mark">${mock ? "Finish and mark mock" : "Mark " + esc(name)}</button>`;
   }
   const target = Math.round(list.length * PACE), paceK = Math.min(list.length, Math.floor(set.el / PACE) + 1);
-  h += `<div class="divider"></div><div><p class="plabel">Timer · target ${fmt(target)}</p><div class="clock"><span class="t" id="clock">${fmt(set.el)}</span><button type="button" class="btn small" data-act="timer">${timerOn ? "Pause" : (set.el ? "Resume" : "Start")}</button></div><p class="muted" id="pace">At live-test pace you’d be on question ${paceK} of this set.</p></div>`;
+  if (mock) {
+    if (set.started) h += `<div class="divider"></div><div><p class="plabel">${set.marked ? "Time used" : "Time left"} · of ${fmt(set.limit)}</p><div class="clock"><span class="t" id="clock">${fmt(Math.floor(set.marked ? Math.min(set.el, set.limit) : left(set)))}</span>${set.marked ? "" : `<button type="button" class="btn small" data-act="timer">${timerOn ? "Pause" : "Resume"}</button>`}</div>${set.marked ? "" : `<p class="muted" id="pace">At live-test pace you’d be on question ${paceK} of ${list.length}.</p>`}</div>`;
+  } else {
+    h += `<div class="divider"></div><div><p class="plabel">Timer · target ${fmt(target)}</p><div class="clock"><span class="t" id="clock">${fmt(set.el)}</span><button type="button" class="btn small" data-act="timer">${timerOn ? "Pause" : (set.el ? "Resume" : "Start")}</button></div><p class="muted" id="pace">At live-test pace you’d be on question ${paceK} of this set.</p></div>`;
+  }
+  const fl = list.map((qi, k) => [qi, k]).filter(([qi]) => flagged(qi));
+  h += `<div><p class="plabel">Flagged · ${fl.length}</p>` + (fl.length
+    ? `<div class="flaglist">${fl.map(([qi, k]) => `<button type="button" class="fchip${k === set.cur ? " cur" : ""}" data-act="go" data-k="${k}" aria-label="Go to flagged question ${k + 1}">${k + 1}</button>`).join("")}</div><button type="button" class="btn small" data-act="next-flag">Next flagged</button>`
+    : `<p class="muted">Flag a question (or press F) to come back to it. Flags stay until you remove them.</p>`) + `</div>`;
   if (ui.confirmReset) h += `<div class="confirm"><span>Clear the answers and timer for ${esc(name)}? Your Results history is kept.</span><div class="row"><button type="button" class="btn small danger" data-act="reset-yes">Clear ${esc(name)}</button><button type="button" class="btn small" data-act="reset-no">Cancel</button></div></div>`;
   else h += `<button type="button" class="btn small danger" data-act="reset">Reset ${esc(name)}</button>`;
   h += storageOk
     ? `<p class="saved">✓ Progress saved on this device. It stays when you come back in this browser.</p>`
     : `<p class="saved warn">This browser isn’t saving progress (it may be a private window). Use a normal window, or copy a progress code in Settings.</p>`;
   h += `<p class="note">These are original, unofficial questions modelled on the official DFT practice papers and on GDC guidance. The keys are reasoned judgements, not official answers. Where yours differ in the middle ranks, compare the reasoning, and use “I disagree” to flag keys you think are wrong.</p>`;
-  document.getElementById("panel").innerHTML = h;
+  const panel = document.getElementById("panel"), sig = `${S.setId}:${nrev}:${got}`;
+  panel.innerHTML = h;
+  if (panel.dataset.sig !== sig && !calm()) { panel.classList.remove("anim"); void panel.offsetWidth; panel.classList.add("anim"); }
+  panel.dataset.sig = sig;
 }
 
 // ---------- results ----------
@@ -606,17 +718,34 @@ document.addEventListener("click", async e => {
   switch (act) {
     case "dismiss-notice": ui0.rewritten = false; render(); break;
     case "view": if (location.hash === "#" + b.dataset.v) fromHash(); else location.hash = b.dataset.v; break;
-    case "set": S.setId = b.dataset.id; ui.building = false; ui.warn = false; ui.confirmMark = ui.confirmReset = false; timerOn = false; save(); render(); break;
+    case "set": S.setId = b.dataset.id; ui.building = false; ui.summary = false; ui.warn = false; ui.confirmMark = ui.confirmReset = false; timerOn = false; save(); render(); break;
     case "new": ui.building = !ui.building; render(); scrollToCard(); break;
     case "cancel-build": ui.building = false; render(); break;
     case "build": buildQuiz(b.dataset.kind, b.dataset.arg); break;
+    case "mock-quick": {
+      const c = S.sets.custom;
+      if (c && isMock(c) && !c.marked) { S.setId = "custom"; ui.building = false; ui.summary = false; save(); render(); scrollToCard(); }
+      else buildQuiz("mock");
+      break;
+    }
+    case "mock-start": set.started = true; set.el = 0; timerOn = true; ui.warned = {}; save(); render(); focusCard(); announce(`Mock started. You have ${Math.round(set.limit / 60)} minutes.`); break;
+    case "summary": ui.summary = true; render(); scrollToCard(); break;
+    case "review": ui.summary = false; go(0); focusCard(); break;
+    case "review-flagged": { ui.summary = false; const k = curList().findIndex(flagged); go(k < 0 ? 0 : k); focusCard(); break; }
+    case "flag": toggleFlag(qi); break;
+    case "next-flag": {
+      const list = curList(), n = list.length;
+      for (let d = 1; d <= n; d++) { const k = (set.cur + d) % n; if (flagged(list[k])) { go(k); focusCard(); break; } }
+      break;
+    }
     case "go": go(+b.dataset.k); focusCard(); break;
     case "prev": go(set.cur - 1); break;
     case "next": go(set.cur + 1); break;
     case "mv": {
       const a = ansOf(set, qi), o = +b.dataset.o, d = +b.dataset.d, pos = a.ord.indexOf(o), np = pos + d;
       if (np < 0 || np > 4) return;
-      [a.ord[pos], a.ord[np]] = [a.ord[np], a.ord[pos]]; a.set = true; save(); render(); announce(`Option ${L[o]} moved to position ${np + 1}.`);
+      const before = rankPositions();
+      [a.ord[pos], a.ord[np]] = [a.ord[np], a.ord[pos]]; a.set = true; save(); render(); glide(before); announce(`Option ${L[o]} moved to position ${np + 1}.`);
       const f = document.getElementById(`mv-${qi}-${o}-${d < 0 ? "up" : "down"}`), alt = document.getElementById(`mv-${qi}-${o}-${d < 0 ? "down" : "up"}`);
       (f && !f.disabled ? f : alt)?.focus();
       break;
@@ -624,7 +753,7 @@ document.addEventListener("click", async e => {
     case "keep": ansOf(set, qi).set = true; save(); render(); break;
     case "pick": {
       const a = ansOf(set, qi), o = +b.dataset.o, at = a.p.indexOf(o);
-      if (at !== -1) { a.p.splice(at, 1); ui.warn = false; } else if (a.p.length < 3) { a.p.push(o); ui.warn = false; } else ui.warn = true;
+      if (at !== -1) { a.p.splice(at, 1); ui.warn = false; } else if (a.p.length < 3) { a.p.push(o); ui.warn = false; ui.popped = o; } else ui.warn = true;
       save(); render(); document.getElementById(`pk-${qi}-${o}`)?.focus();
       break;
     }
@@ -635,16 +764,16 @@ document.addEventListener("click", async e => {
       document.querySelector("#card .scoreline")?.setAttribute("tabindex", "-1"); document.querySelector("#card .scoreline")?.focus({preventScroll: true});
       break;
     case "retry": delete set.ans[qi]; delete set.chk[qi]; ui.fbOpen = null; ui.warn = false; save(); render(); focusCard(); break;
-    case "mode": if (b.dataset.mode !== set.mode) { set.mode = b.dataset.mode; ui.confirmMark = false; save(); render(); } break;
+    case "mode": if (isMock(set)) break; if (b.dataset.mode !== set.mode) { set.mode = b.dataset.mode; ui.confirmMark = false; save(); render(); } break;
     case "mark": { const n = curList().filter(i => complete(set, i)).length; if (n < curList().length) { ui.confirmMark = true; renderPanel(); } else markSet(); break; }
     case "mark-yes": markSet(); break;
     case "mark-no": ui.confirmMark = false; renderPanel(); break;
-    case "timer": timerOn = !timerOn; renderPanel(); break;
+    case "timer": timerOn = !timerOn; if (isMock(set)) { renderCard(); announce(timerOn ? "Clock running." : "Clock paused."); } renderPanel(); break;
     case "reset": ui.confirmReset = true; renderPanel(); break;
     case "reset-no": ui.confirmReset = false; renderPanel(); break;
     case "reset-yes":
       curList().forEach(i => { delete set.ans[i]; delete set.chk[i]; });
-      set.marked = false; set.el = 0; set.cur = 0; set.logged = false; timerOn = false; ui.confirmReset = false; save(); render();
+      set.marked = false; set.el = 0; set.cur = 0; set.logged = false; if (isMock(set)) set.started = false; timerOn = false; ui.confirmReset = false; ui.summary = false; save(); render();
       break;
     case "disagree": ui.fbOpen = qi; refreshStats(qi); document.getElementById("fb-" + qi)?.focus(); break;
     case "cancel-fb": ui.fbOpen = null; refreshStats(qi); break;
@@ -685,19 +814,52 @@ function markSet(){
   const set = curSet(), list = curList();
   set.marked = true; timerOn = false; ui.confirmMark = false;
   list.forEach(qi => { if (started(set, qi) && !set.chk[qi]) { set.chk[qi] = true; addAttempt(S, set, qi); } });
+  if (isMock(set)) { ui.summary = true; set.cur = 0; }
   logSetIfDone(S.setId); save(); render(); flush();
+  if (isMock(set)) { scrollToCard(); focusCard(); }
 }
+function toggleFlag(qi){
+  if (qi == null) return;
+  if (S.flags[qi]) delete S.flags[qi]; else S.flags[qi] = 1;
+  save(); render();
+  const b = document.querySelector('#card [data-act="flag"]');
+  if (b) { b.focus({preventScroll: true}); if (!calm() && flagged(qi)) { b.classList.remove("waved"); void b.offsetWidth; b.classList.add("waved"); } }
+  announce(flagged(qi) ? "Question flagged." : "Flag removed.");
+}
+// F flags the current question; ignored while typing.
+document.addEventListener("keydown", e => {
+  if (e.key !== "f" && e.key !== "F") return;
+  if (e.metaKey || e.ctrlKey || e.altKey || e.target.closest("input, textarea, select, [contenteditable]")) return;
+  if (S.view !== "practice" || ui.building) return;
+  const set = curSet();
+  if (isMock(set) && ((!set.started && !set.marked) || ui.summary)) return;
+  e.preventDefault(); toggleFlag(curQi());
+});
 
 // ---------- timer ----------
-let tick = 0;
+// Paper timers count only while you're looking at them. A mock counts wall-clock time while the site is open
+// (any tab, any view), so a background tab can't freeze it; each tick is capped so a sleeping laptop doesn't drain it.
+let tick = 0, lastTick = Date.now(), carry = 0;
 setInterval(() => {
-  if (!timerOn || S.view !== "practice" || document.visibilityState !== "visible") return;
-  const set = curSet(), list = curList();
-  set.el++; tick++;
+  const now = Date.now(), dt = Math.min(30, Math.max(0, (now - lastTick) / 1000)); lastTick = now;
+  if (!timerOn) return;
+  const set = curSet(), list = curList(), live = mockLive(set);
+  if (!live && (S.view !== "practice" || document.visibilityState !== "visible")) return;
+  carry += live ? dt : 1;
+  const whole = Math.floor(carry); if (!whole) return;
+  carry -= whole; set.el += whole; tick += whole;
   const c = document.getElementById("clock"), p = document.getElementById("pace");
-  if (c) c.textContent = fmt(set.el);
-  if (p) p.textContent = `At live-test pace you’d be on question ${Math.min(list.length, Math.floor(set.el / PACE) + 1)} of this set.`;
-  if (tick % 5 === 0) save();
+  if (live) {
+    set.el = Math.min(set.limit, set.el);
+    const t = left(set), bar = document.getElementById("mockbar"), mc = document.getElementById("mclock");
+    if (mc) mc.textContent = fmt(Math.floor(t));
+    if (c) c.textContent = fmt(Math.floor(t));
+    if (bar) { bar.classList.toggle("low", t <= 900 && t > 300); bar.classList.toggle("crit", t <= 300); }
+    for (const mins of [15, 5]) if (t <= mins * 60 && !ui.warned[mins]) { ui.warned[mins] = true; announce(`${mins} minutes left.`); if (bar && !calm()) { bar.classList.remove("ping"); void bar.offsetWidth; bar.classList.add("ping"); } }
+    if (t <= 0) { save(); timeUp(); return; }
+  } else if (c) c.textContent = fmt(set.el);
+  if (p) p.textContent = `At live-test pace you’d be on question ${Math.min(list.length, Math.floor(set.el / PACE) + 1)} of ${live ? list.length : "this set"}.`;
+  if (tick % 5 < whole) save();
 }, 1000);
 
 // ---------- cross-device sync (username + PIN, optional) ----------

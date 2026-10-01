@@ -6,7 +6,10 @@ An unofficial practice site for the UK Dental Foundation Training (DFT) Situatio
 
 - 96 original questions in three papers: Paper 1 (standard), and Papers 2 and 3 (harder)
 - Ranking items you drag into order, and best-three-of-eight items, both marked with the live test's near-miss scoring
-- Quick 10 quizzes, a 56-question full mock, and weak-spot, area and theme quizzes
+- A timed mock: 56 random questions in 105 minutes, with a countdown, warnings at 15 and 5 minutes, automatic marking when time runs out and a results summary
+- Flags on any question (button or the F key), shown on the question grid, with a Flagged questions quiz
+- Quick 10 quizzes, and weak-spot, area and theme quizzes
+- Gentle animations between questions and on reveals, switched off for anyone who prefers reduced motion
 - Results by area and by theme, your weakest themes, and progress over time
 - A built-in pattern guide with a playbook for each of the 12 themes
 - Community stats that show how everyone else answered, plus an "I disagree with this key" button

@@ -362,3 +362,75 @@ textarea:focus{border-color:var(--accent)}
 .sf input:focus{outline:2px solid var(--accent); outline-offset:1px}
 .syncpanel .err{color:var(--bad); font-size:14px}
 @media (max-width:640px){ .syncform{grid-template-columns:1fr} }
+
+/* ---------- flags, timed mock and motion (Oct 2026) ---------- */
+.flagbtn{display:inline-flex; align-items:center; gap:6px; font:500 12px/1 var(--sans); padding:6px 10px; border-radius:999px; border:1px solid var(--line); background:var(--surface); color:var(--ink-2); cursor:pointer}
+.flagbtn:hover{border-color:var(--near); color:var(--near)}
+.flagbtn[aria-pressed="true"]{background:var(--near-soft); border-color:transparent; color:var(--near)}
+.flagbtn[aria-pressed="true"] svg path{fill:currentColor; fill-opacity:.25}
+.cell{position:relative}
+.cell.flagged::after{content:""; position:absolute; top:-1px; right:-1px; width:0; height:0; border-style:solid; border-width:0 11px 11px 0; border-color:transparent var(--near) transparent transparent; border-top-right-radius:6px}
+.cell.lo.flagged::after{border-top-right-radius:11px}
+.legend .lflag{width:10px; height:10px; border:0; border-radius:0; background:linear-gradient(225deg, var(--near) 50%, transparent 50%)}
+.flaglist{display:flex; flex-wrap:wrap; gap:6px; margin-bottom:10px}
+.fchip{min-width:34px; height:30px; padding:0 8px; border-radius:7px; border:1px solid transparent; background:var(--near-soft); color:var(--near); font:600 12.5px var(--mono); cursor:pointer}
+.fchip:hover,.fchip.cur{border-color:var(--near)}
+.ptab.mockgo{display:inline-flex; align-items:center; gap:6px}
+
+.mockbar{position:sticky; top:calc(env(safe-area-inset-top,0px) + 8px); z-index:5; display:flex; align-items:center; gap:10px 16px; flex-wrap:wrap; margin:-8px -8px 18px; padding:10px 12px; border-radius:10px; background:var(--surface-2); border:1px solid var(--line); box-shadow:0 6px 18px rgba(16,40,36,.08)}
+.mockbar .mt{font:600 22px/1 var(--mono); font-variant-numeric:tabular-nums; color:var(--ink); min-width:5ch}
+.mockbar .mstat{font-size:13px; color:var(--ink-2); flex:1}
+.mockbar .mstat b{font-family:var(--mono); color:var(--ink)}
+.mockbar.low{background:var(--near-soft); border-color:transparent}
+.mockbar.low .mt{color:var(--near)}
+.mockbar.crit{background:var(--bad-soft); border-color:transparent}
+.mockbar.crit .mt{color:var(--bad)}
+.lead{font:400 18px/1.55 var(--serif); max-width:62ch; margin:10px 0 14px}
+.mocklist{margin:0; padding-left:20px; display:grid; gap:8px; max-width:66ch; color:var(--ink-2)}
+.mocklist b{color:var(--ink); font-family:var(--mono)}
+.sumtop{display:grid; grid-template-columns:repeat(auto-fit, minmax(150px, 1fr)); gap:14px; margin:16px 0 6px; padding:16px; border-radius:12px; background:var(--surface-2)}
+.sumtop .big{font-size:26px}
+.card .doms{max-width:520px}
+
+/* motion: only when the visitor hasn't asked for reduced motion */
+@media (prefers-reduced-motion: no-preference){
+  html{scroll-behavior:smooth}
+  @keyframes q-next{from{opacity:0; transform:translateX(22px)}to{opacity:1; transform:none}}
+  @keyframes q-prev{from{opacity:0; transform:translateX(-22px)}to{opacity:1; transform:none}}
+  @keyframes fade-up{from{opacity:0; transform:translateY(10px)}to{opacity:1; transform:none}}
+  @keyframes fade-in{from{opacity:0}to{opacity:1}}
+  @keyframes pop{0%{transform:scale(1)}40%{transform:scale(1.18)}100%{transform:scale(1)}}
+  @keyframes grow{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+  @keyframes wave{0%{transform:rotate(0)}30%{transform:rotate(-14deg)}60%{transform:rotate(8deg)}100%{transform:rotate(0)}}
+  @keyframes ping{0%{box-shadow:0 0 0 0 color-mix(in srgb, var(--near) 55%, transparent)}100%{box-shadow:0 0 0 14px transparent}}
+  @keyframes tick{0%,100%{opacity:1}50%{opacity:.55}}
+
+  [data-view-panel]:not([hidden]){animation:fade-in .28s ease-out}
+  .card.in-next{animation:q-next .32s cubic-bezier(.2,.8,.2,1)}
+  .card.in-prev{animation:q-prev .32s cubic-bezier(.2,.8,.2,1)}
+  .card.in-fade{animation:fade-up .3s cubic-bezier(.2,.8,.2,1)}
+  .card.in-reveal .xhead{animation:fade-in .25s ease-out both}
+  .card.in-reveal .xitem{animation:fade-up .38s cubic-bezier(.2,.8,.2,1) both; animation-delay:calc(var(--i, 0) * 55ms)}
+  .card.in-reveal .result{animation:fade-up .45s cubic-bezier(.2,.8,.2,1) both; animation-delay:.32s}
+  .card.in-reveal .crow{animation:fade-up .35s cubic-bezier(.2,.8,.2,1) both; animation-delay:.5s}
+  .card.in-fade .bcard{animation:fade-up .35s cubic-bezier(.2,.8,.2,1) both}
+  .card.in-fade .bcard:nth-child(2){animation-delay:.05s}
+  .card.in-fade .bcard:nth-child(3){animation-delay:.1s}
+  .card.in-fade .bcard:nth-child(4){animation-delay:.15s}
+  .card.in-fade .bar i, .panel.anim .bar i{transform-origin:left; animation:grow .7s cubic-bezier(.2,.8,.2,1) both; animation-delay:.15s}
+  .card.in-fade .sumtop{animation:fade-up .4s cubic-bezier(.2,.8,.2,1) both}
+  .panel.anim .big{animation:fade-up .35s cubic-bezier(.2,.8,.2,1)}
+  .pick.popped .letter{animation:pop .28s cubic-bezier(.2,.8,.2,1)}
+  .flagbtn.waved svg{transform-origin:3px 14px; animation:wave .45s ease-out}
+  .mockbar.ping{animation:ping .9s ease-out 2}
+  .mockbar.crit .mt{animation:tick 1s steps(2, jump-none) infinite}
+  .syncpanel:not([hidden]){animation:fade-up .28s cubic-bezier(.2,.8,.2,1)}
+
+  .btn,.ptab,.views button,.seg button,.chipbtn,.bcard,.opt,.ritem,.mvb,.fchip,.flagbtn,.cell{transition:background-color .18s, border-color .18s, color .18s, box-shadow .18s, transform .12s}
+  .btn:active:not(:disabled),.ptab:active,.chipbtn:active,.bcard:active:not(:disabled),.fchip:active,.flagbtn:active{transform:scale(.97)}
+  .pick:active,.ritem:active{transform:scale(.995)}
+  .cell:hover{transform:translateY(-1px)}
+  .cell.cur{transition:outline-offset .18s}
+  .bcard:hover:not(:disabled){box-shadow:0 6px 18px rgba(16,40,36,.10)}
+}
+@media (prefers-reduced-motion: reduce){ *,*::before,*::after{animation:none!important; transition:none!important; scroll-behavior:auto!important} }

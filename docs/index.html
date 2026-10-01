@@ -35,9 +35,9 @@
   <section class="card syncpanel" id="syncpanel" tabindex="-1" aria-label="Continue on another device" hidden></section>
 
   <section data-view-panel="practice" id="view-practice">
-    <p class="sub">Original practice questions in three papers, plus quick quizzes and a full-length mock. Drag ranking items into order; everything is marked with the live test’s near-miss scoring.</p>
+    <p class="sub">Original practice questions in three papers, plus quick quizzes and a timed 56-question mock. Drag ranking items into order, flag hard questions to come back to, and get marked with the live test’s near-miss scoring.</p>
     <nav class="chart" aria-label="Question sets">
-      <div class="setbar"><div class="ptabs" id="ptabs" role="tablist" aria-label="Question sets"></div><button type="button" class="ptab new" id="newquiz" data-act="new" aria-pressed="false">+ New quiz</button></div>
+      <div class="setbar"><div class="ptabs" id="ptabs" role="tablist" aria-label="Question sets"></div><button type="button" class="ptab new" id="newquiz" data-act="new" aria-pressed="false">+ New quiz</button><button type="button" class="ptab new mockgo" data-act="mock-quick"><svg width="13" height="13" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="9" r="5.8" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M8 5.6V9l2.2 1.4M6.2 1.5h3.6" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>Timed mock</button></div>
       <div class="chart-top">
         <span class="chart-title" id="chart-title"></span>
         <span class="legend">
@@ -46,6 +46,7 @@
           <span><i style="background:var(--good-soft)"></i>80%+</span>
           <span><i style="background:var(--near-soft)"></i>55–79%</span>
           <span><i style="background:var(--bad-soft)"></i>Under 55%</span>
+          <span><i class="lflag"></i>Flagged</span>
         </span>
       </div>
       <div id="grid"></div>
