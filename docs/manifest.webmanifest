@@ -1,7 +1,7 @@
 {
   "name": "DFT SJT Mock Paper",
   "short_name": "DFT SJT",
-  "description": "Unofficial practice for the Dental Foundation Training SJT: 96 original questions with near-miss scoring.",
+  "description": "Unofficial practice for the Dental Foundation Training SJT: 128 original questions with near-miss scoring.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
