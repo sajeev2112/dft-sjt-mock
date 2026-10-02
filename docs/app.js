@@ -5,7 +5,8 @@ const PAPERS = {
   p1:{name:"Paper 1", from:0, to:32},
   p2:{name:"Paper 2", from:32, to:64},
   p3:{name:"Paper 3", from:64, to:96},
-  p4:{name:"Paper 4 · Advanced", from:96, to:128, note:"harder than the live test"}
+  p4:{name:"Paper 4 · Advanced", from:96, to:128, note:"harder than the live test"},
+  p5:{name:"Paper 5 · Advanced", from:128, to:160, note:"harder than the live test"}
 };
 const PAPER_IDS = Object.keys(PAPERS).filter(id => Q.length >= PAPERS[id].to);
 const PACE = 112.5; // seconds per item at live-test pace (105 min / 56)
@@ -27,7 +28,7 @@ function shuffle(a){ a = a.slice(); for (let i = a.length - 1; i > 0; i--) { con
 // ---------- state ----------
 const STORE = "dft-sjt-mock-v5", V4 = "dft-sjt-mock-v4";
 function newSet(extra){ return Object.assign({ans:{}, chk:{}, marked:false, el:0, cur:0, mode:"practice", logged:false}, extra || {}); }
-function fresh(){ return {v:5, ts:0, cid:uid(), share:true, view:"practice", setId:"p1", sets:{p1:newSet(), p2:newSet(), p3:newSet(), p4:newSet(), custom:null}, att:{}, days:{}, hist:[], sent:{}, outbox:[], fb:{}, flags:{}}; }
+function fresh(){ return {v:5, ts:0, cid:uid(), share:true, view:"practice", setId:"p1", sets:{p1:newSet(), p2:newSet(), p3:newSet(), p4:newSet(), p5:newSet(), custom:null}, att:{}, days:{}, hist:[], sent:{}, outbox:[], fb:{}, flags:{}}; }
 let S = fresh();
 // Rebuilds state from untrusted JSON (localStorage, IndexedDB or a pasted progress code),
 // keeping only well-formed values so nothing odd can reach the page or crash rendering.
@@ -326,7 +327,7 @@ function renderCard(){
   const where = S.setId === "custom" ? ` <span class="qfrom">· Paper ${q.p}, question ${localNum(q)}</span>` : "";
   let h = ui0.rewritten ? `<div class="notice"><b>The questions have been rewritten to be harder.</b> Every option is now plausible, so your earlier answers have been cleared. Your progress chart and visit history are kept. <button type="button" class="btn small" data-act="dismiss-notice">OK</button></div>` : "";
   if (mockLive(set)) h += mockBarHtml(set);
-  h += `<div class="qhead"><span class="qnum" tabindex="-1">Question ${k + 1} of ${list.length}${where}</span><div class="chips"><span class="chip type">${TYPES[q.t]}</span><span class="chip">${DOMAINS[q.d]}</span>${q.p === 4 ? `<span class="chip hard" title="Paper 4 is deliberately harder than the live test">Advanced</span>` : ""}` +
+  h += `<div class="qhead"><span class="qnum" tabindex="-1">Question ${k + 1} of ${list.length}${where}</span><div class="chips"><span class="chip type">${TYPES[q.t]}</span><span class="chip">${DOMAINS[q.d]}</span>${q.p >= 4 ? `<span class="chip hard" title="Papers 4 and 5 are deliberately harder than the live test">Advanced</span>` : ""}` +
     `<button type="button" class="flagbtn" data-act="flag" aria-pressed="${flagged(qi)}" title="Flag this question to come back to (shortcut: F)">${FLAG}<span>${flagged(qi) ? "Flagged" : "Flag"}</span></button></div></div>`;
   h += `<p class="scenario">${q.s}</p><p class="instr">${PROMPTS[q.t]}</p>`;
   if (!rev) {
