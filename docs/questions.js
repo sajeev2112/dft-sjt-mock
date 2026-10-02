@@ -6041,7 +6041,7 @@ Q.forEach((q, i) => { q.p = Math.floor(i / 32) + 1; q.n = i + 1; });
 
 // Fixed per-question shuffle of the displayed options; each key is remapped to the displayed letters.
 (function(){
-  const REF = /(\b(?:of|than|out|unlike|like|below|above|over|beats?|outranks?|edges?|and|or|nor|neither|which|because|to|in|with|as|from)\s+)([A-H])(?=[\s,.;:)’'\-]|$)|(^|[\s(])([A-H])(?=\s+(?:and|or|nor|because|does|do|is|would|ranks?|sits?|comes?|but|edges|beats|outranks|keeps|leaves|wins|addresses|depends|matters|covers|on)\b)|\(([A-H])\)/g;
+  const REF = /(\b(?:of|than|out|unlike|like|below|above|over|beats?|outranks?|edges?|and|or|nor|neither|which|because|to|in|with|as|from)\s+)([A-H])(?=[\s,.;:)’'\-]|$)|(^|[\s(])([A-H])(?=\s+(?:and|or|nor|because|does|do|is|would|ranks?|sits?|comes?|but|edges|beats|outranks|keeps|leaves|wins|addresses|depends|matters|covers|starts|gets|gives|takes|offers|puts|deals|fixes|on)\b)|\(([A-H])\)/g;
   function rng(seed){ let x = (seed >>> 0) || 1; return () => { x ^= x << 13; x >>>= 0; x ^= x >>> 17; x ^= x << 5; x >>>= 0; return x / 4294967296; }; }
   Q.forEach((q, qi) => {
     const rnd = rng(((qi + 11) * 2654435761) >>> 0);

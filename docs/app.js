@@ -98,7 +98,7 @@ let timerOn = false;
 // Progress lives in localStorage, with a debounced backup copy in IndexedDB in case one store is cleared.
 let storageOk = true, savedAt = 0, idbTimer = null;
 function save(now){
-  S.ts = Date.now();
+  S.ts = Math.max(Date.now(), (S.ts || 0) + 1); // never go backwards, even if another device's clock was ahead
   const json = JSON.stringify(S);
   try { localStorage.setItem(STORE, json); storageOk = true; } catch(e) { storageOk = false; }
   savedAt = Date.now();
@@ -495,6 +495,11 @@ function builderHtml(){
   return h;
 }
 function buildQuiz(kind, arg){
+  const c0 = S.sets.custom;
+  if (c0 && !c0.marked && !c0.logged) {
+    const done = c0.list.filter(i => started(c0, i)).length;
+    if ((done || (isMock(c0) && c0.started)) && !confirm(`Start a new quiz? Your unfinished “${c0.name}” (${done} of ${c0.list.length} answered) will be replaced. Questions you’ve already checked stay in Results.`)) return;
+  }
   const all = Q.map((_, i) => i);
   let list = [], name = "", mode = "practice";
   if (kind === "quick") { list = pickFresh(all, 10); name = "Quick 10"; }
@@ -659,7 +664,7 @@ function renderSettings(){
     if (installPrompt) h += `<div class="row"><button type="button" class="btn small primary" data-act="install">Install now</button></div>`;
   }
   h += `</section>`;
-  h += `<section class="sset"><h3>Clear everything</h3><p class="muted">Removes all answers, results and history from this browser.</p>`;
+  h += `<section class="sset"><h3>Clear everything</h3><p class="muted">Removes all answers, results and history from this browser.${SY ? " This device is also unlinked from Sync first, so the progress saved under your username (and on your other devices) isn’t touched." : ""}</p>`;
   if (ui.confirmWipe) h += `<div class="confirm"><span>This can’t be undone. Clear everything?</span><div class="row"><button type="button" class="btn small danger" data-act="wipe-yes">Clear everything</button><button type="button" class="btn small" data-act="wipe-no">Cancel</button></div></div>`;
   else h += `<button type="button" class="btn small danger" data-act="wipe">Clear everything</button>`;
   h += `</section><section class="sset"><h3>About</h3><p class="muted">${Q.length} original practice questions written for this site, modelled on the official 2016 and 2021 DFT practice papers and on GDC and defence organisation guidance. Unofficial, and not affiliated with NHS England, COPDEND, HEIW or NIMDTA. <a href="https://github.com/sajeev2112/dft-sjt-mock" target="_blank" rel="noopener">Source on GitHub</a>.</p></section></div>`;
@@ -697,7 +702,7 @@ function go(k){
   const set = curSet(), list = curList();
   set.cur = Math.max(0, Math.min(list.length - 1, k));
   ui.warn = false; ui.confirmMark = false; ui.confirmReset = false; ui.fbOpen = null; ui.building = false;
-  save(); render(); scrollToCard();
+  persistAsIs(); render(); scrollToCard(); // moving between questions isn't a change to your answers
 }
 function fromHash(){
   const h = decodeURIComponent(location.hash.slice(1));
@@ -707,7 +712,8 @@ function fromHash(){
     if (target) setTimeout(() => target.scrollIntoView({block:"start"}), 0);
     return;
   }
-  if (!h || ["practice", "results", "settings"].includes(h)) { S.view = h || "practice"; save(); render(); window.scrollTo(0, 0); }
+  if (!h || ["practice", "results", "settings"].includes(h)) { S.view = h || "practice"; persistAsIs(); render(); window.scrollTo(0, 0); return; }
+  render(); // unknown #anchor: still draw the page
 }
 window.addEventListener("hashchange", fromHash);
 
@@ -720,7 +726,7 @@ document.addEventListener("click", async e => {
   switch (act) {
     case "dismiss-notice": ui0.rewritten = false; render(); break;
     case "view": if (location.hash === "#" + b.dataset.v) fromHash(); else location.hash = b.dataset.v; break;
-    case "set": S.setId = b.dataset.id; ui.building = false; ui.summary = false; ui.warn = false; ui.confirmMark = ui.confirmReset = false; timerOn = false; save(); render(); break;
+    case "set": S.setId = b.dataset.id; ui.building = false; ui.summary = false; ui.warn = false; ui.confirmMark = ui.confirmReset = false; timerOn = false; persistAsIs(); render(); document.querySelector(`#ptabs [data-id="${b.dataset.id}"]`)?.focus({preventScroll: true}); break;
     case "new": ui.building = !ui.building; render(); scrollToCard(); break;
     case "cancel-build": ui.building = false; render(); break;
     case "build": buildQuiz(b.dataset.kind, b.dataset.arg); break;
@@ -741,8 +747,8 @@ document.addEventListener("click", async e => {
       break;
     }
     case "go": go(+b.dataset.k); focusCard(); break;
-    case "prev": go(set.cur - 1); break;
-    case "next": go(set.cur + 1); break;
+    case "prev": go(set.cur - 1); focusCard(); break;
+    case "next": go(set.cur + 1); focusCard(); break;
     case "mv": {
       const a = ansOf(set, qi), o = +b.dataset.o, d = +b.dataset.d, pos = a.ord.indexOf(o), np = pos + d;
       if (np < 0 || np > 4) return;
@@ -752,7 +758,7 @@ document.addEventListener("click", async e => {
       (f && !f.disabled ? f : alt)?.focus();
       break;
     }
-    case "keep": ansOf(set, qi).set = true; save(); render(); break;
+    case "keep": ansOf(set, qi).set = true; save(); render(); (document.querySelector('#card [data-act="check"]:not(:disabled)') || document.querySelector('#card [data-act="next"]:not(:disabled)'))?.focus(); break;
     case "pick": {
       const a = ansOf(set, qi), o = +b.dataset.o, at = a.p.indexOf(o);
       if (at !== -1) { a.p.splice(at, 1); ui.warn = false; } else if (a.p.length < 3) { a.p.push(o); ui.warn = false; ui.popped = o; } else ui.warn = true;
@@ -766,11 +772,11 @@ document.addEventListener("click", async e => {
       document.querySelector("#card .scoreline")?.setAttribute("tabindex", "-1"); document.querySelector("#card .scoreline")?.focus({preventScroll: true});
       break;
     case "retry": delete set.ans[qi]; delete set.chk[qi]; ui.fbOpen = null; ui.warn = false; save(); render(); focusCard(); break;
-    case "mode": if (isMock(set)) break; if (b.dataset.mode !== set.mode) { set.mode = b.dataset.mode; ui.confirmMark = false; save(); render(); } break;
+    case "mode": if (isMock(set)) break; if (b.dataset.mode !== set.mode) { set.mode = b.dataset.mode; ui.confirmMark = false; save(); render(); document.querySelector(`#panel [data-act="mode"][data-mode="${b.dataset.mode}"]`)?.focus(); } break;
     case "mark": { const n = curList().filter(i => complete(set, i)).length; if (n < curList().length) { ui.confirmMark = true; renderPanel(); } else markSet(); break; }
     case "mark-yes": markSet(); break;
     case "mark-no": ui.confirmMark = false; renderPanel(); break;
-    case "timer": timerOn = !timerOn; if (isMock(set)) { renderCard(); announce(timerOn ? "Clock running." : "Clock paused."); } renderPanel(); break;
+    case "timer": { const inBar = !!b.closest("#mockbar"); timerOn = !timerOn; if (isMock(set)) { renderCard(); announce(timerOn ? "Clock running." : "Clock paused."); } renderPanel(); document.querySelector(inBar ? '#mockbar [data-act="timer"]' : '#panel [data-act="timer"]')?.focus(); break; }
     case "reset": ui.confirmReset = true; renderPanel(); break;
     case "reset-no": ui.confirmReset = false; renderPanel(); break;
     case "reset-yes":
@@ -805,7 +811,7 @@ document.addEventListener("click", async e => {
     case "install": if (installPrompt) { installPrompt.prompt(); installPrompt = null; renderSettings(); } break;
     case "wipe": ui.confirmWipe = true; renderSettings(); break;
     case "wipe-no": ui.confirmWipe = false; renderSettings(); break;
-    case "wipe-yes": { const cid = S.cid; S = fresh(); S.cid = cid; S.view = "settings"; ui.confirmWipe = false; timerOn = false; save(true); render(); break; }
+    case "wipe-yes": { if (SY) { SY = null; saveLink(); syncUi.conflict = null; syncUi.status = ""; renderSyncButton(); } const cid = S.cid; S = fresh(); S.cid = cid; S.view = "settings"; ui.confirmWipe = false; timerOn = false; save(true); render(); break; }
   }
 });
 document.addEventListener("change", e => {
@@ -843,7 +849,7 @@ document.addEventListener("keydown", e => {
 // (any tab, any view), so a background tab can't freeze it; each tick is capped so a sleeping laptop doesn't drain it.
 let tick = 0, lastTick = Date.now(), carry = 0;
 setInterval(() => {
-  const now = Date.now(), dt = Math.min(30, Math.max(0, (now - lastTick) / 1000)); lastTick = now;
+  const now = Date.now(), dt = Math.min(120, Math.max(0, (now - lastTick) / 1000)); lastTick = now;
   if (!timerOn) return;
   const set = curSet(), list = curList(), live = mockLive(set);
   if (!live && (S.view !== "practice" || document.visibilityState !== "visible")) return;
@@ -898,6 +904,7 @@ const SYNC_ERRORS = {
   not_found: "No saved progress with that username. Use “Save and link” to create it.",
   rate_limited: "Too many tries from this network. Please wait a while and try again.",
   bad_data: "This progress is too large to sync.",
+  bad_request: "This progress is too large to sync.",
 };
 function syncErr(res){ if (res.body.error === "locked") return `Too many wrong PINs for that username. Try again in ${res.body.retry_after} minute${res.body.retry_after === 1 ? "" : "s"}.`; return SYNC_ERRORS[res.body.error] || "Couldn’t reach the server. Check your connection and try again."; }
 function adopt(data, ts){

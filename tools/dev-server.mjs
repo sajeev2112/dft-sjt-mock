@@ -1,5 +1,5 @@
 // Local development server: runs the real Worker (src/worker.js) with an in-memory SQLite stand-in for D1,
-// and serves docs/ as the static assets. Usage: node tools/dev-server.mjs [port]
+// and serves docs/ as the static assets. Usage: node tools/dev-server.mjs [port] [folder]
 import http from "node:http";
 import fs from "node:fs";
 import path from "node:path";
@@ -7,7 +7,7 @@ import { fileURLToPath } from "node:url";
 import { DatabaseSync } from "node:sqlite";
 import worker from "../src/worker.js";
 
-const root = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "docs");
+const root = process.argv[3] ? path.resolve(process.argv[3]) : path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "docs"); // optional 2nd arg: another folder to serve (e.g. a design trial)
 const db = new DatabaseSync(":memory:");
 class Stmt {
   constructor(sql){ this.sql = sql; this.args = []; }

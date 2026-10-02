@@ -160,7 +160,7 @@ async function health(env, cors) {
 const SYNC_MAX = 262144;
 async function sync(request, env, ctx, cors) {
   const noStore = {...cors, "Cache-Control": "no-store"};
-  const body = await readJson(request, SYNC_MAX + 2048);
+  const body = await readJson(request, SYNC_MAX * 2 + 2048); // the progress JSON is string-escaped inside the body
   if (!body) return json({error: "bad_request"}, 400, noStore);
   const name = typeof body.name === "string" ? body.name.trim().toLowerCase() : "";
   const pin = typeof body.pin === "string" ? body.pin : "";
