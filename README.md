@@ -48,36 +48,6 @@ The **Sync** button in the top bar lets anyone save their progress under a usern
 - **Deletable:** you can stop syncing on a device, or delete your saved copy, at any time.
 - **Stored in D1:** saved copies live in the `sync` table.
 
-## Private dashboard
-
-Open `/admin` on the site (for example https://dft-sjt-mock.sajeev-r13.workers.dev/admin) and sign in with the dashboard password. It shows:
-
-- visitors, returning visitors and home-screen app users
-- answers per day
-- **keys to recheck**: questions where people's answers disagree with the key, scored with the live test's marking
-- "I disagree" comments
-- recent errors
-
-The page itself holds no data. Everything comes from `/api/admin`, which only answers with the password. To set the password, add a **secret** named `ADMIN_KEY` under the Worker's Settings → Variables and Secrets in the Cloudflare dashboard. Password attempts are rate-limited, and the page is marked noindex.
-
-## Private visitor stats
-
-Visits are counted anonymously in D1, one row per browser per day. They're never shown on the site. Run these queries in the D1 console:
-
-```sql
--- Visitors and page views per day (app = opened from the home screen)
-SELECT day, COUNT(*) AS visitors, SUM(views) AS page_views, SUM(app) AS app_users
-FROM visits GROUP BY day ORDER BY day DESC LIMIT 30;
-
--- All-time unique visitors, and people who have answered at least one question
-SELECT (SELECT COUNT(DISTINCT client) FROM visits) AS visitors,
-       (SELECT COUNT(DISTINCT client) FROM answers_v2) AS answering;
-
--- The most-answered questions
-SELECT (q - 1) / 32 + 1 AS paper, (q - 1) % 32 + 1 AS question, COUNT(*) AS answers
-FROM answers_v2 GROUP BY q ORDER BY answers DESC LIMIT 10;
-```
-
 ## Error alerts
 
 `.github/workflows/site-health.yml` runs every hour. It checks the site, the GitHub Pages copy, the stats API and the error counts from `/api/health`. If anything fails, it opens a `site-alert` issue, which makes GitHub email the repo owner. When the site recovers, it closes the issue. Error messages are kept in D1 and never shown in the public issue:
