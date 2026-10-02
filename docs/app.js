@@ -51,6 +51,7 @@ function cleanSet(x, list){
   set.el = Math.floor(num(x.el, 1e6)); set.cur = Math.floor(num(x.cur, list.length - 1));
   for (const k of Object.keys(x.ans || {})) { const i = +k; if (isQi(i) && list.includes(i)) { const a = cleanAns(i, x.ans[k]); if (a) set.ans[i] = a; } }
   for (const k of Object.keys(x.chk || {})) { const i = +k; if (isQi(i) && list.includes(i) && x.chk[k]) set.chk[i] = true; }
+  if (x.qt && typeof x.qt === "object") { set.qt = {}; for (const k of Object.keys(x.qt)) { const i = +k; if (isQi(i) && list.includes(i)) set.qt[i] = Math.floor(num(x.qt[k], 1e5)); } }
   return set;
 }
 function normalise(o){
@@ -312,6 +313,28 @@ function renderGrid(){
   document.getElementById("grid").innerHTML = h;
 }
 
+// After an answer is revealed, the cues that drive the key are highlighted in the scenario.
+function markPhrases(text, qi){
+  const ps = (window.KEY_PHRASES && KEY_PHRASES[qi]) || [];
+  ps.forEach((p, n) => { const at = text.indexOf(p); if (at >= 0) text = text.slice(0, at) + `<mark class="kp" style="--n:${n}">${p}</mark>` + text.slice(at + p.length); });
+  return text;
+}
+// Your order and the key side by side, joined by lines: a crossing line shows where you went wrong.
+function rankLinksHtml(set, qi){
+  const q = Q[qi], a = set.ans[qi]; if (!a || !a.set) return "";
+  const W = 300, top = 34, gap = 40, xl = 60, xr = W - 60, y = i => top + i * gap, H = top + 4 * gap + 22;
+  const th = i => (i + 1) + ["st","nd","rd","th","th"][i];
+  let lines = "", nodes = "";
+  a.ord.forEach((o, i) => {
+    const j = keyRank(q, o) - 1, d = Math.abs(i - j), cls = d === 0 ? "b4" : d === 1 ? "b3" : "b0";
+    lines += `<path class="rl ${cls}" style="--i:${i}" d="M${xl + 15},${y(i)} C${W / 2},${y(i)} ${W / 2},${y(j)} ${xr - 15},${y(j)}" data-tip="${L[o]}: you put it ${th(i)}, the key has it ${th(j)}${d ? ` (${d} place${d === 1 ? "" : "s"} out)` : ""}"/>`;
+    nodes += `<g class="rn ${cls}"><circle cx="${xl}" cy="${y(i)}" r="15"/><text x="${xl}" y="${y(i) + 5}">${L[o]}</text></g>`;
+  });
+  q.k.split("").forEach((ch, j) => { nodes += `<g class="rn key"><circle cx="${xr}" cy="${y(j)}" r="15"/><text x="${xr}" y="${y(j) + 5}">${ch}</text></g>`; });
+  for (let i = 0; i < 5; i++) nodes += `<text class="rpos" x="${xl - 34}" y="${y(i) + 4}">${i + 1}</text>`;
+  return `<div class="rlinks"><svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Your order compared with the correct order"><text class="rhead" x="${xl}" y="14">You</text><text class="rhead" x="${xr}" y="14">Key</text>${lines}${nodes}</svg>` +
+    `<p class="rlegend"><span><i class="b4"></i>Right place</span><span><i class="b3"></i>One out</span><span><i class="b0"></i>Two or more out</span></p></div>`;
+}
 function crow(pos, o, text, cls, pts){
   return `<div class="crow ${cls}"><span class="pos">${pos}</span><span class="letter">${L[o]}</span><span class="ctext">${text}</span><span class="pts">${pts}</span></div>`;
 }
@@ -329,7 +352,7 @@ function renderCard(){
   if (mockLive(set)) h += mockBarHtml(set);
   h += `<div class="qhead"><span class="qnum" tabindex="-1">Question ${k + 1} of ${list.length}${where}</span><div class="chips"><span class="chip type">${TYPES[q.t]}</span><span class="chip">${DOMAINS[q.d]}</span>${q.p >= 4 ? `<span class="chip hard" title="Papers 4 and 5 are deliberately harder than the live test">Advanced</span>` : ""}` +
     `<button type="button" class="flagbtn" data-act="flag" aria-pressed="${flagged(qi)}" title="Flag this question to come back to (shortcut: F)">${FLAG}<span>${flagged(qi) ? "Flagged" : "Flag"}</span></button></div></div>`;
-  h += `<p class="scenario">${q.s}</p><p class="instr">${PROMPTS[q.t]}</p>`;
+  h += `<p class="scenario">${rev ? markPhrases(q.s, qi) : q.s}</p><p class="instr">${PROMPTS[q.t]}</p>`;
   if (!rev) {
     if (rank) {
       const ord = a ? a.ord : [0,1,2,3,4], isSet = !!(a && a.set);
@@ -351,11 +374,11 @@ function renderCard(){
       h += "</div>";
     }
   } else {
-    h += `<p class="xhead">${rank ? "Why each option sits where it does" : "Why each option is or isn’t one of the best three"}</p><div class="xlist">`;
+    h += `<div class="xcol"><p class="xhead">${rank ? "Why each option sits where it does" : "Why each option is or isn’t one of the best three"}</p><div class="xlist">`;
     q.o.forEach(([text, why], idx) => { h += `<div class="xitem" style="--i:${idx}"><span class="letter">${L[idx]}</span><div><span class="otext">${text}</span><span class="xwhy"><b>Justification:</b> ${why}</span></div></div>`; });
-    h += "</div>";
+    h += "</div></div>";
     const sc = qScore(set, qi);
-    h += `<div class="result"><div class="scoreline">${sc.got} / ${sc.max} marks</div><div class="compare"><div class="ccol"><h4>Your answer</h4><div class="crows">`;
+    h += `<div class="result"><div class="scoreline">${sc.got} / ${sc.max} marks</div>${rank ? rankLinksHtml(set, qi) : ""}<div class="compare"><div class="ccol"><h4>Your answer</h4><div class="crows">`;
     if (rank) {
       if (a && a.set) a.ord.forEach((o, pos) => { const pts = optPts(set, qi, o); h += crow(pos + 1, o, q.o[o][0], "b" + pts, pts + "/4"); });
       else h += `<div class="cempty">Not answered</div>`;
@@ -436,21 +459,42 @@ function mockIntroHtml(set){
     `<li>There’s no feedback until the end. Flag anything you want to come back to, and move freely between questions.</li><li>When time runs out, the mock is marked automatically. You can also finish early.</li><li>Leaving the site pauses the clock; Pause is there if you need it, but the real test has no pause.</li></ul>` +
     `<div class="actions"><button type="button" class="btn" data-act="new">Choose a different quiz</button><button type="button" class="btn primary" data-act="mock-start">Start the clock</button></div>`;
 }
+function ringSvg(frac, size, stroke, cls){
+  const r = (size - stroke) / 2, c = 2 * Math.PI * r;
+  return `<svg class="ring ${cls || ""}" viewBox="0 0 ${size} ${size}" aria-hidden="true"><circle class="rbg" cx="${size / 2}" cy="${size / 2}" r="${r}" stroke-width="${stroke}"/><circle class="rfg" cx="${size / 2}" cy="${size / 2}" r="${r}" stroke-width="${stroke}" stroke-dasharray="${c}" stroke-dashoffset="${c * (1 - frac)}" style="--c:${c}"/></svg>`;
+}
 function mockSummaryHtml(set){
   const list = curList(); let got = 0, max = 0, done = 0;
-  const dom = {}, typ = {rank:[0,0], best3:[0,0]};
-  list.forEach(qi => { const s = qScore(set, qi), q = Q[qi], d = dom[q.d] || (dom[q.d] = [0,0]), t = typ[isRank(q) ? "rank" : "best3"];
-    got += s.got; max += s.max; d[0] += s.got; d[1] += s.max; t[0] += s.got; t[1] += s.max; if (complete(set, qi)) done++; });
-  const nf = list.filter(flagged).length, used = Math.min(set.el, set.limit);
-  const bar = (label, g, m) => `<div class="dom"><span>${label}</span><span>${m ? pct(g, m) + "%" : "–"}</span><div class="bar"><i style="width:${pct(g, m)}%"></i></div></div>`;
-  let h = `<h2 class="bh" tabindex="-1">Mock complete</h2><div class="sumtop"><div><p class="plabel">Score</p><div class="big sumscore" data-to="${got}" data-max="${max}">${got}<small> / ${max} · ${pct(got, max)}%</small></div></div>` +
-    `<div><p class="plabel">Time used</p><div class="big">${fmt(Math.floor(used))}<small> of ${fmt(set.limit)}</small></div></div>` +
-    `<div><p class="plabel">Answered</p><div class="big">${done}<small> / ${list.length}</small></div></div></div>`;
-  h += `<h3 class="bsub">By area</h3><div class="doms">` + Object.keys(DOMAINS).filter(d => dom[d]).map(d => bar(DOMAINS[d], dom[d][0], dom[d][1])).join("") + `</div>`;
-  h += `<h3 class="bsub">By question type</h3><div class="doms">${bar("Ranking", ...typ.rank)}${bar("Best three of eight", ...typ.best3)}</div>`;
+  const dom = {}, typ = {rank:[0,0], best3:[0,0]}, thm = {};
+  list.forEach(qi => { const s = qScore(set, qi), q = Q[qi], d = dom[q.d] || (dom[q.d] = [0,0]), t = typ[isRank(q) ? "rank" : "best3"], g = thm[q.g] || (thm[q.g] = [0,0,0]);
+    got += s.got; max += s.max; d[0] += s.got; d[1] += s.max; t[0] += s.got; t[1] += s.max; g[0] += s.got; g[1] += s.max; g[2]++; if (complete(set, qi)) done++; });
+  const nf = list.filter(flagged).length, used = Math.min(set.el, set.limit), p = pct(got, max), qt = set.qt || {};
+  const timed = list.filter(qi => qt[qi]), avg = timed.length ? Math.round(timed.reduce((a, qi) => a + qt[qi], 0) / timed.length) : 0;
+  const verdict = p >= 80 ? "Excellent: you’re reading almost every scenario the way the key does." : p >= 70 ? "Strong: most of your rankings line up with the key." : p >= 60 ? "Solid, with room to tighten the middle ranks." : "Keep going: the weakest questions below are the quickest wins.";
+  const bar = (label, g, m, extra) => `<div class="dom"><span>${label}${extra || ""}</span><span>${m ? pct(g, m) + "%" : "–"}</span><div class="bar"><i style="width:${pct(g, m)}%"></i></div></div>`;
+  let h = `<h2 class="bh" tabindex="-1">Mock complete</h2><div class="mhero"><div class="mring">${ringSvg(max ? got / max : 0, 132, 12, band(got, max || 1))}<div class="mrc"><b>${p}%</b><span>${got} / ${max}</span></div></div>` +
+    `<div class="mside"><p class="mverdict">${verdict}</p><div class="mtiles"><div><span>Time used</span><b>${fmt(Math.floor(used))}</b><small>of ${fmt(set.limit)}</small></div><div><span>Answered</span><b>${done}</b><small>of ${list.length}</small></div><div><span>Per question</span><b>${avg ? fmt(avg) : "–"}</b><small>pace ${fmt(Math.round(PACE))}</small></div></div></div></div>`;
+  // the five questions that cost the most marks
+  const weak = list.map((qi, k) => ({qi, k, s: qScore(set, qi)})).sort((a, b) => (a.s.got / a.s.max) - (b.s.got / b.s.max) || a.k - b.k).slice(0, 5);
+  h += `<h3 class="bsub">Your weakest 5</h3><div class="mweak">` + weak.map(w => { const q = Q[w.qi]; return `<button type="button" class="mwrow" data-act="review-q" data-k="${w.k}"><span class="pill ${band(w.s.got, w.s.max)}">${w.s.got}/${w.s.max}</span><span class="mwt"><b>Question ${w.k + 1} · ${THEMES[q.g]}</b><span>${esc(q.s.replace(/<[^>]+>/g, "").slice(0, 110))}…</span></span><span class="mwgo" aria-hidden="true">→</span></button>`; }).join("") + `</div>`;
+  // time spent on each question
+  if (timed.length) {
+    const W = 640, H = 170, pl = 34, pr = 8, pt = 10, pb = 22, iw = W - pl - pr, ih = H - pt - pb, bw = iw / list.length;
+    const top = Math.max(PACE * 2, ...list.map(qi => qt[qi] || 0)), yv = v => pt + ih - v / top * ih;
+    let svg = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Time spent on each question">`;
+    [0, 60, 120, 180, 240, 300].filter(v => v <= top).forEach(v => svg += `<line class="gl" x1="${pl}" x2="${W - pr}" y1="${yv(v)}" y2="${yv(v)}"/><text class="ax" x="${pl - 5}" y="${yv(v) + 4}" text-anchor="end">${v / 60}m</text>`);
+    list.forEach((qi, k) => { const t = qt[qi] || 0, sc = qScore(set, qi), y0 = yv(t), x = pl + k * bw;
+      svg += `<g class="tb" data-act="review-q" data-k="${k}" data-tip="Question ${k + 1} · ${fmt(t)} · ${sc.got}/${sc.max} marks"><rect class="hit" x="${x}" y="${pt}" width="${bw}" height="${ih}"/><rect class="tbar ${band(sc.got, sc.max)}" x="${x + 1}" y="${Math.min(y0, pt + ih - 2)}" width="${Math.max(1, bw - 2)}" height="${Math.max(2, pt + ih - y0)}" rx="2" style="--k:${k}"/></g>`; });
+    svg += `<line class="pace" x1="${pl}" x2="${W - pr}" y1="${yv(PACE)}" y2="${yv(PACE)}"/><text class="ax pacel" x="${W - pr}" y="${yv(PACE) - 5}" text-anchor="end">live-test pace ${fmt(Math.round(PACE))}</text>`;
+    svg += `<text class="ax" x="${pl}" y="${H - 5}">Q1</text><text class="ax" x="${W - pr}" y="${H - 5}" text-anchor="end">Q${list.length}</text></svg>`;
+    h += `<h3 class="bsub">Time per question</h3><div class="chartbox mtime">${svg}</div><p class="muted">Bar colour shows the score. Tap a bar to open that question.</p>`;
+  }
+  h += `<div class="mcols"><div><h3 class="bsub">By area</h3><div class="doms">` + Object.keys(DOMAINS).filter(d => dom[d]).map(d => bar(DOMAINS[d], dom[d][0], dom[d][1])).join("") + `</div>`;
+  h += `<h3 class="bsub">By question type</h3><div class="doms">${bar("Ranking", ...typ.rank)}${bar("Best three of eight", ...typ.best3)}</div></div>`;
+  h += `<div><h3 class="bsub">By theme</h3><div class="doms">` + Object.keys(thm).sort((a, b) => thm[a][0] / thm[a][1] - thm[b][0] / thm[b][1]).map(g => bar(`<a href="#guide-${g}">${THEMES[g]}</a>`, thm[g][0], thm[g][1], ` <small class="muted">${thm[g][2]}</small>`)).join("") + `</div></div></div>`;
   h += `<div class="actions"><button type="button" class="btn" data-act="build" data-kind="mock">New timed mock</button><div class="act-r">` +
     (nf ? `<button type="button" class="btn" data-act="review-flagged">Review ${nf} flagged</button>` : "") +
-    `<button type="button" class="btn primary" data-act="review">Review answers</button></div></div>`;
+    `<button type="button" class="btn" data-act="review-q" data-k="${weak[0] ? weak[0].k : 0}">Review weakest</button><button type="button" class="btn primary" data-act="review">Review all answers</button></div></div>`;
   return h;
 }
 function timeUp(){
@@ -616,6 +660,7 @@ function renderResults(){
   if (weakest.length) {
     h += `<div class="callout"><p class="xhead">Your weakest themes</p>` + weakest.map(t => `<div class="wrow"><span><b>${THEMES[t]}</b> · ${pct(byG[t].g, byG[t].m)}% over ${byG[t].n} question${byG[t].n === 1 ? "" : "s"}</span><span class="row"><a class="btn small" href="#guide-${t}">Read playbook</a><button type="button" class="btn small primary" data-act="build" data-kind="theme" data-arg="${t}">Practise</button></span></div>`).join("") + `</div>`;
   }
+  h += activityHtml();
   h += `<h3 class="bsub">Progress over time</h3>` + progressChart();
   h += `<h3 class="bsub">By area</h3><div class="doms wide">` + Object.keys(DOMAINS).map(d => { const x = byD[d]; return `<div class="dom"><span>${DOMAINS[d]} <small class="muted">${x.n}/${x.total}</small></span><span>${x.n ? pct(x.g, x.m) + "%" : "–"}</span><div class="bar"><i style="width:${pct(x.g, x.m)}%"></i></div></div>`; }).join("") + `</div>`;
   h += `<h3 class="bsub">By theme</h3><div class="tscroll"><table class="rtable"><thead><tr><th>Theme</th><th>Answered</th><th>Average</th><th></th></tr></thead><tbody>`;
@@ -628,7 +673,67 @@ function renderResults(){
     S.hist.slice().reverse().forEach(x => { h += `<tr><td>${new Date(x.t).toLocaleDateString("en-GB", {day:"numeric", month:"short"})}</td><td>${esc(x.name)}</td><td>${x.mode === "exam" ? "Exam" : "Practice"}</td><td>${x.g} / ${x.m} · ${pct(x.g, x.m)}%</td></tr>`; });
     h += `</tbody></table></div>`;
   }
+  h += badgesHtml();
   el.innerHTML = h + `</div>`;
+}
+// ---------- activity and badges ----------
+const dkey = d => d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+function streaks(){
+  const has = k => S.days[k] && S.days[k].n;
+  const d = new Date(); if (!has(dkey(d))) d.setDate(d.getDate() - 1);
+  let cur = 0; while (has(dkey(d))) { cur++; d.setDate(d.getDate() - 1); }
+  let best = 0, run = 0, prev = null;
+  Object.keys(S.days).filter(has).sort().forEach(k => { const t = new Date(k + "T12:00:00"); run = prev && Math.round((t - prev) / 864e5) === 1 ? run + 1 : 1; best = Math.max(best, run); prev = t; });
+  return {cur, best, days: Object.keys(S.days).filter(has).length};
+}
+function activityHtml(){
+  const st = streaks(), WEEKS = 20, end = new Date(); end.setHours(12, 0, 0, 0);
+  const start = new Date(end); start.setDate(start.getDate() - ((start.getDay() + 6) % 7) - (WEEKS - 1) * 7);
+  let week7 = 0; for (let i = 0; i < 7; i++) { const d = new Date(end); d.setDate(d.getDate() - i); const x = S.days[dkey(d)]; if (x) week7 += x.n; }
+  const lvl = n => !n ? 0 : n < 5 ? 1 : n < 12 ? 2 : n < 25 ? 3 : 4;
+  const MON = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  let cells = "", months = "", lastM = -1;
+  for (let w = 0; w < WEEKS; w++) {
+    const wd = new Date(start); wd.setDate(wd.getDate() + w * 7);
+    months += `<span style="grid-column:${w + 1}">${wd.getMonth() !== lastM ? MON[wd.getMonth()] : ""}</span>`; lastM = wd.getMonth();
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(wd); d.setDate(d.getDate() + i);
+      if (d > end) { cells += `<i class="hc out" style="grid-column:${w + 1};grid-row:${i + 1}"></i>`; continue; }
+      const x = S.days[dkey(d)], n = x ? x.n : 0, lab = d.toLocaleDateString("en-GB", {weekday: "short", day: "numeric", month: "short"});
+      cells += `<i class="hc l${lvl(n)}${dkey(d) === dkey(end) ? " today" : ""}" style="grid-column:${w + 1};grid-row:${i + 1}" data-tip="${lab}: ${n ? `${n} question${n === 1 ? "" : "s"} · ${pct(x.g, x.m)}%` : "no practice"}"></i>`;
+    }
+  }
+  return `<h3 class="bsub">Activity</h3><div class="acts"><div class="streak${st.cur ? " lit" : ""}"><b>${st.cur}</b><span>day streak${st.cur ? " 🔥" : ""}</span></div>` +
+    `<div><b>${st.best}</b><span>best streak</span></div><div><b>${st.days}</b><span>days practised</span></div><div><b>${week7}</b><span>questions this week</span></div></div>` +
+    `<div class="heat" role="img" aria-label="Practice calendar for the last ${WEEKS} weeks, ${st.days} days practised"><div class="hmonths">${months}</div><div class="hdays"><span>Mon</span><span></span><span>Wed</span><span></span><span>Fri</span><span></span><span></span></div><div class="hgrid">${cells}</div></div>` +
+    `<p class="hkey muted">Less <i class="hc l0"></i><i class="hc l1"></i><i class="hc l2"></i><i class="hc l3"></i><i class="hc l4"></i> More</p>`;
+}
+// Badges are worked out from your saved progress, so they sync and never need storing.
+function badgeList(){
+  const ans = Object.keys(S.att).length, st = streaks(), atts = Object.entries(S.att);
+  const full = f => atts.some(([i, a]) => a.some(x => x.g === x.m) && f(Q[+i]));
+  const mocks = S.hist.filter(h => /mock/i.test(h.name)), papers = S.hist.filter(h => /^Paper \d/.test(h.name));
+  const improved = atts.some(([, a]) => a.length > 1 && a[a.length - 1].g / a[a.length - 1].m > a[0].g / a[0].m);
+  const n = x => Math.min(x[0], x[1]) + "/" + x[1];
+  return [
+    {id:"first", ico:"✦", name:"First steps", how:"Mark your first question", ok: ans >= 1},
+    {id:"q25", ico:"25", name:"Warming up", how:"Answer 25 questions", ok: ans >= 25, prog: n([ans, 25])},
+    {id:"q80", ico:"80", name:"Halfway there", how:"Answer 80 questions", ok: ans >= 80, prog: n([ans, 80])},
+    {id:"all", ico:"★", name:"Completionist", how:`Answer all ${Q.length} questions`, ok: ans >= Q.length, prog: n([ans, Q.length])},
+    {id:"perfect", ico:"20", name:"Perfect ranking", how:"Score 20/20 on a ranking question", ok: full(q => isRank(q))},
+    {id:"best3", ico:"3✓", name:"Hat-trick", how:"Pick all three best options", ok: full(q => !isRank(q))},
+    {id:"adv", ico:"◆", name:"Advanced ace", how:"Full marks on a Paper 4 or 5 question", ok: full(q => q.p >= 4)},
+    {id:"paper", ico:"▤", name:"Paper done", how:"Finish a whole paper", ok: papers.length > 0},
+    {id:"mock", ico:"⏱", name:"Mock survivor", how:"Finish a timed mock", ok: mocks.length > 0},
+    {id:"mock75", ico:"◎", name:"Exam ready", how:"Score 75%+ on a timed mock", ok: mocks.some(h => h.g / h.m >= 0.75)},
+    {id:"streak3", ico:"3d", name:"On a roll", how:"Practise 3 days in a row", ok: st.best >= 3, prog: n([st.best, 3])},
+    {id:"streak7", ico:"7d", name:"Week strong", how:"Practise 7 days in a row", ok: st.best >= 7, prog: n([st.best, 7])},
+    {id:"retry", ico:"↻", name:"Second look", how:"Beat your first score on a question", ok: improved}
+  ];
+}
+function badgesHtml(){
+  const b = badgeList(), got = b.filter(x => x.ok).length;
+  return `<h3 class="bsub">Badges <small class="muted">${got} of ${b.length}</small></h3><div class="badges">` + b.map(x => `<div class="badge${x.ok ? " ok" : ""}" data-tip="${x.ok ? "Earned · " : ""}${x.how}${!x.ok && x.prog ? ` (${x.prog})` : ""}"><span class="bico" aria-hidden="true">${x.ico}</span><b>${x.name}</b><small>${x.ok ? "Earned" : x.prog || "Locked"}</small></div>`).join("") + `</div>`;
 }
 function progressChart(){
   const days = Object.keys(S.days).sort().slice(-30);
@@ -643,7 +748,7 @@ function progressChart(){
   [0, 25, 50, 75, 100].forEach(v => { s += `<line x1="${pl}" x2="${W - pr}" y1="${y(v)}" y2="${y(v)}" class="gl"/><text x="${pl - 6}" y="${y(v) + 4}" class="ax" text-anchor="end">${v}%</text>`; });
   s += `<polygon class="area" points="${pl},${y(0)} ${pts.map(p => p[0] + "," + p[1]).join(" ")} ${pts[pts.length - 1][0]},${y(0)}"/>`;
   s += `<polyline class="ln" points="${pts.map(p => p[0] + "," + p[1]).join(" ")}"/>`;
-  pts.forEach((p, i) => { const d = S.days[p[2]]; s += `<circle cx="${p[0]}" cy="${p[1]}" r="${i === pts.length - 1 ? 5 : 3.5}" class="${i === pts.length - 1 ? "pt last" : "pt"}"><title>${p[2]}: ${pct(d.g, d.m)}% over ${d.n} questions</title></circle>`; });
+  pts.forEach((p, i) => { const d = S.days[p[2]]; s += `<circle cx="${p[0]}" cy="${p[1]}" r="${i === pts.length - 1 ? 5 : 3.5}" class="${i === pts.length - 1 ? "pt last" : "pt"}" data-tip="${new Date(p[2] + "T12:00:00").toLocaleDateString("en-GB", {day: "numeric", month: "short"})}: ${pct(d.g, d.m)}% over ${d.n} questions"></circle>`; });
   const lab = i => { const [yy, mm, dd] = days[i].split("-"); return `${+dd} ${["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][+mm - 1]}`; };
   s += `<text x="${x(0)}" y="${H - 8}" class="ax" text-anchor="start">${lab(0)}</text><text x="${x(days.length - 1)}" y="${H - 8}" class="ax" text-anchor="end">${lab(days.length - 1)}</text>`;
   return s + `</svg></div><p class="muted">Daily average score across the questions you marked each day.</p>`;
@@ -761,6 +866,7 @@ document.addEventListener("click", async e => {
     case "mock-start": set.started = true; set.el = 0; timerOn = true; ui.warned = {}; save(); render(); focusCard(); announce(`Mock started. You have ${Math.round(set.limit / 60)} minutes.`); break;
     case "summary": ui.summary = true; render(); scrollToCard(); break;
     case "review": ui.summary = false; go(0); focusCard(); break;
+    case "review-q": ui.summary = false; go(+b.dataset.k); focusCard(); break;
     case "review-flagged": { ui.summary = false; const k = curList().findIndex(flagged); go(k < 0 ? 0 : k); focusCard(); break; }
     case "flag": toggleFlag(qi); break;
     case "next-flag": {
@@ -879,6 +985,7 @@ setInterval(() => {
   carry += live ? dt : 1;
   const whole = Math.floor(carry); if (!whole) return;
   carry -= whole; set.el += whole; tick += whole;
+  if (live && S.view === "practice" && !ui.building && !ui.summary) { const qi = curQi(); set.qt = set.qt || {}; set.qt[qi] = (set.qt[qi] || 0) + whole; }
   const c = document.getElementById("clock"), p = document.getElementById("pace");
   if (live) {
     set.el = Math.min(set.limit, set.el);

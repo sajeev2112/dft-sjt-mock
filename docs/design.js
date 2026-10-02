@@ -8,7 +8,8 @@
   root.classList.add("nd");
 
   const prog = document.createElement("div"); prog.className = "nd-progress nd-only"; document.body.appendChild(prog);
-  const onScroll = () => { const h = document.documentElement; const max = h.scrollHeight - h.clientHeight; prog.style.setProperty("--sp", max > 0 ? (h.scrollTop / max).toFixed(4) : 0); };
+  let spQueued = false;   // at most one update per frame
+  const onScroll = () => { if (spQueued) return; spQueued = true; requestAnimationFrame(() => { spQueued = false; const h = document.documentElement; const max = h.scrollHeight - h.clientHeight; prog.style.transform = `scaleX(${max > 0 ? (h.scrollTop / max).toFixed(4) : 0})`; }); };
   window.addEventListener("scroll", onScroll, {passive: true});
 
   // shared gradient for gauges
@@ -210,4 +211,146 @@
     window.addEventListener("scroll", onScroll, {passive: true}); document.addEventListener("keydown", onKey);
     document.addEventListener("pointerdown", onDown, true); window.addEventListener("resize", place);
   }, 1200);
+})();
+
+
+// ---------- polish pack (trial): page transitions, focus mode, mobile tab bar, tooltips, accent colours,
+// install card and badge toasts ----------
+(function(){
+  const root = document.documentElement;
+  const reduce = () => window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const get = (k, d) => { try { return localStorage.getItem(k) ?? d; } catch(e) { return d; } };
+  const put = (k, v) => { try { localStorage.setItem(k, v); } catch(e) {} };
+
+  // accent colours
+  const ACCENTS = {teal:"Teal", indigo:"Indigo", plum:"Plum", ocean:"Ocean", slate:"Slate"};
+  const META = {teal:["#0E6A62","#0E1413"], indigo:["#4338CA","#11121C"], plum:["#8A2C6C","#171017"], ocean:["#1D5FA8","#0D1420"], slate:["#3E4C63","#11151B"]};
+  const applyAccent = a => {
+    if (!ACCENTS[a]) a = "teal";
+    if (a === "teal") delete root.dataset.accent; else root.dataset.accent = a;
+    document.querySelectorAll('meta[name="theme-color"]').forEach((m, i) => m.content = META[a][i] || META[a][0]);
+  };
+  applyAccent(get("dft-accent", "teal"));
+
+  // hover/tap tooltips for anything with data-tip (chart bars, calendar days, badges)
+  const tip = document.createElement("div"); tip.className = "nd-hovertip"; tip.setAttribute("role", "tooltip"); document.body.appendChild(tip);
+  let tipFor = null;
+  const showTip = (el, x, y) => {
+    tipFor = el; tip.textContent = el.dataset.tip; tip.classList.add("show");
+    const w = tip.offsetWidth, h = tip.offsetHeight, vw = document.documentElement.clientWidth;
+    tip.style.left = Math.min(Math.max(8, x - w / 2), vw - w - 8) + "px";
+    tip.style.top = (y - h - 12 < 8 ? y + 18 : y - h - 12) + "px";
+  };
+  const hideTip = () => { tipFor = null; tip.classList.remove("show"); };
+  document.addEventListener("pointermove", e => {
+    const el = e.target.closest && e.target.closest("[data-tip]");
+    if (!el) { if (tipFor) hideTip(); return; }
+    showTip(el, e.clientX, e.clientY);
+  }, {passive: true});
+  document.addEventListener("pointerdown", e => { const el = e.target.closest && e.target.closest("[data-tip]"); if (el && e.pointerType !== "mouse") { const r = el.getBoundingClientRect(); showTip(el, r.left + r.width / 2, r.top); } else if (!el) hideTip(); });
+  window.addEventListener("scroll", () => { if (tipFor) hideTip(); }, {passive: true});
+
+  // mobile tab bar
+  const ICONS = {
+    practice: '<path d="M4 5.5h16M4 12h16M4 18.5h10" />',
+    results: '<path d="M5 19V11M12 19V5M19 19v-6" />',
+    guide: '<path d="M5 4.5h9a3 3 0 0 1 3 3V20H8a3 3 0 0 1-3-3z M17 7.5h2V20" />',
+    settings: '<circle cx="12" cy="12" r="3"/><path d="M12 3v2.5M12 18.5V21M3 12h2.5M18.5 12H21M5.6 5.6l1.8 1.8M16.6 16.6l1.8 1.8M5.6 18.4l1.8-1.8M16.6 7.4l1.8-1.8" />'
+  };
+  const tabbar = document.createElement("nav"); tabbar.className = "nd-tabbar nd-only"; tabbar.setAttribute("aria-label", "Sections");
+  tabbar.innerHTML = ["practice", "results", "guide", "settings"].map(v => `<button type="button" data-act="view" data-v="${v}"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${ICONS[v]}</svg><span>${v[0].toUpperCase() + v.slice(1)}</span></button>`).join("");
+  document.body.appendChild(tabbar);
+
+  // focus-mode bar (shown while a timed mock is running)
+  const fbar = document.createElement("div"); fbar.className = "nd-focusbar nd-only";
+  fbar.innerHTML = `<span><b>Focus mode</b> · everything but the question is hidden</span><button type="button" class="btn small" data-nd="unfocus">Show everything</button>`;
+  document.querySelector("#view-practice").prepend(fbar);
+  const focusOff = () => { try { return sessionStorage.getItem("dft-focus-off") === "1"; } catch(e) { return false; } };
+  document.addEventListener("click", e => {
+    const b = e.target.closest("[data-nd]"); if (!b) return;
+    if (b.dataset.nd === "unfocus") { try { sessionStorage.setItem("dft-focus-off", "1"); } catch(err) {} sync(); }
+    if (b.dataset.nd === "focus") { try { sessionStorage.removeItem("dft-focus-off"); } catch(err) {} sync(); }
+    if (b.dataset.nd === "accent") { put("dft-accent", b.dataset.a); applyAccent(b.dataset.a); sync(); }
+    if (b.dataset.nd === "install-x") { put("dft-install-x", "1"); install.remove(); }
+  });
+
+  // install card
+  const install = document.createElement("div"); install.className = "nd-install nd-only"; install.hidden = true;
+  const ios = /iphone|ipad|ipod/i.test(navigator.userAgent) && !window.MSStream;
+  const standalone = () => (window.matchMedia && window.matchMedia("(display-mode: standalone)").matches) || navigator.standalone;
+  document.querySelector(".layout")?.after(install);
+
+  // badge toasts
+  const toasts = document.createElement("div"); toasts.className = "nd-toasts"; toasts.setAttribute("aria-live", "polite"); document.body.appendChild(toasts);
+  const toast = b => {
+    const t = document.createElement("div"); t.className = "nd-toast";
+    t.innerHTML = `<span class="bico">${b.ico}</span><span><small>Badge earned</small><b>${b.name}</b></span>`;
+    toasts.appendChild(t); requestAnimationFrame(() => t.classList.add("show"));
+    setTimeout(() => { t.classList.remove("show"); setTimeout(() => t.remove(), 400); }, 4200);
+  };
+  let seenBadges = null;
+
+  let lastView = null, lastFocus = null;
+  function sync(){
+    if (typeof S === "undefined") return;
+    // page transition when the section changes
+    if (lastView !== null && lastView !== S.view && !reduce()) {
+      const el = document.querySelector(`[data-view-panel="${S.view}"]`);
+      if (el) { el.classList.remove("nd-enter"); void el.offsetWidth; el.classList.add("nd-enter"); }
+    }
+    lastView = S.view;
+    tabbar.querySelectorAll("[data-v]").forEach(b => b.setAttribute("aria-current", b.dataset.v === S.view ? "page" : "false"));
+
+    // focus mode
+    const set = S.sets[S.setId], live = typeof mockLive === "function" && set && mockLive(set) && S.view === "practice" && !ui.building;
+    const on = live && !focusOff();
+    if (on !== lastFocus) { root.classList.toggle("nd-focus", on); lastFocus = on; }
+    fbar.hidden = !live;
+    fbar.innerHTML = on ? `<span><b>Focus mode</b> · only the question, the clock and the grid</span><button type="button" class="btn small" data-nd="unfocus">Show everything</button>`
+                        : `<span>Timed mock in progress</span><button type="button" class="btn small" data-nd="focus">Focus mode</button>`;
+
+    // install card: after a few questions, if the app isn't installed and wasn't dismissed
+    const answered = Object.keys(S.att || {}).length;
+    const canPrompt = typeof installPrompt !== "undefined" && installPrompt;
+    const show = S.view === "practice" && !standalone() && get("dft-install-x") !== "1" && answered >= 3 && (canPrompt || ios) && !live;
+    install.hidden = !show;
+    if (show && install.dataset.mode !== (canPrompt ? "p" : "i")) {
+      install.dataset.mode = canPrompt ? "p" : "i";
+      install.innerHTML = `<img src="icon-192.png" alt="" width="44" height="44"><div><b>Install DFT SJT as an app</b><span>${canPrompt ? "Full-screen, works offline, one tap from your home screen." : "Tap <strong>Share</strong>, then <strong>Add to Home Screen</strong>: full-screen and works offline."}</span></div>` +
+        (canPrompt ? `<button type="button" class="btn primary small" data-act="install">Install</button>` : "") + `<button type="button" class="nd-tip-x" data-nd="install-x" aria-label="Dismiss">×</button>`;
+    }
+
+    // accent picker in Settings
+    const st = document.getElementById("view-settings");
+    if (S.view === "settings" && st.firstElementChild && !st.querySelector(".nd-accents")) {
+      const cur = root.dataset.accent || "teal", sec = document.createElement("section"); sec.className = "sset nd-accents";
+      sec.innerHTML = `<h3>Appearance</h3><p class="muted">Pick an accent colour. The light, dark or auto theme is the ◐ button in the top bar.</p><div class="swatches" role="group" aria-label="Accent colour">` +
+        Object.keys(ACCENTS).map(a => `<button type="button" class="swatch" data-nd="accent" data-a="${a}" aria-pressed="${a === cur}"><i data-a="${a}"></i>${ACCENTS[a]}</button>`).join("") + `</div>`;
+      st.querySelector(".sset")?.before(sec);
+    } else st.querySelectorAll(".swatch").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.a === (root.dataset.accent || "teal"))));
+
+    // badges: toast the ones earned since last time (first visit just records them)
+    if (typeof badgeList === "function") {
+      const now = badgeList().filter(b => b.ok);
+      if (seenBadges === null) { try { seenBadges = JSON.parse(get("dft-badges-seen", "null")); } catch(e) { seenBadges = null; } if (!Array.isArray(seenBadges)) { seenBadges = now.map(b => b.id); put("dft-badges-seen", JSON.stringify(seenBadges)); } }
+      const fresh = now.filter(b => !seenBadges.includes(b.id));
+      if (fresh.length) { fresh.forEach((b, i) => setTimeout(() => toast(b), 600 + i * 700)); seenBadges = seenBadges.concat(fresh.map(b => b.id)); put("dft-badges-seen", JSON.stringify(seenBadges)); }
+    }
+  }
+  let q = false;
+  const later = () => { if (q) return; q = true; setTimeout(() => { q = false; sync(); }, 0); };
+  const mo = new MutationObserver(later);
+  ["card", "panel", "view-results", "view-settings", "view-guide"].forEach(id => { const el = document.getElementById(id); if (el) mo.observe(el, {childList: true}); });
+  document.querySelectorAll("[data-view-panel]").forEach(el => mo.observe(el, {attributes: true, attributeFilter: ["hidden"]}));
+  window.addEventListener("beforeinstallprompt", () => setTimeout(later, 0));
+  sync();
+})();
+
+// While the page is scrolling, pause hover effects so cards don't lift and repaint as they pass under the cursor.
+(function(){
+  const root = document.documentElement; let t = null;
+  window.addEventListener("scroll", () => {
+    if (!t) root.classList.add("nd-scrolling");
+    clearTimeout(t); t = setTimeout(() => { root.classList.remove("nd-scrolling"); t = null; }, 140);
+  }, {passive: true});
 })();
