@@ -759,14 +759,14 @@ function renderGuide(){
   const el = document.getElementById("view-guide");
   if (el.dataset.ready) return;
   let toc = GUIDE.map(g => `<a href="#guide-${g.id}">${g.title}</a>`).join("") + `<a href="#guide-themes">Theme playbooks</a>`;
-  let h = `<div class="card guide"><h2 class="bh">Pattern guide</h2><p class="muted">The logic behind the keys, drawn from the official DFT practice papers, GDC guidance and hundreds of practice items.</p><nav class="toc" aria-label="Guide contents">${toc}</nav>`;
+  let h = `<div class="card guide"><h2 class="bh">Pattern guide</h2><p class="muted">The logic behind the keys, drawn from the official DFT practice papers, GDC guidance and hundreds of practice items.</p><div class="gwrap"><nav class="toc gside" aria-label="Guide contents">${toc}</nav><div class="gbody">`;
   GUIDE.forEach(g => { h += `<section class="gsec" id="guide-${g.id}"><h3>${g.title}</h3>${g.html}</section>`; });
   h += `<section class="gsec" id="guide-themes"><h3>Theme playbooks</h3><p>Every question belongs to one of these themes. The “Pattern” box after each question links to its playbook.</p><nav class="toc">${Object.keys(THEMES).map(t => `<a href="#guide-${t}">${THEMES[t]}</a>`).join("")}</nav></section>`;
   Object.keys(THEMES).forEach(t => {
     const p = PLAYBOOKS[t], n = Q.filter(q => q.g === t).length;
     h += `<section class="gsec play" id="guide-${t}"><h3>${THEMES[t]}</h3><div class="gcols"><div><h4 class="hi">Usually ranks high</h4><ul>${p.high.map(x => `<li>${x}</li>`).join("")}</ul></div><div><h4 class="lo">Usually ranks low</h4><ul>${p.low.map(x => `<li>${x}</li>`).join("")}</ul></div></div><p class="gnote"><b>Nuance:</b> ${p.note}</p><button type="button" class="btn small primary" data-act="build" data-kind="theme" data-arg="${t}">Practise ${n} ${THEMES[t].toLowerCase()} questions</button></section>`;
   });
-  el.innerHTML = h + `</div>`;
+  el.innerHTML = h + `</div></div></div>`;
   el.dataset.ready = "1";
 }
 

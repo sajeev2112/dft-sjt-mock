@@ -354,3 +354,18 @@
     clearTimeout(t); t = setTimeout(() => { root.classList.remove("nd-scrolling"); t = null; }, 140);
   }, {passive: true});
 })();
+
+// Pattern guide: highlight the section you're reading in the contents list.
+(function(){
+  if (!("IntersectionObserver" in window)) return;
+  const seen = new Map();
+  const mark = id => document.querySelectorAll(".gside a").forEach(a => a.setAttribute("aria-current", String(a.getAttribute("href") === "#" + id)));
+  const io = new IntersectionObserver(es => {
+    es.forEach(e => seen.set(e.target.id, e.isIntersecting ? e.boundingClientRect.top : null));
+    const cur = [...seen].filter(([, t]) => t !== null).sort((a, b) => a[1] - b[1])[0];
+    if (cur && document.querySelector(`.gside a[href="#${cur[0]}"]`)) mark(cur[0]);
+  }, {rootMargin: "-120px 0px -55% 0px"});
+  const hook = () => document.querySelectorAll("#view-guide .gbody > .gsec:not([data-toc])").forEach(s => { s.dataset.toc = "1"; io.observe(s); });
+  new MutationObserver(hook).observe(document.getElementById("view-guide"), {childList: true});
+  hook();
+})();

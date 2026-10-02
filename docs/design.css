@@ -454,3 +454,28 @@ html.nd-scrolling .wrap{pointer-events:none}
   html.nd body{font-size:17px}
   html.nd .scenario{font-size:22px}
 }
+
+/* ---------- pattern guide: full width, with a sticky contents list on wider screens ---------- */
+html.nd .gsec{scroll-margin-top:calc(env(safe-area-inset-top,0px) + 120px)}
+@media (min-width:1100px){
+  html.nd .guide{max-width:none}
+  html.nd .gwrap{display:grid; grid-template-columns:240px minmax(0,1fr); gap:0 44px; align-items:start; margin-top:8px}
+  html.nd .gside{position:sticky; top:calc(env(safe-area-inset-top,0px) + 118px); flex-direction:column; flex-wrap:nowrap; gap:2px; margin:0; max-height:calc(100vh - 140px); overflow-y:auto; padding:4px 6px 4px 0; scrollbar-width:thin}
+  html.nd .gside a{background:transparent; border-radius:10px; padding:7px 12px; color:var(--ink-2); border-left:2px solid transparent; border-radius:0 10px 10px 0}
+  html.nd .gside a:hover{background:var(--surface-2); color:var(--ink)}
+  html.nd .gside a[aria-current="true"]{color:var(--accent); background:var(--accent-soft); border-left-color:var(--accent)}
+  html.nd .gbody > .gsec:first-child{margin-top:0; padding-top:0; border-top:0}
+  html.nd .gsec p, html.nd .gsec li{max-width:76ch}
+}
+@media (min-width:1640px){
+  html.nd .gwrap{grid-template-columns:270px minmax(0,1fr); gap:0 56px}
+  html.nd .gsec p, html.nd .gsec li{font-size:16px}
+}
+
+/* ---------- settings: sections as tiles on wider screens ---------- */
+@media (min-width:1100px){
+  html.nd #view-settings > .card{display:grid; grid-template-columns:repeat(auto-fit, minmax(420px, 1fr)); gap:16px; align-items:start}
+  html.nd #view-settings > .card > .bh{grid-column:1 / -1; margin-bottom:0}
+  html.nd #view-settings .sset{max-width:none; margin:0; padding:20px 22px; border:1px solid color-mix(in srgb, var(--line) 75%, transparent); border-radius:16px; background:color-mix(in srgb, var(--surface-2) 45%, var(--surface))}
+  html.nd #view-settings .code{width:100%}
+}
