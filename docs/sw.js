@@ -1,9 +1,9 @@
 // Offline support. The site's own files load network-first, so updates show straight away when online;
 // fonts and the drag library load cache-first. API calls are never cached.
-const VERSION = "9808852c62"; // set by tools/build.js
+const VERSION = "c4c4176022"; // set by tools/build.js
 const CACHE = "dft-sjt-" + VERSION;
 const CORE = [
-  "./", "styles.css", "questions.js", "guide.js", "app.js",
+  "./", "styles.css", "design.css", "questions.js", "guide.js", "app.js", "design.js",
   "manifest.webmanifest", "icon.svg", "icon-192.png", "icon-512.png", "apple-touch-icon.png",
   "https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"
 ];

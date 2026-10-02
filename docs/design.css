@@ -1,0 +1,223 @@
+/* The site's design layer (Oct 2026), applied on top of styles.css. Scoped to html.nd. */
+
+.nd-only{display:none!important}
+html.nd .nd-only{display:revert!important}
+
+/* ---------- tokens ---------- */
+html.nd{
+  --r-sm:10px; --r:16px; --r-lg:22px;
+  --accent-2:#1B8F7F; --glow:0 0 0 4px color-mix(in srgb, var(--accent) 22%, transparent);
+  --elev-1:0 1px 2px rgba(10,30,28,.05), 0 4px 14px rgba(10,30,28,.06);
+  --elev-2:0 2px 4px rgba(10,30,28,.06), 0 14px 36px rgba(10,30,28,.12);
+  --glass:color-mix(in srgb, var(--surface) 72%, transparent);
+  --mesh-1:color-mix(in srgb, var(--accent) 16%, transparent);
+  --mesh-2:color-mix(in srgb, #6C8BFF 12%, transparent);
+  --mesh-3:color-mix(in srgb, var(--near) 10%, transparent);
+}
+@media (prefers-color-scheme: dark){ html.nd:not([data-theme="light"]){ --elev-1:0 1px 2px rgba(0,0,0,.4), 0 6px 18px rgba(0,0,0,.35); --elev-2:0 2px 6px rgba(0,0,0,.45), 0 18px 44px rgba(0,0,0,.5); --accent-2:#7FD6C8; } }
+html.nd[data-theme="dark"]{ --elev-1:0 1px 2px rgba(0,0,0,.4), 0 6px 18px rgba(0,0,0,.35); --elev-2:0 2px 6px rgba(0,0,0,.45), 0 18px 44px rgba(0,0,0,.5); --accent-2:#7FD6C8; }
+
+/* ---------- page ---------- */
+html.nd body{background:
+  radial-gradient(900px 520px at 8% -8%, var(--mesh-1), transparent 60%),
+  radial-gradient(760px 480px at 100% 0%, var(--mesh-2), transparent 60%),
+  radial-gradient(700px 520px at 50% 110%, var(--mesh-3), transparent 60%),
+  var(--ground); background-attachment:fixed}
+html.nd .nd-progress{position:fixed; inset:0 0 auto 0; height:3px; z-index:70; transform-origin:0 50%; transform:scaleX(var(--sp, 0)); background:linear-gradient(90deg, var(--accent), var(--accent-2), #6C8BFF)}
+
+/* sticky glass header */
+html.nd .top{position:sticky; top:0; z-index:40; margin:-28px -20px 18px; padding:16px 20px 14px; background:var(--glass); -webkit-backdrop-filter:saturate(1.6) blur(14px); backdrop-filter:saturate(1.6) blur(14px); border-bottom:1px solid color-mix(in srgb, var(--line) 70%, transparent); border-radius:0 0 var(--r) var(--r)}
+html.nd .top h1{background:linear-gradient(120deg, var(--ink) 30%, var(--accent) 100%); -webkit-background-clip:text; background-clip:text; color:transparent}
+html.nd .views{position:relative; isolation:isolate; border-radius:14px; padding:5px; background:color-mix(in srgb, var(--surface-2) 80%, transparent)}
+html.nd .views button{position:relative; z-index:1; border-radius:10px; transition:color .2s}
+html.nd .views button[aria-current="page"]{background:transparent; box-shadow:none; color:var(--ink)}
+html.nd .nav-ind{position:absolute; z-index:0; top:5px; height:calc(100% - 10px); border-radius:10px; background:var(--surface); box-shadow:var(--elev-1); transition:left .35s cubic-bezier(.2,.8,.2,1), width .35s cubic-bezier(.2,.8,.2,1)}
+html.nd .themebtn{border:0; background:transparent; color:var(--ink-2); width:36px; height:36px; border-radius:10px; cursor:pointer; display:grid; place-items:center; position:relative; z-index:1}
+html.nd .themebtn:hover{color:var(--ink); background:var(--surface)}
+
+/* hero stats */
+html.nd .nd-stats{display:grid; grid-template-columns:repeat(4, minmax(0, 1fr)); gap:12px; margin:18px 0 6px}
+html.nd .nd-stat{padding:14px 16px; border-radius:var(--r); background:var(--glass); border:1px solid color-mix(in srgb, var(--line) 70%, transparent); box-shadow:var(--elev-1); -webkit-backdrop-filter:blur(8px); backdrop-filter:blur(8px)}
+html.nd .nd-stat b{display:block; font:600 26px/1.1 var(--mono); font-variant-numeric:tabular-nums; letter-spacing:-.02em}
+html.nd .nd-stat span{font:500 11.5px var(--mono); letter-spacing:.06em; text-transform:uppercase; color:var(--ink-3)}
+html.nd .nd-stat.acc b{color:var(--accent)}
+@media (max-width:640px){ html.nd .nd-stats{grid-template-columns:repeat(2, minmax(0, 1fr))} html.nd .top{margin-inline:-16px; padding-inline:16px} }
+
+/* ---------- surfaces ---------- */
+html.nd .card, html.nd .panel, html.nd .chart{border-radius:var(--r-lg); border-color:color-mix(in srgb, var(--line) 75%, transparent); box-shadow:var(--elev-1)}
+html.nd .card{padding:28px}
+html.nd .panel{top:calc(env(safe-area-inset-top,0px) + 112px)}
+html.nd .scenario{font-size:19.5px; line-height:1.6}
+
+/* paper tabs with progress */
+html.nd .ptab{border-radius:12px; padding:9px 14px 11px; position:relative; overflow:hidden; background:var(--surface); border-color:color-mix(in srgb, var(--line) 80%, transparent)}
+html.nd .ptab::after{content:""; position:absolute; left:10px; right:10px; bottom:5px; height:3px; border-radius:3px; background:linear-gradient(90deg, var(--accent) calc(var(--p, 0) * 100%), color-mix(in srgb, var(--line) 70%, transparent) 0)}
+html.nd .ptab[aria-selected="true"]{background:linear-gradient(135deg, var(--accent), var(--accent-2)); color:var(--accent-ink); box-shadow:0 6px 18px color-mix(in srgb, var(--accent) 35%, transparent)}
+html.nd .ptab[aria-selected="true"]::after{background:linear-gradient(90deg, var(--accent-ink) calc(var(--p, 0) * 100%), color-mix(in srgb, var(--accent-ink) 30%, transparent) 0)}
+html.nd .ptab.new{border-style:solid; background:transparent}
+html.nd .ptab.new::after{display:none}
+
+/* question grid */
+html.nd .cell{border-radius:10px; height:38px; border-color:transparent; background:color-mix(in srgb, var(--surface-2) 85%, transparent)}
+html.nd .cell.lo{border-radius:10px}
+html.nd .cell:hover{transform:translateY(-2px); box-shadow:var(--elev-1)}
+html.nd .cell.cur{outline:none; box-shadow:0 0 0 2px var(--surface), 0 0 0 4px var(--accent)}
+
+/* options */
+html.nd .opt, html.nd .ritem, html.nd .xitem, html.nd .bcard{border-radius:14px; border-color:color-mix(in srgb, var(--line) 80%, transparent); background:var(--surface)}
+html.nd .pick:hover, html.nd .ritem:hover, html.nd .bcard:hover:not(:disabled){transform:translateY(-2px); box-shadow:var(--elev-2); border-color:color-mix(in srgb, var(--accent) 55%, transparent)}
+html.nd .pick[aria-pressed="true"]{background:linear-gradient(135deg, color-mix(in srgb, var(--accent) 14%, var(--surface)), var(--surface)); border-color:var(--accent); box-shadow:0 0 0 1px var(--accent), var(--elev-1)}
+html.nd .pick .letter{transition:background .2s, color .2s, transform .25s cubic-bezier(.2,.8,.2,1)}
+html.nd .pick[aria-pressed="true"] .letter{transform:rotate(-6deg) scale(1.06)}
+html.nd .ritem::before{background:linear-gradient(135deg, var(--accent), var(--accent-2)); border-radius:10px; box-shadow:0 4px 10px color-mix(in srgb, var(--accent) 30%, transparent)}
+html.nd .dragging{transform:rotate(-1.2deg) scale(1.02); box-shadow:0 22px 50px rgba(10,30,28,.28)}
+html.nd .letter{border-radius:8px}
+
+/* buttons */
+html.nd .btn{border-radius:12px; position:relative; overflow:hidden}
+html.nd .btn.primary{background:linear-gradient(135deg, var(--accent), var(--accent-2)); border-color:transparent; box-shadow:0 6px 16px color-mix(in srgb, var(--accent) 32%, transparent)}
+html.nd .btn.primary:hover:not(:disabled){box-shadow:0 10px 24px color-mix(in srgb, var(--accent) 42%, transparent); transform:translateY(-1px)}
+html.nd :focus-visible{outline:none; box-shadow:var(--glow)}
+html.nd .ripple{position:absolute; border-radius:50%; pointer-events:none; background:currentColor; opacity:.18; transform:scale(0); animation:nd-ripple .55s ease-out forwards}
+@keyframes nd-ripple{to{transform:scale(1); opacity:0}}
+
+/* panel score gauge */
+html.nd .nd-gauge{display:flex; align-items:center; gap:14px}
+html.nd .nd-gauge svg{width:74px; height:74px; transform:rotate(-90deg); flex:none}
+html.nd .nd-gauge .bg{stroke:var(--surface-2)}
+html.nd .nd-gauge .fg{stroke:url(#nd-grad); stroke-linecap:round; transition:stroke-dashoffset 1s cubic-bezier(.2,.8,.2,1)}
+html.nd .bar{height:8px; border-radius:6px}
+html.nd .bar i{border-radius:6px; background:linear-gradient(90deg, var(--accent), var(--accent-2))}
+
+/* answer reveal: score ring */
+html.nd .scoreline{display:flex; align-items:center; gap:12px}
+html.nd .nd-ring{width:46px; height:46px; transform:rotate(-90deg)}
+html.nd .nd-ring .bg{stroke:var(--surface-2)}
+html.nd .nd-ring .fg{stroke-linecap:round; transition:stroke-dashoffset .9s cubic-bezier(.2,.8,.2,1)}
+html.nd .compare .ccol{border-radius:14px}
+html.nd .takeaway{border-radius:14px; background:linear-gradient(135deg, var(--accent-soft), var(--surface-2))}
+
+/* mock bar */
+html.nd .mockbar{border-radius:14px; background:var(--glass); -webkit-backdrop-filter:blur(12px); backdrop-filter:blur(12px); top:calc(env(safe-area-inset-top,0px) + 108px)}
+
+/* guide: scroll reveal */
+html.nd .gsec.nd-hide{opacity:0; transform:translateY(16px)}
+html.nd .gsec{transition:opacity .5s ease-out, transform .5s cubic-bezier(.2,.8,.2,1)}
+
+/* confetti */
+.nd-confetti{position:fixed; inset:0; pointer-events:none; z-index:80}
+
+@media (prefers-reduced-motion: reduce){ html.nd *{animation:none!important; transition:none!important} html.nd .gsec.nd-hide{opacity:1; transform:none} }
+
+/* display fixes for elements that only exist in the new design */
+html.nd .nd-stats.nd-only{display:grid!important}
+html.nd .themebtn.nd-only{display:grid!important}
+html.nd .nd-gauge .nd-only{display:block!important}
+html.nd .nd-stats{margin:16px 0 4px}
+html.nd .nd-stat{padding:12px 14px}
+html.nd .nd-stat b{font-size:22px}
+html.nd .nav-ind{transition:left .35s cubic-bezier(.2,.8,.2,1), width .35s cubic-bezier(.2,.8,.2,1), top .35s cubic-bezier(.2,.8,.2,1)}
+@media (max-width:640px){
+  html.nd .top{position:static; margin:-28px -16px 14px; border-radius:0 0 var(--r) var(--r)}
+  html.nd .views{flex-wrap:nowrap; overflow-x:auto; scrollbar-width:none}
+  html.nd .views::-webkit-scrollbar{display:none}
+  html.nd .views button{padding:8px 11px; white-space:nowrap}
+  html.nd .panel{top:auto}
+  html.nd .mockbar{top:calc(env(safe-area-inset-top,0px) + 8px)}
+}
+
+/* ---------- smoother drag-to-rank (trial) ---------- */
+html.nd .ritem{transition:background-color .2s, border-color .2s, box-shadow .25s, scale .2s cubic-bezier(.2,.8,.2,1); will-change:transform}
+html.nd .rlist.sorting .ritem:hover{transform:none; box-shadow:none}
+html.nd .chosen{scale:1.01; border-color:var(--accent); box-shadow:var(--elev-1)}
+/* the empty slot where the option will land */
+html.nd .ghost{opacity:1!important; background:color-mix(in srgb, var(--accent) 9%, transparent)!important; border:2px dashed color-mix(in srgb, var(--accent) 65%, transparent)!important; box-shadow:none!important}
+html.nd .ghost > *{opacity:0}
+html.nd .ghost::before{opacity:.35}
+/* the card under your finger: lifted, slightly tilted (rotate/scale don't fight Sortable's inline transform) */
+html.nd .dragging{opacity:1!important; rotate:-1.2deg; scale:1.035; border-color:var(--accent)!important; box-shadow:0 24px 56px rgba(10,30,28,.30), 0 0 0 1px var(--accent)!important; cursor:grabbing; background:var(--surface)!important}
+html.nd .dragging::before{content:counter(rk)}
+body.is-sorting, body.is-sorting *{cursor:grabbing!important; user-select:none; -webkit-user-select:none}
+/* landing highlight */
+@keyframes nd-settle{0%{box-shadow:0 0 0 0 color-mix(in srgb, var(--accent) 55%, transparent); background:color-mix(in srgb, var(--accent) 12%, var(--surface))}100%{box-shadow:0 0 0 10px transparent; background:var(--surface)}}
+html.nd .ritem.settled{animation:nd-settle .7s ease-out}
+
+/* ---------- prominent timed mock + flag (trial) ---------- */
+html.nd .nd-mockcta.nd-only{display:flex!important}
+html.nd .nd-mockcta{align-items:center; gap:16px; margin:14px 0 4px; padding:18px 20px; border-radius:var(--r-lg); color:var(--accent-ink);
+  background:linear-gradient(120deg, var(--accent) 0%, var(--accent-2) 55%, #5B7BEA 130%); box-shadow:0 14px 34px color-mix(in srgb, var(--accent) 35%, transparent); position:relative; overflow:hidden}
+html.nd .nd-mockcta::after{content:""; position:absolute; right:-40px; top:-60px; width:220px; height:220px; border-radius:50%; background:radial-gradient(closest-side, rgba(255,255,255,.22), transparent)}
+html.nd .nd-cta-ico{width:48px; height:48px; flex:none; border-radius:14px; display:grid; place-items:center; background:rgba(255,255,255,.18)}
+html.nd .nd-cta-txt{flex:1; min-width:0; display:grid; gap:2px}
+html.nd .nd-cta-txt b{font:600 19px/1.2 var(--serif)}
+html.nd .nd-cta-txt span{font-size:13.5px; opacity:.9}
+html.nd .nd-cta-btn{background:var(--surface)!important; color:var(--accent)!important; border:0!important; font-weight:600; padding:12px 18px; box-shadow:0 6px 18px rgba(0,0,0,.18)!important; position:relative; z-index:1}
+html.nd .nd-cta-btn:hover{transform:translateY(-1px)}
+@media (max-width:640px){ html.nd .nd-mockcta{flex-wrap:wrap} html.nd .nd-cta-btn{width:100%} }
+html.nd .ptab.mockgo{display:none}  /* the big card replaces the small tab button */
+
+html.nd .nd-statbtn{text-align:left; font:inherit; color:inherit; cursor:pointer}
+html.nd .nd-statbtn:hover{border-color:var(--near); transform:translateY(-2px); box-shadow:var(--elev-2)}
+html.nd .nd-statbtn b{color:var(--near)}
+html.nd .nd-revflag.nd-only{display:inline-flex!important; align-items:center; gap:8px}
+html.nd .nd-revflag[hidden]{display:none!important}
+html.nd .nd-revflag{background:var(--near-soft); color:var(--near); border-color:transparent; font-weight:600}
+html.nd .nd-revflag::after{display:none}
+html.nd .nd-revflag small{background:var(--near); color:var(--surface); border-radius:999px; padding:1px 7px; opacity:1}
+
+/* the big flag button in the action bar */
+html.nd .act-l{display:flex; gap:10px; flex-wrap:wrap}
+.act-l{display:flex; gap:10px; flex-wrap:wrap}
+html.nd .flagbig{display:inline-flex; align-items:center; gap:8px; border-color:color-mix(in srgb, var(--near) 45%, var(--line)); color:var(--near); font-weight:600}
+html.nd .flagbig:hover:not(:disabled){border-color:var(--near); background:var(--near-soft)}
+html.nd .flagbig[aria-pressed="true"]{background:var(--near); color:var(--surface); border-color:var(--near); box-shadow:0 6px 16px color-mix(in srgb, var(--near) 35%, transparent)}
+html.nd .flagbig[aria-pressed="true"] svg path{fill:currentColor; fill-opacity:.35}
+html.nd .flagbig.waved svg{transform-origin:3px 14px; animation:wave .45s ease-out}
+html.nd .flagbtn{font-size:12.5px; padding:7px 12px; border-color:color-mix(in srgb, var(--near) 40%, var(--line)); color:var(--near)}
+html.nd .cell.flagged::after{border-width:0 14px 14px 0}
+html.nd .cell.flagged{box-shadow:inset 0 0 0 2px color-mix(in srgb, var(--near) 55%, transparent)}
+
+/* calmer timed-mock card (less bright) */
+html.nd .nd-mockcta{color:#EAF4F2; background:linear-gradient(120deg, #135F58 0%, #1C4F57 60%, #263F52 100%); box-shadow:0 8px 22px rgba(12,40,38,.18)}
+html.nd .nd-mockcta::after{background:radial-gradient(closest-side, rgba(255,255,255,.08), transparent)}
+html.nd .nd-cta-ico{background:rgba(255,255,255,.10)}
+html.nd .nd-cta-txt span{opacity:.8}
+html.nd .nd-cta-btn{box-shadow:0 3px 10px rgba(0,0,0,.14)!important}
+@media (prefers-color-scheme: dark){ html.nd:not([data-theme="light"]) .nd-mockcta{background:linear-gradient(120deg, #17393A 0%, #1A3138 60%, #1D2A36 100%); box-shadow:0 8px 22px rgba(0,0,0,.35); border:1px solid rgba(255,255,255,.06)} }
+html.nd[data-theme="dark"] .nd-mockcta{background:linear-gradient(120deg, #17393A 0%, #1A3138 60%, #1D2A36 100%); box-shadow:0 8px 22px rgba(0,0,0,.35); border:1px solid rgba(255,255,255,.06)}
+
+/* ---------- Sync tip bubble (trial) ---------- */
+.nd-tip{position:fixed; z-index:65; width:min(320px, calc(100vw - 24px)); display:flex; gap:10px; align-items:flex-start; padding:14px 12px 16px 16px; border-radius:16px;
+  background:var(--surface); color:var(--ink); border:1px solid color-mix(in srgb, var(--accent) 35%, var(--line)); box-shadow:0 16px 40px rgba(10,30,28,.20);
+  opacity:0; transform:translateY(-8px) scale(.96); transform-origin:var(--arrow, 50%) 0; pointer-events:none; transition:opacity .28s ease, transform .32s cubic-bezier(.2,.8,.2,1)}
+.nd-tip::before{content:""; position:absolute; top:-7px; left:calc(var(--arrow, 50%) - 7px); width:14px; height:14px; transform:rotate(45deg); background:var(--surface);
+  border-left:1px solid color-mix(in srgb, var(--accent) 35%, var(--line)); border-top:1px solid color-mix(in srgb, var(--accent) 35%, var(--line)); border-radius:3px 0 0 0}
+.nd-tip.show{opacity:1; transform:none; pointer-events:auto}
+.nd-tip.hide{opacity:0; transform:translateY(-6px) scale(.98)}
+.nd-tip-body{display:grid; gap:4px; font-size:13.5px; line-height:1.45; color:var(--ink-2)}
+.nd-tip-body b{font:600 14.5px var(--sans); color:var(--ink)}
+.nd-tip-body strong{color:var(--accent)}
+.nd-tip-x{flex:none; width:28px; height:28px; margin:-4px -2px 0 0; border:0; border-radius:8px; background:transparent; color:var(--ink-3); font-size:18px; line-height:1; cursor:pointer}
+.nd-tip-x:hover{background:var(--surface-2); color:var(--ink)}
+/* a thin bar that shrinks as the tip counts down */
+.nd-tip-bar{position:absolute; left:14px; right:14px; bottom:7px; height:3px; border-radius:3px; background:color-mix(in srgb, var(--accent) 22%, transparent); overflow:hidden}
+.nd-tip-bar::after{content:""; position:absolute; inset:0; background:var(--accent); transform-origin:left; transform:scaleX(1)}
+.nd-tip.counting .nd-tip-bar::after{animation:nd-life var(--life, 7000ms) linear forwards}
+@keyframes nd-life{to{transform:scaleX(0)}}
+@media (prefers-reduced-motion: reduce){ .nd-tip{transition:opacity .2s} .nd-tip.counting .nd-tip-bar::after{animation:none; transform:scaleX(.5)} }
+html.nd .nd-tip.nd-only{display:flex!important}
+html.nd .nd-statbtn:disabled{cursor:default}
+html.nd .nd-statbtn:disabled:hover{transform:none; box-shadow:var(--elev-1); border-color:color-mix(in srgb, var(--line) 70%, transparent)}
+html.nd .nd-statbtn:disabled b{color:var(--ink)}
+html.nd .flagbig.nd-only{display:inline-flex!important}
+@media (max-width:640px){ html.nd .card{padding:20px 16px} html.nd .scenario{font-size:17.5px} html.nd .nd-mockcta{padding:16px} }
+@media (max-width:640px){
+  html.nd .views{flex-wrap:wrap; overflow:visible; justify-content:center; row-gap:4px}
+  html.nd .views button{padding:7px 10px; font-size:13.5px}
+}
+@media (prefers-color-scheme: dark){ html.nd:not([data-theme="light"]) .nd-cta-btn{background:#EAF4F2!important; color:#0F4A45!important} }
+html.nd[data-theme="dark"] .nd-cta-btn{background:#EAF4F2!important; color:#0F4A45!important}
+
+/* pressed "Flagged for review" stays readable while hovered */
+html.nd .flagbig[aria-pressed="true"]:hover:not(:disabled){background:color-mix(in srgb, var(--near) 85%, #000); border-color:color-mix(in srgb, var(--near) 85%, #000); color:var(--surface)}
+html.nd .flagbig[aria-pressed="true"]:active:not(:disabled){background:color-mix(in srgb, var(--near) 75%, #000)}

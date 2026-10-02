@@ -10,6 +10,7 @@ An unofficial practice site for the UK Dental Foundation Training (DFT) Situatio
 - Flags on any question (button or the F key), shown on the question grid, with a Flagged questions quiz
 - Quick 10 quizzes, and weak-spot, area and theme quizzes
 - Gentle animations between questions and on reveals, switched off for anyone who prefers reduced motion
+- A modern design layer (`design.css`, `design.js`): glass header with a sliding nav pill and theme toggle, progress tiles, a timed-mock card, score rings and gauges, smoother drag-to-rank, a prominent Flag for review button, and a one-time tip explaining Sync
 - Results by area and by theme, your weakest themes, and progress over time
 - A built-in pattern guide with a playbook for each of the 12 themes
 - Community stats that show how everyone else answered, plus an "I disagree with this key" button

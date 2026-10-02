@@ -371,7 +371,7 @@ function renderCard(){
     h += `<div class="takeaway"><span class="tlabel">Pattern · ${q.a}</span>${q.tk}<a class="tlink" href="#guide-${q.g}">${THEMES[q.g]} playbook →</a></div>`;
     h += statsHtml(qi) + `</div>`;
   }
-  h += `<div class="actions"><button type="button" class="btn" data-act="prev"${k === 0 ? " disabled" : ""}>Previous</button><div class="act-r">`;
+  h += `<div class="actions"><div class="act-l"><button type="button" class="btn" data-act="prev"${k === 0 ? " disabled" : ""}>Previous</button><button type="button" class="btn flagbig nd-only" data-act="flag" aria-pressed="${flagged(qi)}">${FLAG}<span>${flagged(qi) ? "Flagged for review" : "Flag for review"}</span></button></div><div class="act-r">`;
   if (set.mode === "practice" && rev) h += `<button type="button" class="btn" data-act="retry">Try again</button>`;
   if (set.mode === "practice" && !rev) h += `<button type="button" class="btn primary" data-act="check"${complete(set, qi) ? "" : " disabled"}>Check answer</button>`;
   h += `<button type="button" class="btn${rev || set.mode === "exam" ? " primary" : ""}" data-act="next"${k === list.length - 1 ? " disabled" : ""}>Next</button></div></div>`;
@@ -467,10 +467,32 @@ function initDrag(){
   const el = document.getElementById("rlist");
   if (!el || !window.Sortable) return;
   const set = curSet(), qi = curQi();
+  const buzz = ms => { try { if (navigator.vibrate && !calm()) navigator.vibrate(ms); } catch(e) {} };
   sortable = Sortable.create(el, {
-    animation:160, forceFallback:true, fallbackTolerance:4, delayOnTouchOnly:true, delay:120,
-    filter:".mvb", preventOnFilter:false, ghostClass:"ghost", chosenClass:"chosen", dragClass:"dragging",
-    onEnd: () => { const a = ansOf(set, qi); a.ord = [...el.children].map(li => +li.dataset.o); a.set = true; save(); setTimeout(render, 0); }
+    animation: calm() ? 0 : 240, easing: "cubic-bezier(.2,.8,.2,1)",
+    forceFallback: true, fallbackOnBody: true, fallbackTolerance: 3,
+    delayOnTouchOnly: true, delay: 140, touchStartThreshold: 5,
+    direction: "vertical", swapThreshold: 0.6, invertSwap: false,
+    scroll: true, scrollSensitivity: 90, scrollSpeed: 14, bubbleScroll: true,
+    filter: ".mvb", preventOnFilter: false, ghostClass: "ghost", chosenClass: "chosen", dragClass: "dragging",
+    onChoose: () => buzz(6),
+    onStart: () => { el.classList.add("sorting"); document.body.classList.add("is-sorting"); },
+    onChange: () => buzz(3),
+    onEnd: evt => {
+      el.classList.remove("sorting"); document.body.classList.remove("is-sorting");
+      const a = ansOf(set, qi), before = a.ord.join(""), wasSet = a.set;
+      a.ord = [...el.children].map(li => +li.dataset.o); a.set = true; save();
+      // Update in place instead of rebuilding the card, so the list doesn't flash or jump on drop.
+      el.classList.remove("unset");
+      [...el.children].forEach((li, pos) => {
+        const up = li.querySelector('[data-d="-1"]'), dn = li.querySelector('[data-d="1"]');
+        if (up) up.disabled = pos === 0; if (dn) dn.disabled = pos === el.children.length - 1;
+      });
+      if (!wasSet) { document.querySelector("#card .setrow")?.remove(); const chk = document.querySelector('#card [data-act="check"]'); if (chk) chk.disabled = false; }
+      if (!calm() && evt.item && before !== a.ord.join("")) { evt.item.classList.remove("settled"); void evt.item.offsetWidth; evt.item.classList.add("settled"); buzz(10); }
+      announce(`Option ${L[+evt.item.dataset.o]} moved to position ${evt.newIndex + 1}.`);
+      renderGrid(); renderPanel(); renderTabs();
+    }
   });
 }
 
@@ -828,9 +850,10 @@ function markSet(){
 }
 function toggleFlag(qi){
   if (qi == null) return;
+  const fromBig = !!(document.activeElement && document.activeElement.classList.contains("flagbig"));
   if (S.flags[qi]) delete S.flags[qi]; else S.flags[qi] = 1;
   save(); render();
-  const b = document.querySelector('#card [data-act="flag"]');
+  const b = document.querySelector(fromBig ? '#card .flagbig' : '#card .flagbtn');
   if (b) { b.focus({preventScroll: true}); if (!calm() && flagged(qi)) { b.classList.remove("waved"); void b.offsetWidth; b.classList.add("waved"); } }
   announce(flagged(qi) ? "Question flagged." : "Flag removed.");
 }
