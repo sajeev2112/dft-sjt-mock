@@ -319,6 +319,17 @@ function markPhrases(text, qi){
   ps.forEach((p, n) => { const at = text.indexOf(p); if (at >= 0) text = text.slice(0, at) + `<mark class="kp" style="--n:${n}">${p}</mark>` + text.slice(at + p.length); });
   return text;
 }
+// Citations in a justification ("Std 1.5.1, 8.2.3", "GDC candour guidance") link to the standards in the guide.
+const stdId = n => "guide-std-" + n.replace(/\./g, "-");
+function linkCites(text){
+  const STD = window.STANDARDS || {}, GM = window.GUIDANCE_MATCH || [];
+  const one = n => STD[n] ? `<a class="cite" href="#${stdId(n)}" data-tip="Std ${n}: ${esc(STD[n])}">${n}</a>` : n;
+  return text.replace(/\(([^()]*)\)/g, (m, inner) => {
+    let t = inner.replace(/\bStd\s+([\d.]+(?:\s*[–,-]\s*[\d.]+)*)/g, (mm, nums) => "Std " + nums.replace(/\d+(?:\.\d+)*/g, one));
+    GM.forEach(([re, id]) => { const g = (window.GUIDANCE || []).find(x => x.id === id); t = t.replace(new RegExp(`(^|[;,]\\s*)(${re})`), (x, pre, name) => `${pre}<a class="cite" href="#guide-g-${id}" data-tip="${esc(g ? g.name : name)}">${name}</a>`); });
+    return "(" + t + ")";
+  });
+}
 // Your order and the key side by side, joined by lines: a crossing line shows where you went wrong.
 function rankLinksHtml(set, qi){
   const q = Q[qi], a = set.ans[qi]; if (!a || !a.set) return "";
@@ -375,7 +386,7 @@ function renderCard(){
     }
   } else {
     h += `<div class="xcol"><p class="xhead">${rank ? "Why each option sits where it does" : "Why each option is or isn’t one of the best three"}</p><div class="xlist">`;
-    q.o.forEach(([text, why], idx) => { h += `<div class="xitem" style="--i:${idx}"><span class="letter">${L[idx]}</span><div><span class="otext">${text}</span><span class="xwhy"><b>Justification:</b> ${why}</span></div></div>`; });
+    q.o.forEach(([text, why], idx) => { h += `<div class="xitem" style="--i:${idx}"><span class="letter">${L[idx]}</span><div><span class="otext">${text}</span><span class="xwhy"><b>Justification:</b> ${linkCites(why)}</span></div></div>`; });
     h += "</div></div>";
     const sc = qScore(set, qi);
     h += `<div class="result"><div class="scoreline">${sc.got} / ${sc.max} marks</div>${rank ? rankLinksHtml(set, qi) : ""}<div class="compare"><div class="ccol"><h4>Your answer</h4><div class="crows">`;
@@ -758,9 +769,10 @@ function progressChart(){
 function renderGuide(){
   const el = document.getElementById("view-guide");
   if (el.dataset.ready) return;
-  let toc = GUIDE.map(g => `<a href="#guide-${g.id}">${g.title}</a>`).join("") + `<a href="#guide-themes">Theme playbooks</a>`;
+  let toc = GUIDE.map(g => `<a href="#guide-${g.id}">${g.title}</a>`).join("") + `<a href="#guide-standards">GDC Standards</a><a href="#guide-guidance">Other guidance</a><a href="#guide-themes">Theme playbooks</a>`;
   let h = `<div class="card guide"><h2 class="bh">Pattern guide</h2><p class="muted">The logic behind the keys, drawn from the official DFT practice papers, GDC guidance and hundreds of practice items.</p><div class="gwrap"><nav class="toc gside" aria-label="Guide contents">${toc}</nav><div class="gbody">`;
   GUIDE.forEach(g => { h += `<section class="gsec" id="guide-${g.id}"><h3>${g.title}</h3>${g.html}</section>`; });
+  h += standardsHtml();
   h += `<section class="gsec" id="guide-themes"><h3>Theme playbooks</h3><p>Every question belongs to one of these themes. The “Pattern” box after each question links to its playbook.</p><nav class="toc">${Object.keys(THEMES).map(t => `<a href="#guide-${t}">${THEMES[t]}</a>`).join("")}</nav></section>`;
   Object.keys(THEMES).forEach(t => {
     const p = PLAYBOOKS[t], n = Q.filter(q => q.g === t).length;
@@ -769,6 +781,41 @@ function renderGuide(){
   el.innerHTML = h + `</div></div></div>`;
   el.dataset.ready = "1";
 }
+
+// The GDC Standards for the Dental Team (summarised) and the other guidance the justifications cite.
+function standardsHtml(){
+  const STD = window.STANDARDS || {}, keys = Object.keys(STD);
+  if (!keys.length) return "";
+  const tops = keys.filter(k => !k.includes("."));
+  let h = `<section class="gsec stdsec" id="guide-standards"><h3>GDC Standards for the Dental Team</h3><p>The nine principles every registrant must follow, with each numbered standard summarised in plain English. Justifications cite these numbers, for example <b>Std 4.2.1</b>, and link straight here. The full official wording is on the GDC site, linked under each principle.</p>` +
+    `<label class="stdfind"><span class="sr-only">Find a standard</span><input type="search" id="stdfind" placeholder="Find a standard, e.g. consent, records, 8.2" autocomplete="off"></label>` +
+    `<nav class="toc stdnav" aria-label="Principles">${tops.map(t => `<a href="#guide-std-${t}">${t}. ${STD[t]}</a>`).join("")}</nav>`;
+  tops.forEach(t => {
+    h += `<div class="stdp" id="guide-std-${t}"><h4><span class="sn">${t}</span>${STD[t]}</h4><div class="stdlist">`;
+    keys.filter(k => k.startsWith(t + ".")).forEach(k => {
+      const depth = k.split(".").length;
+      h += `<div class="std d${depth}" id="${stdId(k)}"><span class="sn">${k}</span><span class="st">${STD[k]}</span></div>`;
+    });
+    h += `</div><a class="stdsrc" href="https://standards.gdc-uk.org/pages/principle${t}/principle${t}" target="_blank" rel="noopener">Principle ${t} in full on the GDC site ↗</a></div>`;
+  });
+  h += `<p class="muted stdnone" hidden>No standards match that search.</p></section>`;
+  h += `<section class="gsec stdsec" id="guide-guidance"><h3>Other guidance cited</h3><p>Justifications also cite these. Each is summarised in our own words; follow the link for the official version.</p>` +
+    (window.GUIDANCE || []).map(g => `<div class="gdoc" id="guide-g-${g.id}"><h4>${g.name}</h4><ul>${g.points.map(x => `<li>${x}</li>`).join("")}</ul><a class="stdsrc" href="${g.url}" target="_blank" rel="noopener">Official source ↗</a></div>`).join("") + `</section>`;
+  return h;
+}
+document.addEventListener("input", e => {
+  if (e.target.id !== "stdfind") return;
+  const q = e.target.value.trim().toLowerCase(); let any = false;
+  document.querySelectorAll("#guide-standards .stdp").forEach(p => {
+    let shown = 0;
+    p.querySelectorAll(".std").forEach(r => { const hit = !q || r.textContent.toLowerCase().includes(q); r.hidden = !hit; if (hit) shown++; });
+    const headHit = q && p.querySelector("h4").textContent.toLowerCase().includes(q);
+    if (headHit) { p.querySelectorAll(".std").forEach(r => r.hidden = false); shown = 1; }
+    p.hidden = !shown; if (shown) any = true;
+  });
+  document.querySelector("#guide-standards .stdnav").hidden = !!q;
+  document.querySelector("#guide-standards .stdnone").hidden = any;
+});
 
 // ---------- settings ----------
 function renderSettings(){
@@ -836,13 +883,36 @@ function fromHash(){
   if (h.startsWith("guide")) {
     S.view = "guide"; render();
     const target = document.getElementById(h === "guide" ? "view-guide" : h);
-    if (target) setTimeout(() => target.scrollIntoView({block:"start"}), 0);
+    if (target) {
+      const f = document.getElementById("stdfind"); if (f && f.value && h.startsWith("guide-std")) { f.value = ""; f.dispatchEvent(new Event("input", {bubbles: true})); }
+      // jump straight there (a long smooth scroll can land short while the page is still laying out), then correct once it settles
+      const go = () => target.scrollIntoView({behavior: "instant", block: h.startsWith("guide-std-") && h.split("-").length > 3 ? "center" : "start"});
+      setTimeout(() => { go(); setTimeout(go, 120); if (/^guide-(std|g)-/.test(h)) { target.classList.remove("hit"); void target.offsetWidth; target.classList.add("hit"); } }, 0);
+    }
+    renderCiteBack();
     return;
   }
-  if (!h || ["practice", "results", "settings"].includes(h)) { S.view = h || "practice"; persistAsIs(); render(); window.scrollTo(0, 0); return; }
+  if (!h || ["practice", "results", "settings"].includes(h)) {
+    S.view = h || "practice"; persistAsIs(); render();
+    if (h === "practice" && ui.citeFrom != null) { const o = ui.citeFrom; ui.citeFrom = null; setTimeout(() => document.querySelectorAll("#card .xitem")[o]?.scrollIntoView({block: "center"}), 0); }
+    else window.scrollTo(0, 0);
+    renderCiteBack(); return;
+  }
   render(); // unknown #anchor: still draw the page
 }
 window.addEventListener("hashchange", fromHash);
+// Opening a citation from a justification remembers where you were, so the guide can offer a way back.
+document.addEventListener("click", e => {
+  const a = e.target.closest && e.target.closest("#card a.cite"); if (!a) return;
+  const item = a.closest(".xitem"); ui.citeFrom = item ? [...document.querySelectorAll("#card .xitem")].indexOf(item) : -1;
+});
+function renderCiteBack(){
+  let b = document.getElementById("citeback");
+  const show = S.view === "guide" && ui.citeFrom != null;
+  if (!show) { if (b) b.hidden = true; if (S.view !== "guide") ui.citeFrom = S.view === "practice" ? ui.citeFrom : null; return; }
+  if (!b) { b = document.createElement("button"); b.type = "button"; b.id = "citeback"; b.className = "btn primary citeback"; b.dataset.act = "view"; b.dataset.v = "practice"; b.textContent = "← Back to the question"; document.body.appendChild(b); }
+  b.hidden = false;
+}
 
 // ---------- events ----------
 document.addEventListener("click", async e => {

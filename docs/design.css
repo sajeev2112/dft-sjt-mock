@@ -416,7 +416,6 @@ html.nd .nd-tabbar.nd-only, .nd-tabbar{display:none!important}
 html.nd.nd-focus body .nd-stats.nd-only, html.nd.nd-focus body .nd-mockcta.nd-only, html.nd.nd-focus body .nd-revflag.nd-only, html.nd.nd-focus body .nd-tabbar.nd-only, html.nd.nd-focus body .nd-install.nd-only, html.nd.nd-focus body .nd-tip.nd-only{display:none!important}
 
 /* scrolling performance: skip layout/paint work for long sections that are off screen */
-html.nd #view-guide .gsec{content-visibility:auto; contain-intrinsic-size:auto 520px}
 html.nd #view-results .tscroll{content-visibility:auto; contain-intrinsic-size:auto 600px}
 html.nd .nd-progress{will-change:transform}
 html.nd-scrolling .wrap{pointer-events:none}
@@ -489,3 +488,31 @@ html.nd .stats .hcell.key{outline:2px solid var(--ink); outline-offset:-2px; box
 .hlegend span{display:inline-flex; align-items:center; gap:4px}
 .hlegend .hcell{display:inline-block; width:18px; height:14px; border-radius:4px}
 .hlegend span > .hcell:last-of-type{margin-right:4px}
+
+/* ---------- GDC Standards in the guide, and citation links ---------- */
+a.cite{color:var(--accent); font-weight:600; text-decoration:underline; text-decoration-color:color-mix(in srgb, var(--accent) 40%, transparent); text-underline-offset:2px; border-radius:3px}
+a.cite:hover{text-decoration-color:var(--accent); background:var(--accent-soft)}
+.stdfind{display:block; margin:12px 0 10px}
+.stdfind input{width:100%; max-width:460px; font:15px var(--sans); padding:10px 14px; border-radius:12px; border:1px solid var(--line); background:var(--surface); color:var(--ink)}
+.stdfind input:focus{outline:none; border-color:var(--accent); box-shadow:0 0 0 3px color-mix(in srgb, var(--accent) 20%, transparent)}
+.stdnav{margin:4px 0 8px}
+.stdnav a{font-size:12.5px}
+.stdp{margin-top:20px; scroll-margin-top:calc(env(safe-area-inset-top,0px) + 120px)}
+.stdp h4{display:flex; align-items:baseline; gap:10px; font:600 17px/1.3 var(--serif); color:var(--ink); letter-spacing:0; text-transform:none; margin:0 0 8px}
+.stdp h4 .sn{flex:none; display:inline-grid; place-items:center; width:28px; height:28px; border-radius:9px; background:var(--accent); color:var(--accent-ink); font:600 13px var(--mono)}
+.stdlist{display:grid; gap:2px; border-left:2px solid var(--surface-2); padding-left:10px}
+.std{display:grid; grid-template-columns:62px 1fr; gap:10px; padding:6px 10px; border-radius:9px; font-size:14px; line-height:1.45; scroll-margin-top:calc(env(safe-area-inset-top,0px) + 140px)}
+.std .sn{font:600 12.5px/1.6 var(--mono); color:var(--ink-3)}
+.std.d2{font-weight:600; margin-top:6px; background:color-mix(in srgb, var(--surface-2) 60%, transparent)}
+.std.d2 .sn{color:var(--accent)}
+.std.d3{color:var(--ink-2)}
+.std.hit, .gdoc.hit{animation:nd-hit 2.4s ease-out}
+@keyframes nd-hit{0%,35%{background:color-mix(in srgb, var(--near) 26%, transparent); box-shadow:0 0 0 2px var(--near)}100%{background:transparent; box-shadow:0 0 0 2px transparent}}
+.std.d2.hit{animation-name:nd-hit}
+.stdsrc{display:inline-block; margin-top:8px; font-size:13px; color:var(--accent)}
+.gdoc{padding:14px 16px; margin-top:12px; border-radius:14px; border:1px solid color-mix(in srgb, var(--line) 75%, transparent); scroll-margin-top:calc(env(safe-area-inset-top,0px) + 120px)}
+.gdoc h4{font:600 16px/1.3 var(--serif); color:var(--ink); letter-spacing:0; text-transform:none; margin:0 0 6px}
+.gdoc ul{margin:0}
+html.nd .btn.citeback, .citeback{position:fixed; z-index:62; left:50%; transform:translateX(-50%); bottom:calc(env(safe-area-inset-bottom,0px) + 22px); box-shadow:0 10px 28px rgba(10,30,28,.28)!important; animation:nd-enter .3s cubic-bezier(.2,.8,.2,1)}
+.citeback[hidden]{display:none}
+@media (max-width:640px){ .citeback{bottom:calc(env(safe-area-inset-bottom,0px) + 92px)} .std{grid-template-columns:52px 1fr; padding:6px 6px} }
