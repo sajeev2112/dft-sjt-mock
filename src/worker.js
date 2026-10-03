@@ -18,7 +18,7 @@ const QTYPES = "rbrrbrrbrbrbrbrrrbrbrbrbrbrrrbbrrbrbrrbrbrbrbrbrbrrbrbrbrbrbrrbr
 
 const CORS_ORIGINS = ["https://sajeev2112.github.io"];
 // Hourly limits per network and endpoint. Generous enough for a whole class on shared Wi-Fi.
-const LIMITS = {answers: 3000, feedback: 100, visit: 600, error: 200, admin: 60, sync: 600};
+const LIMITS = {answers: 3000, feedback: 100, visit: 600, error: 20, admin: 60, sync: 600, create: 20};
 const MIN_STATS = 3;
 
 let schemaReady = false;
@@ -41,6 +41,8 @@ export default {
 
     const cors = corsHeaders(request);
     if (request.method === "OPTIONS") return new Response(null, {status: 204, headers: cors});
+    // Writes only from this site: other websites can't spend their visitors' networks on the API.
+    if (request.method === "POST" && !sameSite(request, url)) return json({error: "forbidden"}, 403, cors);
     if (!env.DB) return json({error: "not_configured"}, 503, cors);
 
     try {
@@ -96,10 +98,10 @@ async function stats(url, env, cors) {
 async function answers(request, env, ctx, cors) {
   const body = await readJson(request, 16384);
   if (!body || !validClient(body.client) || !Array.isArray(body.items)) return json({error: "bad_request"}, 400, cors);
-  const items = [];
+  const items = [], seen = new Set();
   for (const it of body.items.slice(0, 100)) {
     const q = toQ(it && it.q);
-    if (q && typeof it.a === "string" && validAnswer(QTYPES[q - 1], it.a)) items.push([q, it.a]);
+    if (q && !seen.has(q) && typeof it.a === "string" && validAnswer(QTYPES[q - 1], it.a)) { seen.add(q); items.push([q, it.a]); }
   }
   if (!items.length) return json({ok: true, stored: 0}, 200, cors);
   if (!(await allow(request, env, ctx, items.length, "answers"))) return json({error: "rate_limited"}, 429, cors);
@@ -169,25 +171,33 @@ async function sync(request, env, ctx, cors) {
   if (!["save", "load", "delete"].includes(body.action)) return json({error: "bad_action"}, 400, noStore);
   if (!(await allow(request, env, ctx, 1, "sync"))) return json({error: "rate_limited"}, 429, noStore);
   const now = Date.now();
-  const row = await env.DB.prepare("SELECT * FROM sync WHERE name = ?").bind(name).first();
+  const okTs = v => { const n = Number(v); return Number.isSafeInteger(n) && n > 0 && n <= now + 86400000 ? n : 0; };
+  let row = await env.DB.prepare("SELECT * FROM sync WHERE name = ?").bind(name).first();
 
   if (!row) {
-    if (body.action !== "save") return json({error: "not_found"}, 404, noStore);
+    // An unknown name answers like a wrong PIN, so names can't be discovered by probing.
+    if (body.action !== "save") return json({error: "wrong_pin"}, 401, noStore);
     const data = typeof body.data === "string" ? body.data : "";
     if (!data || data.length > SYNC_MAX) return json({error: "bad_data"}, 400, noStore);
-    const salt = randomHex(16);
-    await env.DB.prepare("INSERT INTO sync (name, salt, pin, data, ts, updated) VALUES (?, ?, ?, ?, ?, ?)")
-      .bind(name, salt, await pinHash(salt, pin), data, Number(body.ts) || now, now).run();
-    return json({ok: true, created: true, ts: Number(body.ts) || now}, 200, noStore);
+    if (!(await allow(request, env, ctx, 1, "create"))) return json({error: "rate_limited"}, 429, noStore);
+    const salt = randomHex(16), ts = okTs(body.ts) || now;
+    const made = await env.DB.prepare("INSERT INTO sync (name, salt, pin, data, ts, updated) VALUES (?, ?, ?, ?, ?, ?) ON CONFLICT (name) DO NOTHING RETURNING name")
+      .bind(name, salt, await pinHash(salt, pin), data, ts, now).first();
+    if (made) return json({ok: true, created: true, ts}, 200, noStore);
+    row = await env.DB.prepare("SELECT * FROM sync WHERE name = ?").bind(name).first(); // created by a simultaneous request
+    if (!row) return json({error: "server_busy"}, 503, noStore);
   }
 
   if (row.locked_until > now) return json({error: "locked", retry_after: Math.ceil((row.locked_until - now) / 60000)}, 423, noStore);
   if (!(await sameSecret(await pinHash(row.salt, pin), row.pin))) {
-    const fails = row.fails + 1, lock = fails % 5 === 0 ? now + 15 * 60000 * Math.pow(2, Math.min(6, fails / 5 - 1)) : 0;
-    await env.DB.prepare("UPDATE sync SET fails = ?, locked_until = ? WHERE name = ?").bind(fails, lock, name).run();
-    return json({error: "wrong_pin", locked: !!lock}, 401, noStore);
+    // One atomic update, so simultaneous guesses can't all read the same failure count and dodge the lock.
+    const f = await env.DB.prepare("UPDATE sync SET fails = fails + 1, locked_until = CASE WHEN (fails + 1) % 5 = 0 THEN ?1 + 900000 * (1 << min(6, (fails + 1) / 5 - 1)) ELSE locked_until END WHERE name = ?2 RETURNING fails, locked_until")
+      .bind(now, name).first();
+    return json({error: "wrong_pin", locked: !!(f && f.locked_until > now)}, 401, noStore);
   }
-  if (row.fails) await env.DB.prepare("UPDATE sync SET fails = 0, locked_until = 0 WHERE name = ?").bind(name).run();
+  // A right PIN only counts if the name wasn't locked by guesses that landed first.
+  const open = await env.DB.prepare("UPDATE sync SET fails = 0, locked_until = 0 WHERE name = ?1 AND locked_until <= ?2 RETURNING name").bind(name, now).first();
+  if (!open) { const l = await env.DB.prepare("SELECT locked_until FROM sync WHERE name = ?").bind(name).first(); return json({error: "locked", retry_after: Math.max(1, Math.ceil(((l && l.locked_until) - now) / 60000))}, 423, noStore); }
 
   if (body.action === "load") return json({ok: true, data: row.data, ts: row.ts, updated: row.updated}, 200, noStore);
   if (body.action === "delete") { await env.DB.prepare("DELETE FROM sync WHERE name = ?").bind(name).run(); return json({ok: true, deleted: true}, 200, noStore); }
@@ -195,9 +205,9 @@ async function sync(request, env, ctx, cors) {
   // save: refuse to overwrite a copy that another device saved after this one last synced, unless forced
   const data = typeof body.data === "string" ? body.data : "";
   if (!data || data.length > SYNC_MAX) return json({error: "bad_data"}, 400, noStore);
-  const base = Number(body.base) || 0;
+  const base = okTs(body.base);
   if (!body.force && row.ts > base) return json({error: "conflict", ts: row.ts, updated: row.updated}, 409, noStore);
-  const ts = Number(body.ts) || now;
+  const ts = okTs(body.ts) || now;
   await env.DB.prepare("UPDATE sync SET data = ?, ts = ?, updated = ? WHERE name = ?").bind(data, ts, now, name).run();
   return json({ok: true, ts}, 200, noStore);
 }
@@ -248,7 +258,7 @@ function network(ip) {
 async function allow(request, env, ctx, weight, kind) {
   const ip = network(request.headers.get("CF-Connecting-IP") || "unknown");
   const hour = Math.floor(Date.now() / 3600000);
-  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(ip + "|dft-sjt|" + kind + "|" + hour));
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(ip + "|dft-sjt|" + (env.HASH_PEPPER || "") + "|" + kind + "|" + hour));
   const key = [...new Uint8Array(digest).slice(0, 12)].map(b => b.toString(16).padStart(2, "0")).join("");
   const row = await env.DB.prepare(
     "INSERT INTO hits (k, h, n) VALUES (?, ?, ?) ON CONFLICT (k) DO UPDATE SET n = n + excluded.n RETURNING n"
@@ -269,13 +279,19 @@ function validAnswer(type, a) {
   return false;
 }
 async function readJson(request, max) {
+  const len = Number(request.headers.get("Content-Length"));
+  if (len > max) return null; // refuse oversized bodies before reading them
   const text = await request.text();
   if (text.length > max) return null;
   try { return JSON.parse(text); } catch { return null; }
 }
+function sameSite(request, url) {
+  const origin = request.headers.get("Origin");
+  return !origin || origin === url.origin || CORS_ORIGINS.includes(origin);
+}
 function corsHeaders(request) {
   const origin = request.headers.get("Origin");
-  if (!origin || !CORS_ORIGINS.includes(origin)) return {};
+  if (!origin || !CORS_ORIGINS.includes(origin)) return {"Vary": "Origin"};
   return {"Access-Control-Allow-Origin": origin, "Access-Control-Allow-Methods": "GET, POST, OPTIONS", "Access-Control-Allow-Headers": "Content-Type, Authorization", "Vary": "Origin"};
 }
 function json(data, status, headers) {

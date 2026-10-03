@@ -13,7 +13,7 @@
   window.addEventListener("scroll", onScroll, {passive: true});
 
   // shared gradient for gauges
-  document.body.insertAdjacentHTML("beforeend", `<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs><linearGradient id="nd-grad" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="var(--accent)"/><stop offset="1" stop-color="#6C8BFF"/></linearGradient></defs></svg>`);
+  document.body.insertAdjacentHTML("beforeend", `<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs><linearGradient id="nd-grad" x1="0" y1="0" x2="1" y2="1"><stop offset="0" style="stop-color:var(--accent)"/><stop offset="1" style="stop-color:#6C8BFF"/></linearGradient></defs></svg>`);
 
   const views = document.querySelector(".views");
   const ind = document.createElement("span"); ind.className = "nav-ind nd-only"; ind.setAttribute("aria-hidden", "true"); views.prepend(ind);
@@ -21,7 +21,7 @@
   theme.type = "button"; theme.className = "themebtn nd-only"; theme.title = "Theme: auto"; theme.setAttribute("aria-label", "Change colour theme");
   const ICON = {auto: "◐", light: "☀", dark: "☾"};
   let mode = "auto"; try { mode = localStorage.getItem(KEY + "-theme") || "auto"; } catch(e) {}
-  const applyTheme = () => { if (mode === "auto") delete root.dataset.theme; else root.dataset.theme = mode; theme.textContent = ICON[mode]; theme.title = "Theme: " + mode; };
+  const applyTheme = () => { if (mode === "auto") delete root.dataset.theme; else root.dataset.theme = mode; theme.textContent = ICON[mode]; theme.title = "Theme: " + mode; theme.setAttribute("aria-label", `Colour theme: ${mode}. Change theme`); };
   theme.addEventListener("click", () => { mode = mode === "auto" ? "light" : mode === "light" ? "dark" : "auto"; try { localStorage.setItem(KEY + "-theme", mode); } catch(e) {} applyTheme(); });
   applyTheme(); views.appendChild(theme);
 
@@ -108,7 +108,7 @@
           `<button type="button" class="btn primary nd-cta-btn" data-act="mock-quick">${live ? (c.started ? "Resume mock" : "Start the clock") : "Start timed mock"}</button>`;
       }
       const nf = Object.keys(S.flags || {}).length;
-      revFlag.hidden = !nf; revFlag.innerHTML = `⚑ Review flagged <small>${nf}</small>`;
+      revFlag.hidden = !nf; const rf = `⚑ Review flagged <small>${nf}</small>`; if (revFlag.innerHTML !== rf) revFlag.innerHTML = rf;
     }
 
     // paper tabs: progress underline
@@ -154,10 +154,13 @@
   let busy = false;
   const now = () => { if (busy) return; busy = true; try { enhance(); } finally { busy = false; } };
   const schedule = () => { if (queued) return; queued = true; setTimeout(() => { queued = false; now(); }, 16); };
-  const mo = new MutationObserver(now);
+  // clock ticks and the score count-up only change text inside these; they don't need the page re-enhanced
+  const quiet = n => { const el = n.nodeType === 1 ? n : n.parentElement; return !!(el && el.closest && el.closest("#clock, #mclock, #pace, .sv")); };
+  const mo = new MutationObserver(recs => { if (recs.every(r => quiet(r.target))) return; now(); });
   ["card", "panel", "ptabs", "grid", "view-results", "view-guide", "view-settings"].forEach(id => { const el = document.getElementById(id); if (el) mo.observe(el, {childList: true, subtree: true}); });
   document.querySelectorAll(".views [data-v]").forEach(b => new MutationObserver(now).observe(b, {attributes: true, attributeFilter: ["aria-current"]}));
   window.addEventListener("resize", schedule);
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(schedule); // the nav pill is measured again once web fonts arrive
   schedule();
 })();
 
@@ -185,13 +188,14 @@
     tip.style.left = left + "px"; tip.style.top = (r.bottom + 12) + "px";
     tip.style.setProperty("--arrow", (centre - left) + "px");
   };
-  let timer = null, left = 7000, startedAt = 0;
+  let timer = null, left = 7000, startedAt = 0, ro = null;
   const close = (forever) => {
     if (!tip.isConnected) return;
     clearTimeout(timer); tip.classList.remove("show"); tip.classList.add("hide");
     if (forever) { seen.done = true; store(); }
     window.removeEventListener("scroll", onScroll); document.removeEventListener("keydown", onKey); document.removeEventListener("pointerdown", onDown, true); window.removeEventListener("resize", place);
     setTimeout(() => tip.remove(), 320);
+    if (ro) ro.disconnect();
   };
   const run = () => { startedAt = Date.now(); tip.style.setProperty("--life", left + "ms"); tip.classList.add("counting"); timer = setTimeout(() => close(false), left); };
   const pause = () => { clearTimeout(timer); left = Math.max(1200, left - (Date.now() - startedAt)); tip.classList.remove("counting"); };
@@ -206,7 +210,7 @@
     if (window.scrollY > 60 || linked()) { tip.remove(); return; }
     place(); tip.classList.add("show"); run();
     // keep the arrow on the button if the header shifts (web fonts loading, nav pill moving, resizing)
-    if ("ResizeObserver" in window) { const ro = new ResizeObserver(place); ro.observe(document.querySelector(".views")); ro.observe(document.querySelector("header.top")); tip.addEventListener("transitionend", () => { if (!tip.isConnected) ro.disconnect(); }); }
+    if ("ResizeObserver" in window) { ro = new ResizeObserver(place); ro.observe(document.querySelector(".views")); ro.observe(document.querySelector("header.top")); }
     if (document.fonts && document.fonts.ready) document.fonts.ready.then(place);
     window.addEventListener("scroll", onScroll, {passive: true}); document.addEventListener("keydown", onKey);
     document.addEventListener("pointerdown", onDown, true); window.addEventListener("resize", place);
@@ -242,11 +246,18 @@
     tip.style.top = (y - h - 12 < 8 ? y + 18 : y - h - 12) + "px";
   };
   const hideTip = () => { tipFor = null; tip.classList.remove("show"); };
+  let tipFrame = 0, tipEv = null;
   document.addEventListener("pointermove", e => {
-    const el = e.target.closest && e.target.closest("[data-tip]");
-    if (!el) { if (tipFor) hideTip(); return; }
-    showTip(el, e.clientX, e.clientY);
+    tipEv = e; if (tipFrame) return;
+    tipFrame = requestAnimationFrame(() => {
+      tipFrame = 0; const ev = tipEv, el = ev.target.closest && ev.target.closest("[data-tip]");
+      if (!el) { if (tipFor) hideTip(); return; }
+      if (el !== tipFor) { tip.textContent = el.dataset.tip; tipFor = el; }
+      showTip(el, ev.clientX, ev.clientY);
+    });
   }, {passive: true});
+  document.addEventListener("focusin", e => { const el = e.target.closest && e.target.closest("[data-tip]"); if (el) { const r = el.getBoundingClientRect(); showTip(el, r.left + r.width / 2, r.top); } else if (tipFor) hideTip(); });
+  document.addEventListener("keydown", e => { if (e.key === "Escape" && tipFor) hideTip(); });
   document.addEventListener("pointerdown", e => { const el = e.target.closest && e.target.closest("[data-tip]"); if (el && e.pointerType !== "mouse") { const r = el.getBoundingClientRect(); showTip(el, r.left + r.width / 2, r.top); } else if (!el) hideTip(); });
   window.addEventListener("scroll", () => { if (tipFor) hideTip(); }, {passive: true});
 
@@ -284,7 +295,7 @@
   const toasts = document.createElement("div"); toasts.className = "nd-toasts"; toasts.setAttribute("aria-live", "polite"); document.body.appendChild(toasts);
   const toast = b => {
     const t = document.createElement("div"); t.className = "nd-toast";
-    t.innerHTML = `<span class="bico">${b.ico}</span><span><small>Badge earned</small><b>${b.name}</b></span>`;
+    t.innerHTML = `<span class="bico" aria-hidden="true">${b.ico}</span><span><small>Badge earned</small><b>${b.name}</b></span>`;
     toasts.appendChild(t); requestAnimationFrame(() => t.classList.add("show"));
     setTimeout(() => { t.classList.remove("show"); setTimeout(() => t.remove(), 400); }, 4200);
   };
@@ -306,8 +317,13 @@
     const on = live && !focusOff();
     if (on !== lastFocus) { root.classList.toggle("nd-focus", on); lastFocus = on; }
     fbar.hidden = !live;
-    fbar.innerHTML = on ? `<span><b>Focus mode</b> · only the question, the clock and the grid</span><button type="button" class="btn small" data-nd="unfocus">Show everything</button>`
-                        : `<span>Timed mock in progress</span><button type="button" class="btn small" data-nd="focus">Focus mode</button>`;
+    if (fbar.dataset.on !== String(on)) {
+      const had = fbar.contains(document.activeElement);
+      fbar.dataset.on = String(on);
+      fbar.innerHTML = on ? `<span><b>Focus mode</b> · only the question, the clock and the grid</span><button type="button" class="btn small" data-nd="unfocus">Show everything</button>`
+                          : `<span>Timed mock in progress</span><button type="button" class="btn small" data-nd="focus">Focus mode</button>`;
+      if (had) fbar.querySelector("button").focus({preventScroll: true});
+    }
 
     // install card: after a few questions, if the app isn't installed and wasn't dismissed
     const answered = Object.keys(S.att || {}).length;
@@ -346,13 +362,14 @@
   sync();
 })();
 
-// While the page is scrolling, pause hover effects so cards don't lift and repaint as they pass under the cursor.
+// The sticky header's real height (it wraps on some tablets), so the mock timer, panel and jump targets sit below it.
 (function(){
-  const root = document.documentElement; let t = null;
-  window.addEventListener("scroll", () => {
-    if (!t) root.classList.add("nd-scrolling");
-    clearTimeout(t); t = setTimeout(() => { root.classList.remove("nd-scrolling"); t = null; }, 140);
-  }, {passive: true});
+  const top = document.querySelector("header.top"), root = document.documentElement;
+  if (!top) return;
+  const measure = () => { const sticky = getComputedStyle(top).position === "sticky"; root.style.setProperty("--hdr", (sticky ? Math.ceil(top.getBoundingClientRect().height) : 0) + "px"); };
+  measure(); window.addEventListener("resize", measure);
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(measure);
+  if ("ResizeObserver" in window) new ResizeObserver(measure).observe(top);
 })();
 
 // Pattern guide: highlight the section you're reading in the contents list.

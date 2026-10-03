@@ -73,7 +73,7 @@ function normalise(o){
     }
   }
   s.setId = s.sets[o.setId] && (o.setId === "custom" || PAPER_IDS.includes(o.setId)) ? o.setId : "p1";
-  for (const k of Object.keys(o.att || {})) { const i = +k; if (isQi(i) && Array.isArray(o.att[k])) s.att[i] = o.att[k].slice(-50).map(a => ({g: num(a && a.g, 20), m: num(a && a.m, 20) || 20, t: num(a && a.t, 1e14)})); }
+  for (const k of Object.keys(o.att || {})) { const i = +k; if (isQi(i) && Array.isArray(o.att[k])) s.att[i] = o.att[k].slice(-20).map(a => ({g: num(a && a.g, 20), m: num(a && a.m, 20) || 20, t: num(a && a.t, 1e14)})); }
   for (const d of Object.keys(o.days || {})) { const x = o.days[d]; if (/^\d{4}-\d{2}-\d{2}$/.test(d) && x) s.days[d] = {g: num(x.g), m: num(x.m), n: num(x.n)}; }
   s.hist = (Array.isArray(o.hist) ? o.hist : []).slice(-200).filter(h => h && typeof h === "object").map(h => ({t: num(h.t, 1e14), name: String(h.name || "Set").slice(0, 80), g: num(h.g), m: num(h.m) || 1, n: num(h.n), total: num(h.total), mode: h.mode === "exam" ? "exam" : "practice"}));
   for (const k of Object.keys(o.sent || {})) { const i = +k; if (isQi(i)) s.sent[i] = 1; }
@@ -90,7 +90,7 @@ function carryOver(o){
     if (typeof o.cid === "string") s.cid = o.cid;
     if (typeof o.share === "boolean") s.share = o.share;
     if (o.days && typeof o.days === "object") s.days = o.days;
-    if (Array.isArray(o.hist)) s.hist = o.hist.map(h => Object.assign({}, h, {name: h.name + " (old version)"}));
+    if (Array.isArray(o.hist)) s.hist = o.hist.filter(h => h && typeof h === "object").map(h => Object.assign({}, h, {name: String(h.name || "Set") + " (old version)"}));
   }
   return normalise(s);
 }
@@ -122,9 +122,13 @@ window.addEventListener("storage", e => {
     const view = S.view, setId = S.setId, cur = S.sets[S.setId] && S.sets[S.setId].cur;
     S = n; S.view = view;
     if (S.sets[setId]) { S.setId = setId; S.sets[setId].cur = cur; }
-    render();
+    if (busyTyping()) pendingRender = true; else render();
   } catch(err) {}
 });
+// Re-rendering rebuilds forms, so wait until the person has finished typing.
+let pendingRender = false;
+function busyTyping(){ const a = document.activeElement; return !!(a && a.matches && a.matches("input, textarea") && a.type !== "checkbox") || !!(document.getElementById("code-in") || {}).value || (typeof syncUi !== "undefined" && syncUi.open); }
+document.addEventListener("focusout", () => setTimeout(() => { if (pendingRender && !busyTyping()) { pendingRender = false; render(); } }, 0));
 window.addEventListener("pagehide", () => { clearTimeout(idbTimer); idbPut(JSON.stringify(S)); });
 function idb(){
   return new Promise((res, rej) => {
@@ -238,13 +242,13 @@ function statsHtml(qi){
     h += `<p class="muted">Community stats appear once ${d.min} people have answered this question. ${S.share ? "Your answer has been counted." : "Turn on anonymous sharing in Settings to add yours."}</p>`;
   } else if (isRank(q)) {
     h += `<p class="muted">Each row is one option, in the key’s order. The boxes show what share of people put it 1st, 2nd, 3rd, 4th or 5th.</p><div class="heat" role="table" aria-label="How others ranked each option">`;
-    h += `<div class="hrow hhead" role="row"><span></span>${["1st","2nd","3rd","4th","5th"].map(n => `<span role="columnheader">${n}</span>`).join("")}<span>Same as key</span></div>`;
+    h += `<div class="hrow hhead" role="row"><span role="columnheader"><span class="sr-only">Option</span></span>${["1st","2nd","3rd","4th","5th"].map(n => `<span role="columnheader">${n}</span>`).join("")}<span role="columnheader">Same as key</span></div>`;
     q.k.split("").forEach(ch => {
       const o = L.indexOf(ch), row = d.pos[o], kp = keyRank(q, o) - 1, tot = row.reduce((a, b) => a + b, 0) || 1;
-      h += `<div class="hrow" role="row"><span class="letter">${ch}</span>` + row.map((c, p) => {
+      h += `<div class="hrow" role="row"><span class="letter" role="rowheader">${ch}</span>` + row.map((c, p) => {
         const share = c / tot;
-        return `<span role="cell" class="hcell${p === kp ? " key" : ""}${share >= 0.5 ? " hi" : ""}" style="--a:${(0.08 + share * 0.92).toFixed(2)}" title="${Math.round(share * 100)}% put ${ch} ${["1st","2nd","3rd","4th","5th"][p]}${p === kp ? " (the key’s position)" : ""}">${share >= 0.1 ? Math.round(share * 100) + "%" : ""}</span>`;
-      }).join("") + `<span class="hagree">${Math.round(row[kp] / tot * 100)}%</span></div>`;
+        return `<span role="cell" class="hcell${p === kp ? " key" : ""}${share >= 0.5 ? " hi" : ""}" style="--a:${(0.08 + share * 0.92).toFixed(2)}" title="${Math.round(share * 100)}% put ${ch} ${["1st","2nd","3rd","4th","5th"][p]}${p === kp ? " (the key’s position)" : ""}">${share >= 0.1 ? Math.round(share * 100) + "%" : `<span class="sr-only">${Math.round(share * 100)}%</span>`}</span>`;
+      }).join("") + `<span class="hagree" role="cell">${Math.round(row[kp] / tot * 100)}%</span></div>`;
     });
     h += `</div><p class="hlegend"><span><i class="hcell key" style="--a:.08"></i>Where the key puts it</span><span><i class="hcell" style="--a:.2"></i><i class="hcell" style="--a:.6"></i><i class="hcell" style="--a:1"></i>Darker = more people</span></p>`;
   } else {
@@ -269,9 +273,32 @@ window.addEventListener("beforeinstallprompt", e => { e.preventDefault(); instal
 
 // ---------- rendering: shell ----------
 function render(){
+  // a mock whose time ran out while paused or on another device is marked as soon as it is shown
+  if (S.view === "practice" && !ui.building) { const st = curSet(); if (mockLive(st) && left(st) <= 0) { timeUp(); return; } }
+  keepFocus(renderAll);
+}
+// Rebuilding the page's HTML would drop keyboard focus, so put it back on the same control (or the nearest sensible one).
+function focusKey(el){
+  if (!el || el === document.body || !el.closest) return null;
+  if (el.id) return "#" + CSS.escape(el.id);
+  const a = el.closest("[data-act]"); if (!a) return null;
+  return "[data-act=\"" + a.dataset.act + "\"]" + ["k", "o", "d", "mode", "id", "kind", "arg", "v", "a", "nd"].filter(k => a.dataset[k] != null).map(k => `[data-${k}="${CSS.escape(a.dataset[k])}"]`).join("");
+}
+function keepFocus(fn){
+  const was = document.activeElement, key = focusKey(was), box = was && was.closest && was.closest("#panel, #card, #view-settings, #syncpanel, #view-results");
+  fn();
+  if (!was || was === document.body || document.activeElement !== document.body) return;
+  let t = key && document.querySelector(key);
+  // a confirmation's yes/no button is gone after it closes: go back to the button that opened it
+  const opener = key && key.match(/^\[data-act="([a-z-]+?)-(?:no|yes)"\]/);
+  if (!t && opener) t = document.querySelector(`[data-act="${opener[1]}"]`);
+  if (!t && box) { const nb = document.getElementById(box.id); t = nb && (nb.querySelector(".confirm button, [role=alert], .bh, .qnum") || nb); if (t && t === nb && !nb.hasAttribute("tabindex")) nb.setAttribute("tabindex", "-1"); }
+  if (t && t.offsetParent !== null) t.focus({preventScroll: true});
+}
+function renderAll(){
   document.querySelectorAll("[data-view-panel]").forEach(el => el.hidden = el.dataset.viewPanel !== S.view);
   document.querySelectorAll(".views [data-v]").forEach(b => b.setAttribute("aria-current", b.dataset.v === S.view ? "page" : "false"));
-  if (S.view === "practice") { renderTabs(); renderGrid(); renderCard(); renderPanel(); }
+  if (S.view === "practice") { renderTabs(); renderGrid(); renderCard(); renderPanelRaw(); }
   else if (S.view === "results") renderResults();
   else if (S.view === "guide") renderGuide();
   else if (S.view === "settings") renderSettings();
@@ -389,7 +416,7 @@ function renderCard(){
     q.o.forEach(([text, why], idx) => { h += `<div class="xitem" style="--i:${idx}"><span class="letter">${L[idx]}</span><div><span class="otext">${text}</span><span class="xwhy"><b>Justification:</b> ${linkCites(why)}</span></div></div>`; });
     h += "</div></div>";
     const sc = qScore(set, qi);
-    h += `<div class="result"><div class="scoreline">${sc.got} / ${sc.max} marks</div>${rank ? rankLinksHtml(set, qi) : ""}<div class="compare"><div class="ccol"><h4>Your answer</h4><div class="crows">`;
+    h += `<div class="result"><div class="scoreline"><span class="sr-only">${sc.got} out of ${sc.max} marks</span><span class="sv" aria-hidden="true">${sc.got} / ${sc.max} marks</span></div>${rank ? rankLinksHtml(set, qi) : ""}<div class="compare"><div class="ccol"><h4>Your answer</h4><div class="crows">`;
     if (rank) {
       if (a && a.set) a.ord.forEach((o, pos) => { const pts = optPts(set, qi, o); h += crow(pos + 1, o, q.o[o][0], "b" + pts, pts + "/4"); });
       else h += `<div class="cempty">Not answered</div>`;
@@ -432,7 +459,7 @@ function animateCard(sig, k = 0, rev = false){
   card.classList.remove("in-fade", "in-next", "in-prev", "in-reveal");
   void card.offsetWidth;
   card.classList.add(cls);
-  if (cls === "in-reveal") countUp(card.querySelector(".scoreline"));
+  if (cls === "in-reveal") countUp(card.querySelector(".scoreline .sv"));
 }
 function countUp(el){
   const m = el && el.textContent.match(/^(\d+) \/ (\d+)/); if (!m) return;
@@ -509,7 +536,7 @@ function mockSummaryHtml(set){
   return h;
 }
 function timeUp(){
-  timerOn = false;
+  timerOn = false; ui.building = false;
   markSet(); S.view = "practice"; if (location.hash && location.hash !== "#practice") location.hash = "practice";
   announce("Time is up. Your mock has been marked."); render();
 }
@@ -526,17 +553,19 @@ function initDrag(){
   sortable = Sortable.create(el, {
     animation: calm() ? 0 : 240, easing: "cubic-bezier(.2,.8,.2,1)",
     forceFallback: true, fallbackOnBody: true, fallbackTolerance: 3,
-    delayOnTouchOnly: true, delay: 140, touchStartThreshold: 5,
+    delayOnTouchOnly: true, delay: 220, touchStartThreshold: 6,
     direction: "vertical", swapThreshold: 0.6, invertSwap: false,
     scroll: true, scrollSensitivity: 90, scrollSpeed: 14, bubbleScroll: true,
     filter: ".mvb", preventOnFilter: false, ghostClass: "ghost", chosenClass: "chosen", dragClass: "dragging",
     onChoose: () => buzz(6),
-    onStart: () => { el.classList.add("sorting"); document.body.classList.add("is-sorting"); },
-    onChange: () => buzz(3),
+    onStart: evt => { el.classList.add("sorting"); document.body.classList.add("is-sorting"); const d = document.querySelector(".dragging"); if (d) d.dataset.pos = evt.oldIndex + 1; },
+    onChange: evt => { buzz(3); const d = document.querySelector(".dragging"); if (d) d.dataset.pos = evt.newIndex + 1; },
     onEnd: evt => {
       el.classList.remove("sorting"); document.body.classList.remove("is-sorting");
       const a = ansOf(set, qi), before = a.ord.join(""), wasSet = a.set;
-      a.ord = [...el.children].map(li => +li.dataset.o); a.set = true; save();
+      a.ord = [...el.children].map(li => +li.dataset.o);
+      if (before === a.ord.join("") && !wasSet) return; // picked up and put back: not an answer yet
+      a.set = true; save();
       // Update in place instead of rebuilding the card, so the list doesn't flash or jump on drop.
       el.classList.remove("unset");
       [...el.children].forEach((li, pos) => {
@@ -595,7 +624,8 @@ function buildQuiz(kind, arg){
 }
 
 // ---------- side panel ----------
-function renderPanel(){
+function renderPanel(){ keepFocus(renderPanelRaw); }
+function renderPanelRaw(){
   const set = curSet(), list = curList(), name = setName(S.setId);
   let got = 0, max = 0, nrev = 0, nans = 0;
   const dom = {I:[0,0], P:[0,0], E:[0,0], T:[0,0]};
@@ -607,8 +637,8 @@ function renderPanel(){
   let h = mock
     ? `<div><p class="plabel">Mode · ${esc(name)}</p><p class="muted">${set.marked ? "Marked. Review each question’s key and reasoning." : "Exam conditions: no feedback until the mock is marked."}</p>${set.marked && !ui.summary ? `<button type="button" class="btn small" data-act="summary">View summary</button>` : ""}</div>`
     : `<div><p class="plabel">Mode · ${esc(name)}</p><div class="seg" role="group" aria-label="Mode">
-    <button type="button" data-act="mode" data-mode="practice" aria-pressed="${set.mode === "practice"}">Practice</button>
-    <button type="button" data-act="mode" data-mode="exam" aria-pressed="${set.mode === "exam"}">Exam</button></div>
+    <button type="button" data-act="mode" data-mode="practice" aria-pressed="${set.mode === "practice"}"${set.marked ? " disabled" : ""}>Practice</button>
+    <button type="button" data-act="mode" data-mode="exam" aria-pressed="${set.mode === "exam"}"${set.marked ? " disabled" : ""}>Exam</button></div>
     <p class="muted">${set.mode === "practice" ? "See the key and reasoning after each question." : "No feedback until you mark the whole set."}</p></div>`;
   h += `<div><p class="plabel">Score</p>`;
   if (nrev) h += `<div class="big">${got}<small> / ${max} · ${pct(got, max)}%</small></div><p class="muted">${nrev} of ${list.length} marked · ${nans} answered</p>`;
@@ -750,7 +780,7 @@ function progressChart(){
   const days = Object.keys(S.days).sort().slice(-30);
   if (days.length < 2) {
     const d = days[0] && S.days[days[0]];
-    return `<p class="muted">${d ? `Today: ${pct(d.g, d.m)}% across ${d.n} question${d.n === 1 ? "" : "s"}. ` : ""}Practise on another day to see a trend line.</p>`;
+    return `<p class="muted">${d ? `${days[0] === today() ? "Today" : new Date(days[0] + "T12:00:00").toLocaleDateString("en-GB", {day: "numeric", month: "short"})}: ${pct(d.g, d.m)}% across ${d.n} question${d.n === 1 ? "" : "s"}. ` : ""}Practise on another day to see a trend line.</p>`;
   }
   const W = 640, H = 200, pl = 36, pr = 12, pt = 12, pb = 28, iw = W - pl - pr, ih = H - pt - pb;
   const x = i => pl + (days.length === 1 ? iw / 2 : i * iw / (days.length - 1)), y = v => pt + ih - v / 100 * ih;
@@ -818,14 +848,15 @@ document.addEventListener("input", e => {
 });
 
 // ---------- settings ----------
-function renderSettings(){
+function renderSettings(){ keepFocus(renderSettingsRaw); }
+function renderSettingsRaw(){
   const el = document.getElementById("view-settings");
   const standalone = window.matchMedia && window.matchMedia("(display-mode: standalone)").matches;
   let h = `<div class="card"><h2 class="bh">Settings</h2>`;
   h += `<section class="sset"><h3>Community stats</h3><label class="toggle"><input type="checkbox" id="share" ${S.share ? "checked" : ""}> <span>Share anonymous answers and usage</span></label><p class="muted">When on, the site sends your first attempt at each question, a count of your visits, and any error reports. None of it includes your name, email or IP address; it’s linked only to a random code stored in this browser. Answers power the community stats. Visit counts and error reports are only seen by the site owner, to keep the site running. Turning this off stops all sending; data already sent stays in the totals.</p></section>`;
   h += `<section class="sset"><h3>How your progress is saved</h3><p class="muted">Your answers, scores and settings are saved automatically in this browser, with a backup copy, so they’re still here when you come back. There’s no account, and nothing leaves your device apart from anonymous answers for the community stats. Progress can be lost if you clear your browsing data, use a private window, or (in Safari) don’t visit for 7 days. Adding the site to your home screen avoids the Safari limit. To carry on across devices automatically, use <b>Sync</b> in the top bar: pick a username and PIN, and your progress saves to the site’s server and loads on any device with the same pair.</p></section>`;
   h += `<section class="sset"><h3>Move your progress to another device</h3><p class="muted">Copy a progress code here, then paste it into Settings on your other device. It replaces the progress there.</p><div class="row"><button type="button" class="btn small primary" data-act="copy-code">Create progress code</button></div>`;
-  if (ui.code) h += `<textarea class="code" id="code-out" rows="3" readonly>${ui.code}</textarea>`;
+  if (ui.code) h += `<label class="lbl" for="code-out">Your progress code</label><textarea class="code" id="code-out" rows="3" readonly>${ui.code}</textarea>`;
   h += `<label class="lbl" for="code-in">Paste a progress code</label><textarea class="code" id="code-in" rows="3" placeholder="SJT1.…"></textarea>`;
   if (ui.confirmLoad) h += `<div class="confirm"><span>Replace all progress on this device with the pasted code?</span><div class="row"><button type="button" class="btn small danger" data-act="load-yes">Replace progress</button><button type="button" class="btn small" data-act="load-no">Cancel</button></div></div>`;
   else h += `<div class="row"><button type="button" class="btn small" data-act="load-code">Load code</button></div>`;
@@ -859,6 +890,7 @@ async function readCode(code){
   code = code.trim();
   const [tag, body] = [code.slice(0, 5), code.slice(5)];
   let bytes = unb64u(body);
+  if (tag === "SJT1." && !window.DecompressionStream) throw new Error("This browser is too old to read compressed progress codes. Update it, or make the code on a device using the same browser.");
   if (tag === "SJT1.") bytes = await pipe(bytes, new DecompressionStream("deflate-raw"));
   else if (tag !== "SJT0.") throw new Error("tag");
   const o = JSON.parse(new TextDecoder().decode(bytes));
@@ -871,7 +903,7 @@ async function readCode(code){
 // ---------- navigation ----------
 function scrollToCard(){ const c = document.getElementById("card"); if (c) c.scrollIntoView({block:"nearest"}); }
 function focusCard(){ const el = document.querySelector("#card .qnum, #card .bh"); if (el) el.focus({preventScroll: true}); }
-function announce(msg){ const el = document.getElementById("status"); if (el) el.textContent = msg; }
+function announce(msg){ const el = document.getElementById("status"); if (!el) return; el.textContent = ""; setTimeout(() => { el.textContent = msg; }, 30); }
 function go(k){
   const set = curSet(), list = curList();
   set.cur = Math.max(0, Math.min(list.length - 1, k));
@@ -879,7 +911,7 @@ function go(k){
   persistAsIs(); render(); scrollToCard(); // moving between questions isn't a change to your answers
 }
 function fromHash(){
-  const h = decodeURIComponent(location.hash.slice(1));
+  let h; try { h = decodeURIComponent(location.hash.slice(1)); } catch(e) { h = location.hash.slice(1); }
   if (h.startsWith("guide")) {
     S.view = "guide"; render();
     const target = document.getElementById(h === "guide" ? "view-guide" : h);
@@ -887,14 +919,15 @@ function fromHash(){
       const f = document.getElementById("stdfind"); if (f && f.value && h.startsWith("guide-std")) { f.value = ""; f.dispatchEvent(new Event("input", {bubbles: true})); }
       // jump straight there (a long smooth scroll can land short while the page is still laying out), then correct once it settles
       const go = () => target.scrollIntoView({behavior: "instant", block: h.startsWith("guide-std-") && h.split("-").length > 3 ? "center" : "start"});
-      setTimeout(() => { go(); setTimeout(go, 120); if (/^guide-(std|g)-/.test(h)) { target.classList.remove("hit"); void target.offsetWidth; target.classList.add("hit"); } }, 0);
+      setTimeout(() => { go(); setTimeout(go, 120); if (/^guide-(std|g)-/.test(h)) { target.classList.remove("hit"); void target.offsetWidth; target.classList.add("hit"); if (!target.hasAttribute("tabindex")) target.setAttribute("tabindex", "-1"); target.focus({preventScroll: true}); } }, 0);
     }
     renderCiteBack();
     return;
   }
   if (!h || ["practice", "results", "settings"].includes(h)) {
     S.view = h || "practice"; persistAsIs(); render();
-    if (h === "practice" && ui.citeFrom != null) { const o = ui.citeFrom; ui.citeFrom = null; setTimeout(() => document.querySelectorAll("#card .xitem")[o]?.scrollIntoView({block: "center"}), 0); }
+    const o = ui.citeFrom; ui.citeFrom = null;
+    if (S.view === "practice" && o != null && o >= 0) setTimeout(() => { const x = document.querySelectorAll("#card .xitem")[o]; if (x) { x.scrollIntoView({block: "center"}); (x.querySelector("a.cite") || x).focus({preventScroll: true}); } }, 0);
     else window.scrollTo(0, 0);
     renderCiteBack(); return;
   }
@@ -909,8 +942,9 @@ document.addEventListener("click", e => {
 function renderCiteBack(){
   let b = document.getElementById("citeback");
   const show = S.view === "guide" && ui.citeFrom != null;
-  if (!show) { if (b) b.hidden = true; if (S.view !== "guide") ui.citeFrom = S.view === "practice" ? ui.citeFrom : null; return; }
-  if (!b) { b = document.createElement("button"); b.type = "button"; b.id = "citeback"; b.className = "btn primary citeback"; b.dataset.act = "view"; b.dataset.v = "practice"; b.textContent = "← Back to the question"; document.body.appendChild(b); }
+  if (!show) { if (b) b.hidden = true; if (S.view !== "guide") ui.citeFrom = null; return; }
+  // placed before the guide (it floats on screen) so keyboard users reach it first
+  if (!b) { b = document.createElement("button"); b.type = "button"; b.id = "citeback"; b.className = "btn primary citeback"; b.dataset.act = "view"; b.dataset.v = "practice"; b.textContent = "← Back to the question"; document.getElementById("view-guide").before(b); }
   b.hidden = false;
 }
 
@@ -921,6 +955,7 @@ document.addEventListener("click", async e => {
   if (act.startsWith("sync-")) { syncAction(act); return; }
   const qi = S.view === "practice" && !ui.building ? curQi() : null;
   switch (act) {
+    case "skip": if (S.view !== "practice") location.hash = "practice"; setTimeout(() => { scrollToCard(); focusCard(); }, 0); break;
     case "dismiss-notice": ui0.rewritten = false; render(); break;
     case "view": if (location.hash === "#" + b.dataset.v) fromHash(); else location.hash = b.dataset.v; break;
     case "set": S.setId = b.dataset.id; ui.building = false; ui.summary = false; ui.warn = false; ui.confirmMark = ui.confirmReset = false; timerOn = false; persistAsIs(); render(); document.querySelector(`#ptabs [data-id="${b.dataset.id}"]`)?.focus({preventScroll: true}); break;
@@ -933,7 +968,7 @@ document.addEventListener("click", async e => {
       else buildQuiz("mock");
       break;
     }
-    case "mock-start": set.started = true; set.el = 0; timerOn = true; ui.warned = {}; save(); render(); focusCard(); announce(`Mock started. You have ${Math.round(set.limit / 60)} minutes.`); break;
+    case "mock-start": set.started = true; set.el = 0; delete set.qt; timerOn = true; ui.warned = {}; save(); render(); focusCard(); announce(`Mock started. You have ${Math.round(set.limit / 60)} minutes.`); break;
     case "summary": ui.summary = true; render(); scrollToCard(); break;
     case "review": ui.summary = false; go(0); focusCard(); break;
     case "review-q": ui.summary = false; go(+b.dataset.k); focusCard(); break;
@@ -959,7 +994,7 @@ document.addEventListener("click", async e => {
     case "keep": ansOf(set, qi).set = true; save(); render(); (document.querySelector('#card [data-act="check"]:not(:disabled)') || document.querySelector('#card [data-act="next"]:not(:disabled)'))?.focus(); break;
     case "pick": {
       const a = ansOf(set, qi), o = +b.dataset.o, at = a.p.indexOf(o);
-      if (at !== -1) { a.p.splice(at, 1); ui.warn = false; } else if (a.p.length < 3) { a.p.push(o); ui.warn = false; ui.popped = o; } else ui.warn = true;
+      if (at !== -1) { a.p.splice(at, 1); ui.warn = false; } else if (a.p.length < 3) { a.p.push(o); ui.warn = false; ui.popped = o; } else { ui.warn = true; announce("Only three can be chosen. Untick one first."); }
       save(); render(); document.getElementById(`pk-${qi}-${o}`)?.focus();
       break;
     }
@@ -970,7 +1005,7 @@ document.addEventListener("click", async e => {
       document.querySelector("#card .scoreline")?.setAttribute("tabindex", "-1"); document.querySelector("#card .scoreline")?.focus({preventScroll: true});
       break;
     case "retry": delete set.ans[qi]; delete set.chk[qi]; ui.fbOpen = null; ui.warn = false; save(); render(); focusCard(); break;
-    case "mode": if (isMock(set)) break; if (b.dataset.mode !== set.mode) { set.mode = b.dataset.mode; ui.confirmMark = false; save(); render(); document.querySelector(`#panel [data-act="mode"][data-mode="${b.dataset.mode}"]`)?.focus(); } break;
+    case "mode": if (isMock(set) || set.marked) break; if (b.dataset.mode !== set.mode) { set.mode = b.dataset.mode; ui.confirmMark = false; save(); render(); document.querySelector(`#panel [data-act="mode"][data-mode="${b.dataset.mode}"]`)?.focus(); } break;
     case "mark": { const n = curList().filter(i => complete(set, i)).length; if (n < curList().length) { ui.confirmMark = true; renderPanel(); } else markSet(); break; }
     case "mark-yes": markSet(); break;
     case "mark-no": ui.confirmMark = false; renderPanel(); break;
@@ -979,7 +1014,7 @@ document.addEventListener("click", async e => {
     case "reset-no": ui.confirmReset = false; renderPanel(); break;
     case "reset-yes":
       curList().forEach(i => { delete set.ans[i]; delete set.chk[i]; });
-      set.marked = false; set.el = 0; set.cur = 0; set.logged = false; if (isMock(set)) set.started = false; timerOn = false; ui.confirmReset = false; ui.summary = false; save(); render();
+      set.marked = false; set.el = 0; set.cur = 0; set.logged = false; delete set.qt; ui.warned = {}; if (isMock(set)) set.started = false; timerOn = false; ui.confirmReset = false; ui.summary = false; save(); render();
       break;
     case "disagree": ui.fbOpen = qi; refreshStats(qi); document.getElementById("fb-" + qi)?.focus(); break;
     case "cancel-fb": ui.fbOpen = null; refreshStats(qi); break;
@@ -1004,7 +1039,7 @@ document.addEventListener("click", async e => {
     case "load-no": ui.confirmLoad = false; renderSettings(); break;
     case "load-yes":
       try { S = await readCode(ui.pending || ""); S.view = "settings"; timerOn = false; save(true); ui.codeMsg = "Progress loaded."; flush(); }
-      catch(err) { ui.codeMsg = "That code couldn’t be read. Check you copied all of it."; }
+      catch(err) { ui.codeMsg = /^This browser/.test(err && err.message) ? err.message : "That code couldn’t be read. Check you copied all of it."; }
       ui.confirmLoad = false; ui.pending = ""; render(); break;
     case "install": if (installPrompt) { installPrompt.prompt(); installPrompt = null; renderSettings(); } break;
     case "wipe": ui.confirmWipe = true; renderSettings(); break;
@@ -1015,7 +1050,7 @@ document.addEventListener("click", async e => {
 document.addEventListener("change", e => {
   if (e.target.id === "share") { S.share = e.target.checked; save(); if (S.share) flush(); }
 });
-function refreshStats(qi){ const box = document.getElementById("stats-" + qi); if (box) box.outerHTML = statsHtml(qi); }
+function refreshStats(qi){ keepFocus(() => { const box = document.getElementById("stats-" + qi); if (box) box.outerHTML = statsHtml(qi); }); }
 function markSet(){
   const set = curSet(), list = curList();
   set.marked = true; timerOn = false; ui.confirmMark = false;
@@ -1036,7 +1071,9 @@ function toggleFlag(qi){
 // F flags the current question; ignored while typing.
 document.addEventListener("keydown", e => {
   if (e.key !== "f" && e.key !== "F") return;
-  if (e.metaKey || e.ctrlKey || e.altKey || e.target.closest("input, textarea, select, [contenteditable]")) return;
+  const t = e.target && e.target.closest ? e.target : document.body;
+  if (e.metaKey || e.ctrlKey || e.altKey || t.closest("input, textarea, select, [contenteditable]")) return;
+  if (t !== document.body && !t.closest("#card")) return;
   if (S.view !== "practice" || ui.building) return;
   const set = curSet();
   if (isMock(set) && ((!set.started && !set.marked) || ui.summary)) return;
@@ -1100,7 +1137,7 @@ async function syncCall(action, extra){
 const SYNC_ERRORS = {
   bad_name: "Usernames are 3–30 characters: letters, numbers, dots, dashes or underscores.",
   bad_pin: "The PIN must be 4 to 8 digits.",
-  wrong_pin: "That username is taken, or the PIN is wrong.",
+  wrong_pin: "That username and PIN don’t match. If you’re saving for the first time, the username may already be taken.",
   not_found: "No saved progress with that username. Use “Save and link” to create it.",
   rate_limited: "Too many tries from this network. Please wait a while and try again.",
   bad_data: "This progress is too large to sync.",
@@ -1108,15 +1145,24 @@ const SYNC_ERRORS = {
 };
 function syncErr(res){ if (res.body.error === "locked") return `Too many wrong PINs for that username. Try again in ${res.body.retry_after} minute${res.body.retry_after === 1 ? "" : "s"}.`; return SYNC_ERRORS[res.body.error] || "Couldn’t reach the server. Check your connection and try again."; }
 function adopt(data, ts){
-  const view = S.view, n = normalise(JSON.parse(data));
-  S = n; S.view = view; S.ts = ts; persistAsIs();
+  const view = S.view, setId = S.setId, n = normalise(JSON.parse(data));
+  S = n; S.view = view; S.ts = ts;
+  if (S.sets[setId]) S.setId = setId; else timerOn = false;
+  ui.summary = false; ui.confirmMark = ui.confirmReset = false; persistAsIs();
   SY.lastTs = ts; SY.at = Date.now(); saveLink(); render();
 }
 function scheduleSync(){
   if (!SY || syncUi.conflict) return;
   clearTimeout(syncTimer); syncTimer = setTimeout(pushSync, 4000);
 }
+let pushing = null, pushAgain = false;
 async function pushSync(force){
+  // never two saves in flight from this device: a second would look like another device's newer copy
+  if (pushing) { pushAgain = true; return pushing; }
+  pushing = pushSyncNow(force);
+  try { await pushing; } finally { pushing = null; if (pushAgain) { pushAgain = false; scheduleSync(); } }
+}
+async function pushSyncNow(force){
   freshLink();
   if (!SY || (!force && S.ts <= (SY.lastTs || 0))) return;
   clearTimeout(syncTimer);
@@ -1148,7 +1194,7 @@ async function syncOnStart(){
       else if (res.body.ts > (SY.lastTs || 0)) { if (S.ts <= (SY.lastTs || 0)) { adopt(res.body.data, res.body.ts); syncUi.status = "saved"; } else { syncUi.conflict = {data: res.body.data, ts: res.body.ts, updated: res.body.updated}; syncUi.status = "conflict"; syncUi.open = true; } }
       else if (S.ts > (SY.lastTs || 0)) await pushSync();
       else syncUi.status = "saved";
-    } else if (res.status === 401 || res.status === 404) { syncUi.error = res.status === 404 ? "Your saved progress was deleted, so this device has stopped syncing." : "The PIN for this username has changed, so this device has stopped syncing."; SY = null; saveLink(); }
+    } else if (res.status === 401 || res.status === 404) { syncUi.error = "Your saved progress was deleted or its PIN changed, so this device has stopped syncing. Your progress here is kept."; SY = null; saveLink(); }
     else syncUi.status = "offline";
   } catch(e) { syncUi.status = "offline"; }
   renderSyncButton(); if (syncUi.open || syncUi.conflict) renderSyncPanel();
@@ -1168,6 +1214,12 @@ function renderSyncButton(){
   b.title = {off: "Save and continue on another device", on: "Syncing as " + (SY && SY.name), conflict: "Sync needs your attention", offline: "Offline: will sync when you’re back online"}[state];
 }
 function renderSyncPanel(){
+  const v = id => (document.getElementById(id) || {}).value, n = v("sync-name"), p = v("sync-pin");
+  keepFocus(renderSyncPanelRaw);
+  const put = (id, x) => { const el = document.getElementById(id); if (el && x && !el.value) el.value = x; };
+  put("sync-name", n); put("sync-pin", p);
+}
+function renderSyncPanelRaw(){
   const p = document.getElementById("syncpanel"); if (!p) return;
   p.hidden = !syncUi.open;
   if (!syncUi.open) return;
@@ -1199,6 +1251,7 @@ async function linkDevice(mode, name, pin){
   try {
     if (mode === "load") {
       const res = await syncCall("load", {name, pin});
+      if (res.status === 200 && answeredCount(S) && res.body.data !== JSON.stringify(S) && !confirm("Load the progress saved under this username? It replaces the progress on this device.")) { syncUi.busy = false; renderSyncPanel(); return; }
       if (res.status === 200) { SY = {name: name.trim().toLowerCase(), pin, lastTs: 0}; adopt(res.body.data, res.body.ts); syncUi.status = "saved"; announce("Progress loaded."); }
       else syncUi.error = syncErr(res);
     } else {
@@ -1222,21 +1275,24 @@ async function syncAction(act){
     case "sync-close": syncUi.open = false; syncUi.error = ""; renderSyncButton(); renderSyncPanel(); document.getElementById("syncbtn")?.focus(); break;
     case "sync-now": // send this device’s changes if it has any, otherwise fetch the latest copy
       syncUi.busy = true; renderSyncPanel();
+      if (!SY) { syncUi.busy = false; renderSyncPanel(); break; }
       if (S.ts > (SY.lastTs || 0)) await pushSync(); else await syncOnStart();
       syncUi.busy = false; renderSyncPanel(); break;
     case "sync-unlink": SY = null; saveLink(); syncUi.status = ""; syncUi.conflict = null; renderSyncButton(); renderSyncPanel(); announce("This device has stopped syncing. Its progress is kept."); break;
     case "sync-delete": syncUi.confirmDelete = true; renderSyncPanel(); break;
     case "sync-delete-no": syncUi.confirmDelete = false; renderSyncPanel(); break;
     case "sync-delete-yes": {
+      if (!SY) { syncUi.confirmDelete = false; renderSyncPanel(); break; }
       const res = await syncCall("delete", {name: SY.name, pin: SY.pin}).catch(() => ({status: 0, body: {}}));
       if (res.status === 200 || res.status === 404) { SY = null; saveLink(); syncUi.confirmDelete = false; syncUi.status = ""; announce("Saved progress deleted from the server."); }
       else syncUi.error = syncErr(res);
       renderSyncButton(); renderSyncPanel(); break;
     }
-    case "sync-use-remote": { const c = syncUi.conflict; syncUi.conflict = null; adopt(c.data, c.ts); syncUi.status = "saved"; renderSyncButton(); renderSyncPanel(); break; }
+    case "sync-use-remote": { const c = syncUi.conflict; if (!c) break; syncUi.conflict = null; adopt(c.data, c.ts); syncUi.status = "saved"; renderSyncButton(); renderSyncPanel(); break; }
     case "sync-keep-local": syncUi.conflict = null; await pushSync(true); break;
-    case "sync-link-load": { const {name, pin} = syncUi.pendingLink; syncUi.pendingLink = null; await linkDevice("load", name, pin); break; }
+    case "sync-link-load": { if (!syncUi.pendingLink) break; const {name, pin} = syncUi.pendingLink; syncUi.pendingLink = null; await linkDevice("load", name, pin); break; }
     case "sync-link-replace": {
+      if (!syncUi.pendingLink) break;
       const {name, pin} = syncUi.pendingLink; syncUi.pendingLink = null;
       SY = {name: name.trim().toLowerCase(), pin, lastTs: 0}; saveLink(); await pushSync(true); break;
     }
@@ -1274,7 +1330,7 @@ if ("serviceWorker" in navigator && location.protocol !== "file:") {
   const hadController = !!navigator.serviceWorker.controller;
   let reloading = false;
   navigator.serviceWorker.addEventListener("controllerchange", () => {
-    if (!hadController || reloading || ui.building || timerOn || document.querySelector(".dragging, textarea:focus") || (document.getElementById("code-in") || {}).value) return;
+    if (!hadController || reloading || ui.building || timerOn || busyTyping() || ui.fbOpen != null || document.querySelector(".dragging, .confirm") || (document.getElementById("code-in") || {}).value) return;
     reloading = true; save(); location.reload();
   });
   navigator.serviceWorker.register("sw.js").catch(() => {});

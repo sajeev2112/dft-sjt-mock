@@ -77,7 +77,7 @@ html.nd .letter{border-radius:8px}
 html.nd .btn{border-radius:12px; position:relative; overflow:hidden}
 html.nd .btn.primary{background:linear-gradient(135deg, var(--accent), var(--accent-2)); border-color:transparent; box-shadow:0 6px 16px color-mix(in srgb, var(--accent) 32%, transparent)}
 html.nd .btn.primary:hover:not(:disabled){box-shadow:0 10px 24px color-mix(in srgb, var(--accent) 42%, transparent); transform:translateY(-1px)}
-html.nd :focus-visible{outline:none; box-shadow:var(--glow)}
+html.nd :focus-visible{outline:2px solid var(--accent); outline-offset:2px}
 html.nd .ripple{position:absolute; border-radius:50%; pointer-events:none; background:currentColor; opacity:.18; transform:scale(0); animation:nd-ripple .55s ease-out forwards}
 @keyframes nd-ripple{to{transform:scale(1); opacity:0}}
 
@@ -416,9 +416,8 @@ html.nd .nd-tabbar.nd-only, .nd-tabbar{display:none!important}
 html.nd.nd-focus body .nd-stats.nd-only, html.nd.nd-focus body .nd-mockcta.nd-only, html.nd.nd-focus body .nd-revflag.nd-only, html.nd.nd-focus body .nd-tabbar.nd-only, html.nd.nd-focus body .nd-install.nd-only, html.nd.nd-focus body .nd-tip.nd-only{display:none!important}
 
 /* scrolling performance: skip layout/paint work for long sections that are off screen */
-html.nd #view-results .tscroll{content-visibility:auto; contain-intrinsic-size:auto 600px}
+html.nd #view-results .tscroll{content-visibility:auto; contain-intrinsic-size:auto 320px}
 html.nd .nd-progress{will-change:transform}
-html.nd-scrolling .wrap{pointer-events:none}
 
 /* ---------- wide screens: use the room instead of leaving it blank ---------- */
 @media (min-width:1360px){
@@ -459,7 +458,7 @@ html.nd .gsec{scroll-margin-top:calc(env(safe-area-inset-top,0px) + 120px)}
 @media (min-width:1100px){
   html.nd .guide{max-width:none}
   html.nd .gwrap{display:grid; grid-template-columns:240px minmax(0,1fr); gap:0 44px; align-items:start; margin-top:8px}
-  html.nd .gside{position:sticky; top:calc(env(safe-area-inset-top,0px) + 118px); flex-direction:column; flex-wrap:nowrap; gap:2px; margin:0; max-height:calc(100vh - 140px); overflow-y:auto; padding:4px 6px 4px 0; scrollbar-width:thin}
+  html.nd .gside{position:sticky; top:calc(env(safe-area-inset-top,0px) + 118px); flex-direction:column; flex-wrap:nowrap; gap:2px; margin:0; max-height:calc(100vh - 140px); max-height:calc(100dvh - 140px); overflow-y:auto; padding:4px 6px 4px 0; scrollbar-width:thin}
   html.nd .gside a{background:transparent; border-radius:10px; padding:7px 12px; color:var(--ink-2); border-left:2px solid transparent; border-radius:0 10px 10px 0}
   html.nd .gside a:hover{background:var(--surface-2); color:var(--ink)}
   html.nd .gside a[aria-current="true"]{color:var(--accent); background:var(--accent-soft); border-left-color:var(--accent)}
@@ -515,4 +514,84 @@ a.cite:hover{text-decoration-color:var(--accent); background:var(--accent-soft)}
 .gdoc ul{margin:0}
 html.nd .btn.citeback, .citeback{position:fixed; z-index:62; left:50%; transform:translateX(-50%); bottom:calc(env(safe-area-inset-bottom,0px) + 22px); box-shadow:0 10px 28px rgba(10,30,28,.28)!important; animation:nd-enter .3s cubic-bezier(.2,.8,.2,1)}
 .citeback[hidden]{display:none}
-@media (max-width:640px){ .citeback{bottom:calc(env(safe-area-inset-bottom,0px) + 92px)} .std{grid-template-columns:52px 1fr; padding:6px 6px} }
+@media (max-width:640px){ html.nd .btn.citeback, .citeback{bottom:calc(env(safe-area-inset-bottom,0px) + 92px)} .std{grid-template-columns:52px 1fr; padding:6px 6px} }
+
+/* =================== bug-check fixes (Oct 2026) =================== */
+
+/* light theme: darker secondary text so small labels pass 4.5:1 (dark theme keeps its own) */
+html.nd{--ink-3:#5C6B68}
+/* light theme: the gradient's end colour stays dark enough for white text */
+html.nd{--accent-2:#167A6D}
+html[data-accent="indigo"]{--accent-2:#5451DB}
+html[data-accent="ocean"]{--accent-2:#2A6CB5}
+html[data-accent="plum"]{--accent-2:#9E3A7E}
+html[data-accent="slate"]{--accent-2:#4F5D75}
+@media (prefers-color-scheme: dark){ html.nd:not([data-theme="light"]){--accent-2:#7FD6C8} }
+html.nd[data-theme="dark"]{--accent-2:#7FD6C8}
+@media (prefers-color-scheme: dark){
+  html[data-accent="indigo"]:not([data-theme="light"]){--accent-2:#C7D0FF} html[data-accent="plum"]:not([data-theme="light"]){--accent-2:#F0BBDD}
+  html[data-accent="ocean"]:not([data-theme="light"]){--accent-2:#A9CDF5} html[data-accent="slate"]:not([data-theme="light"]){--accent-2:#C6D1E0}
+}
+html[data-accent="indigo"][data-theme="dark"]{--accent-2:#C7D0FF} html[data-accent="plum"][data-theme="dark"]{--accent-2:#F0BBDD}
+html[data-accent="ocean"][data-theme="dark"]{--accent-2:#A9CDF5} html[data-accent="slate"][data-theme="dark"]{--accent-2:#C6D1E0}
+/* dark theme + a non-teal accent: the mock button keeps dark, readable text */
+@media (prefers-color-scheme: dark){ html.nd[data-accent]:not([data-theme="light"]) .nd-cta-btn{color:#10201E!important} }
+html.nd[data-accent][data-theme="dark"] .nd-cta-btn{color:#10201E!important}
+
+/* form fields: borders you can see (3:1) */
+html.nd input:not([type="checkbox"]):not([type="radio"]), html.nd textarea{border-color:var(--ink-3)}
+
+/* question grid: answered and scored cells also get a stripe, so status isn't shown by tint alone */
+html.nd .cell.done{background-image:linear-gradient(to top, var(--accent) 3px, transparent 3px)}
+html.nd .cell.good{background-image:linear-gradient(to top, var(--good) 4px, transparent 4px)}
+html.nd .cell.near{background-image:linear-gradient(to top, var(--near) 4px, transparent 4px)}
+html.nd .cell.bad{background-image:linear-gradient(to top, var(--bad) 4px, transparent 4px)}
+
+/* touch screens: no lifted "hover" left behind after a tap */
+@media (hover: none){
+  html.nd .cell:hover, html.nd .pick:hover, html.nd .ritem:hover, html.nd .bcard:hover, html.nd .nd-statbtn:hover, html.nd .mwrow:hover, html.nd .btn.primary:hover, html.nd .nd-cta-btn:hover{transform:none}
+  html.nd .pick:not([aria-pressed="true"]):hover, html.nd .ritem:hover, html.nd .bcard:hover, html.nd .mwrow:hover{box-shadow:none; border-color:color-mix(in srgb, var(--line) 80%, transparent)}
+}
+
+/* the sticky header's real height (measured in design.js) decides where things stick and where jumps land */
+html.nd{scroll-padding-top:calc(var(--hdr, 0px) + 16px)}
+html.nd .mockbar{top:calc(env(safe-area-inset-top,0px) + var(--hdr, 96px) + 10px)}
+html.nd-focus .mockbar{top:calc(env(safe-area-inset-top,0px) + 8px)}
+html.nd .gsec, html.nd .stdp, html.nd .gdoc{scroll-margin-top:calc(var(--hdr, 96px) + 20px)}
+html.nd .std{scroll-margin-top:calc(var(--hdr, 96px) + 40px)}
+@media (min-width:901px){
+  html.nd .panel{top:calc(env(safe-area-inset-top,0px) + var(--hdr, 96px) + 14px); max-height:calc(100vh - var(--hdr, 96px) - 28px); max-height:calc(100dvh - var(--hdr, 96px) - 28px); overflow-y:auto; overscroll-behavior:contain; scrollbar-width:thin}
+  html.nd-focus .panel{top:calc(env(safe-area-inset-top,0px) + 72px); max-height:calc(100dvh - 88px)}
+}
+html.nd .gside{top:calc(env(safe-area-inset-top,0px) + var(--hdr, 96px) + 16px)}
+/* landscape phones: don't keep a tall header pinned over a short screen */
+@media (max-height:500px){ html.nd .top{position:static} }
+@media (max-width:640px){ html.nd{scroll-padding-bottom:96px} }
+
+/* iPhone landscape: keep content clear of the notch */
+@supports (padding:max(0px)){
+  html.nd .wrap{padding-left:max(20px, env(safe-area-inset-left)); padding-right:max(20px, env(safe-area-inset-right))}
+}
+
+/* mobile tab bar: solid instead of blurred (cheaper to draw while scrolling) */
+@media (max-width:640px){ .nd-tabbar{-webkit-backdrop-filter:none!important; backdrop-filter:none!important; background:var(--surface)!important} }
+
+/* badge toasts sit above the "Back to the question" button when it is showing */
+body:has(#citeback:not([hidden])) .nd-toasts{bottom:calc(env(safe-area-inset-bottom, 0px) + 80px)}
+@media (max-width:640px){ body:has(#citeback:not([hidden])) .nd-toasts{bottom:calc(env(safe-area-inset-bottom, 0px) + 150px)} }
+
+/* the lifted card shows its real position while dragging */
+html.nd .dragging[data-pos]::before{content:attr(data-pos)}
+
+/* small phones: roomier ranking text, two-column mock tiles, a capped Sync button */
+@media (max-width:400px){
+  .ritem{grid-template-columns:28px 24px minmax(0,1fr) auto; gap:6px; padding:9px 8px}
+  .ritem::before{width:28px; height:28px; font-size:14px}
+  .mvb{width:30px}
+}
+@media (max-width:360px){ .mtiles{grid-template-columns:repeat(2, minmax(0, 1fr))} }
+@media (max-width:640px){ html.nd .syncbtn .slabel{max-width:7em; overflow:hidden; text-overflow:ellipsis; white-space:nowrap} }
+
+/* skip link: hidden until focused */
+.skiplink{position:fixed; left:12px; top:-60px; z-index:100; padding:10px 14px; border-radius:10px; border:0; background:var(--accent); color:var(--accent-ink); font:600 14px var(--sans); cursor:pointer; transition:top .15s}
+.skiplink:focus{top:12px}
