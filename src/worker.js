@@ -255,7 +255,7 @@ async function sameSecret(a, b) {
   return a.length > 0 && diff === 0;
 }
 
-// Hourly rate limit per hashed IP. Old buckets are pruned occasionally.
+// Hourly rate limit per hashed IP (the database fallback). Old buckets are pruned occasionally.
 // IPv6 addresses are grouped by /64 (one home or device network) so rotating addresses doesn’t bypass the limit.
 function network(ip) {
   if (!ip.includes(":")) return ip;
@@ -265,8 +265,18 @@ function network(ip) {
   const groups = tail === undefined ? h : h.concat(Array(Math.max(0, 8 - h.length - t.length)).fill("0"), t);
   return groups.slice(0, 4).map(g => (parseInt(g, 16) || 0).toString(16)).join(":") + "::/64";
 }
+// Busy endpoints use Cloudflare's built-in rate limiter (per minute, kept outside the database, so no D1 write).
+// Rare or security-sensitive ones (new sync names, admin, error reports) keep exact hourly counts in D1.
+// If a binding is missing (local tests, or a plan without it) the D1 counter is used instead.
+const RATE_BINDINGS = {answers: "RL_ANSWERS", feedback: "RL_FEEDBACK", visit: "RL_VISIT", sync: "RL_SYNC"};
 async function allow(request, env, ctx, weight, kind) {
   const ip = network(request.headers.get("CF-Connecting-IP") || "unknown");
+  const rl = env[RATE_BINDINGS[kind]];
+  if (rl && typeof rl.limit === "function") {
+    const d = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(ip + "|dft-sjt|" + (env.HASH_PEPPER || "") + "|" + kind));
+    const key = [...new Uint8Array(d).slice(0, 12)].map(b => b.toString(16).padStart(2, "0")).join("");
+    try { return (await rl.limit({key})).success; } catch (e) { /* fall through to the database counter */ }
+  }
   const hour = Math.floor(Date.now() / 3600000);
   const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(ip + "|dft-sjt|" + (env.HASH_PEPPER || "") + "|" + kind + "|" + hour));
   const key = [...new Uint8Array(digest).slice(0, 12)].map(b => b.toString(16).padStart(2, "0")).join("");

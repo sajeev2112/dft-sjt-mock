@@ -6,6 +6,13 @@
   "observability": { "enabled": true },
   // Only the docs folder is public. Everything else in the repo stays private to the build.
   "assets": { "directory": "./docs", "binding": "ASSETS" },
+  // Built-in per-minute rate limits for the busy API endpoints (no database writes). Period must be 10 or 60 seconds.
+  "ratelimits": [
+    { "name": "RL_ANSWERS", "namespace_id": "1001", "simple": { "limit": 60, "period": 60 } },
+    { "name": "RL_FEEDBACK", "namespace_id": "1002", "simple": { "limit": 10, "period": 60 } },
+    { "name": "RL_VISIT", "namespace_id": "1003", "simple": { "limit": 30, "period": 60 } },
+    { "name": "RL_SYNC", "namespace_id": "1004", "simple": { "limit": 30, "period": 60 } }
+  ],
   // Community stats. Tables are created automatically on first use.
   "d1_databases": [
     { "binding": "DB", "database_name": "dft-sjt-stats", "database_id": "178ed023-bba5-4d04-8cd2-3928c7b51858" }

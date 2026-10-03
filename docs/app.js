@@ -235,8 +235,10 @@ async function loadStats(qi, force){
 }
 function statsHtml(qi){
   const st = stats[qi], q = Q[qi];
-  if (!st || st.state === "loading") return `<div class="stats" id="stats-${qi}"><p class="muted">Loading how others answered…</p></div>`;
-  if (st.state !== "ok") return `<div class="stats" id="stats-${qi}" hidden></div>`;
+  if (!st) return `<div class="stats" id="stats-${qi}"><button type="button" class="btn small statsopen" data-act="show-stats" aria-expanded="false">Show how others answered</button>${fbHtml(qi, null)}</div>`;
+  if (st.state === "loading") return `<div class="stats" id="stats-${qi}"><p class="muted">Loading how others answered…</p></div>`;
+  if (st.state === "off") return `<div class="stats" id="stats-${qi}">${fbHtml(qi, null)}</div>`;
+  if (st.state !== "ok") return `<div class="stats" id="stats-${qi}"><p class="muted">Couldn’t load how others answered. <button type="button" class="btn small" data-act="show-stats">Try again</button></p>${fbHtml(qi, null)}</div>`;
   const d = st.data;
   let h = `<div class="stats" id="stats-${qi}"><p class="xhead">How others answered · ${d.n} ${d.n === 1 ? "person" : "people"}</p>`;
   if (d.n < d.min) {
@@ -260,10 +262,13 @@ function statsHtml(qi){
     });
     h += `</div>`;
   }
-  if (S.fb[qi]) h += `<p class="muted fbdone">Thanks. Your feedback on this key was sent.</p>`;
-  else if (ui.fbOpen === qi) h += `<div class="fbform"><label for="fb-${qi}">What would you change, and why? (optional)</label><textarea id="fb-${qi}" maxlength="500" rows="3"></textarea><div class="row"><button type="button" class="btn small primary" data-act="send-fb">Send</button><button type="button" class="btn small" data-act="cancel-fb">Cancel</button></div></div>`;
-  else h += `<div class="fbline"><button type="button" class="btn small" data-act="disagree">I disagree with this key</button>${d.disagree ? `<span class="muted">${d.disagree} ${d.disagree === 1 ? "person has" : "people have"} disagreed</span>` : ""}</div>`;
-  return h + `</div>`;
+  return h + fbHtml(qi, d) + `</div>`;
+}
+// "I disagree with this key" is always available, whether or not the community stats are open.
+function fbHtml(qi, d){
+  if (S.fb[qi]) return `<p class="muted fbdone">Thanks. Your feedback on this key was sent.</p>`;
+  if (ui.fbOpen === qi) return `<div class="fbform"><label for="fb-${qi}">What would you change, and why? (optional)</label><textarea id="fb-${qi}" maxlength="500" rows="3"></textarea><div class="row"><button type="button" class="btn small primary" data-act="send-fb">Send</button><button type="button" class="btn small" data-act="cancel-fb">Cancel</button></div></div>`;
+  return `<div class="fbline"><button type="button" class="btn small" data-act="disagree">I disagree with this key</button>${d && d.disagree ? `<span class="muted">${d.disagree} ${d.disagree === 1 ? "person has" : "people have"} disagreed</span>` : ""}</div>`;
 }
 
 // ---------- UI state ----------
@@ -441,7 +446,7 @@ function renderCard(){
   if (set.mode === "exam" && !rev) h += `<p class="hint">Exam mode: your answers are saved and the whole set is marked when you press Mark.</p>`;
   card.innerHTML = h;
   animateCard(`${S.setId}:${qi}:${rev ? 1 : 0}`, k, rev);
-  if (rev) { if (stats[qi]) loadStats(qi); else { stats[qi] = {state:"loading"}; flush().then(() => loadStats(qi, true)); } }
+  if (rev) flush(); // community stats load only when someone opens them
   initDrag();
 }
 
@@ -1017,6 +1022,13 @@ document.addEventListener("click", async e => {
       curList().forEach(i => { delete set.ans[i]; delete set.chk[i]; });
       set.marked = false; set.el = 0; set.cur = 0; set.logged = false; delete set.qt; ui.warned = {}; if (isMock(set)) set.started = false; timerOn = false; ui.confirmReset = false; ui.summary = false; save(); render();
       break;
+    case "show-stats": {
+      const focusStats = () => { const t = document.querySelector(`#stats-${qi} .xhead, #stats-${qi} p`); if (t) { t.setAttribute("tabindex", "-1"); t.focus({preventScroll: true}); } };
+      stats[qi] = {state: "loading"};
+      const box = document.getElementById("stats-" + qi); if (box) box.outerHTML = statsHtml(qi);
+      focusStats(); flush().then(() => loadStats(qi, true)).then(focusStats);
+      break;
+    }
     case "disagree": ui.fbOpen = qi; refreshStats(qi); document.getElementById("fb-" + qi)?.focus(); break;
     case "cancel-fb": ui.fbOpen = null; refreshStats(qi); break;
     case "send-fb": {
@@ -1025,7 +1037,7 @@ document.addEventListener("click", async e => {
       try {
         const r = await fetch(API + "/api/feedback", {method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({client:S.cid, q:qi + 1, comment})});
         if (!r.ok) throw new Error(r.status);
-        S.fb[qi] = 1; ui.fbOpen = null; save(); loadStats(qi, true);
+        S.fb[qi] = 1; ui.fbOpen = null; save(); if (stats[qi]) loadStats(qi, true); else refreshStats(qi);
       } catch(err) { b.disabled = false; b.textContent = "Couldn’t send. Try again"; }
       break;
     }
