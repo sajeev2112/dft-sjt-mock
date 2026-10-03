@@ -237,16 +237,16 @@ function statsHtml(qi){
   if (d.n < d.min) {
     h += `<p class="muted">Community stats appear once ${d.min} people have answered this question. ${S.share ? "Your answer has been counted." : "Turn on anonymous sharing in Settings to add yours."}</p>`;
   } else if (isRank(q)) {
-    h += `<p class="muted">Each row shows where people ranked that option, from 1 (left) to 5 (right). Darker = more people. The outlined cell is the key’s position.</p><div class="heat" role="table" aria-label="How others ranked each option">`;
-    h += `<div class="hrow hhead" role="row"><span></span>${[1,2,3,4,5].map(n => `<span role="columnheader">${n}</span>`).join("")}<span>Agree with key</span></div>`;
+    h += `<p class="muted">Each row is one option, in the key’s order. The boxes show what share of people put it 1st, 2nd, 3rd, 4th or 5th.</p><div class="heat" role="table" aria-label="How others ranked each option">`;
+    h += `<div class="hrow hhead" role="row"><span></span>${["1st","2nd","3rd","4th","5th"].map(n => `<span role="columnheader">${n}</span>`).join("")}<span>Same as key</span></div>`;
     q.k.split("").forEach(ch => {
       const o = L.indexOf(ch), row = d.pos[o], kp = keyRank(q, o) - 1, tot = row.reduce((a, b) => a + b, 0) || 1;
       h += `<div class="hrow" role="row"><span class="letter">${ch}</span>` + row.map((c, p) => {
         const share = c / tot;
-        return `<span role="cell" class="hcell${p === kp ? " key" : ""}${share >= 0.5 ? " hi" : ""}" style="--a:${(0.08 + share * 0.92).toFixed(2)}" title="${Math.round(share * 100)}% ranked ${ch} at ${p + 1}">${share >= 0.1 ? Math.round(share * 100) : ""}</span>`;
+        return `<span role="cell" class="hcell${p === kp ? " key" : ""}${share >= 0.5 ? " hi" : ""}" style="--a:${(0.08 + share * 0.92).toFixed(2)}" title="${Math.round(share * 100)}% put ${ch} ${["1st","2nd","3rd","4th","5th"][p]}${p === kp ? " (the key’s position)" : ""}">${share >= 0.1 ? Math.round(share * 100) + "%" : ""}</span>`;
       }).join("") + `<span class="hagree">${Math.round(row[kp] / tot * 100)}%</span></div>`;
     });
-    h += `</div>`;
+    h += `</div><p class="hlegend"><span><i class="hcell key" style="--a:.08"></i>Where the key puts it</span><span><i class="hcell" style="--a:.2"></i><i class="hcell" style="--a:.6"></i><i class="hcell" style="--a:1"></i>Darker = more people</span></p>`;
   } else {
     h += `<div class="picks">`;
     q.o.forEach((_, o) => {
@@ -705,7 +705,7 @@ function activityHtml(){
   }
   return `<h3 class="bsub">Activity</h3><div class="acts"><div class="streak${st.cur ? " lit" : ""}"><b>${st.cur}</b><span>day streak${st.cur ? " 🔥" : ""}</span></div>` +
     `<div><b>${st.best}</b><span>best streak</span></div><div><b>${st.days}</b><span>days practised</span></div><div><b>${week7}</b><span>questions this week</span></div></div>` +
-    `<div class="heat" role="img" aria-label="Practice calendar for the last ${WEEKS} weeks, ${st.days} days practised"><div class="hmonths">${months}</div><div class="hdays"><span>Mon</span><span></span><span>Wed</span><span></span><span>Fri</span><span></span><span></span></div><div class="hgrid">${cells}</div></div>` +
+    `<div class="acal" role="img" aria-label="Practice calendar for the last ${WEEKS} weeks, ${st.days} days practised"><div class="hmonths">${months}</div><div class="hdays"><span>Mon</span><span></span><span>Wed</span><span></span><span>Fri</span><span></span><span></span></div><div class="hgrid">${cells}</div></div>` +
     `<p class="hkey muted">Less <i class="hc l0"></i><i class="hc l1"></i><i class="hc l2"></i><i class="hc l3"></i><i class="hc l4"></i> More</p>`;
 }
 // Badges are worked out from your saved progress, so they sync and never need storing.
