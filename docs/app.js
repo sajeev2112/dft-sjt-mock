@@ -98,14 +98,14 @@ const ui0 = {rewritten:false};
 let timerOn = false;
 // Progress lives in localStorage, with a debounced backup copy in IndexedDB in case one store is cleared.
 let storageOk = true, savedAt = 0, idbTimer = null;
-function save(now){
+function save(now, quiet){
   S.ts = Math.max(Date.now(), (S.ts || 0) + 1); // never go backwards, even if another device's clock was ahead
   const json = JSON.stringify(S);
   try { localStorage.setItem(STORE, json); storageOk = true; } catch(e) { storageOk = false; }
   savedAt = Date.now();
   clearTimeout(idbTimer);
   if (now) idbPut(json); else idbTimer = setTimeout(() => idbPut(json), 800);
-  if (typeof scheduleSync === "function") scheduleSync();
+  if (!quiet && typeof scheduleSync === "function") scheduleSync();
 }
 // Writes the current state without changing its timestamp (used when adopting a synced copy).
 function persistAsIs(){
@@ -1105,7 +1105,7 @@ setInterval(() => {
     if (t <= 0) { save(); timeUp(); return; }
   } else if (c) c.textContent = fmt(set.el);
   if (p) p.textContent = `At live-test pace you’d be on question ${Math.min(list.length, Math.floor(set.el / PACE) + 1)} of ${live ? list.length : "this set"}.`;
-  if (tick % 5 < whole) save();
+  if (tick % 5 < whole) save(false, true); // the clock alone doesn't trigger a sync upload
 }, 1000);
 
 // ---------- cross-device sync (username + PIN, optional) ----------
@@ -1152,9 +1152,11 @@ function adopt(data, ts){
   ui.summary = false; ui.confirmMark = ui.confirmReset = false; persistAsIs();
   SY.lastTs = ts; SY.at = Date.now(); saveLink(); render();
 }
+// Upload a few seconds after a change, but at most about once every 45 seconds; leaving the page sends the latest copy.
+let lastPushAt = 0;
 function scheduleSync(){
   if (!SY || syncUi.conflict) return;
-  clearTimeout(syncTimer); syncTimer = setTimeout(pushSync, 4000);
+  clearTimeout(syncTimer); syncTimer = setTimeout(pushSync, Math.max(4000, lastPushAt + 45000 - Date.now()));
 }
 let pushing = null, pushAgain = false;
 async function pushSync(force){
@@ -1164,7 +1166,7 @@ async function pushSync(force){
   try { await pushing; } finally { pushing = null; if (pushAgain) { pushAgain = false; scheduleSync(); } }
 }
 async function pushSyncNow(force){
-  freshLink();
+  freshLink(); lastPushAt = Date.now();
   if (!SY || (!force && S.ts <= (SY.lastTs || 0))) return;
   clearTimeout(syncTimer);
   syncUi.status = "saving"; renderSyncButton();

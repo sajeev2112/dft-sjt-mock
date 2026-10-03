@@ -31,7 +31,11 @@ const SCHEMA = [
   "CREATE TABLE IF NOT EXISTS visits (day TEXT NOT NULL, client TEXT NOT NULL, views INTEGER NOT NULL, app INTEGER NOT NULL DEFAULT 0, PRIMARY KEY (day, client))",
   "CREATE TABLE IF NOT EXISTS errors (t INTEGER NOT NULL, kind TEXT NOT NULL, msg TEXT)",
   "CREATE INDEX IF NOT EXISTS errors_t ON errors (t)",
-  "CREATE TABLE IF NOT EXISTS sync (name TEXT PRIMARY KEY, salt TEXT NOT NULL, pin TEXT NOT NULL, data TEXT, ts INTEGER NOT NULL DEFAULT 0, updated INTEGER NOT NULL, fails INTEGER NOT NULL DEFAULT 0, locked_until INTEGER NOT NULL DEFAULT 0)"
+  "CREATE TABLE IF NOT EXISTS sync (name TEXT PRIMARY KEY, salt TEXT NOT NULL, pin TEXT NOT NULL, data TEXT, ts INTEGER NOT NULL DEFAULT 0, updated INTEGER NOT NULL, fails INTEGER NOT NULL DEFAULT 0, locked_until INTEGER NOT NULL DEFAULT 0)",
+  // Running totals for community stats, kept up to date as answers arrive, so a stats lookup reads
+  // at most 120 rows however many people have answered (instead of recounting every answer).
+  "CREATE TABLE IF NOT EXISTS answer_counts (q INTEGER NOT NULL, a TEXT NOT NULL, c INTEGER NOT NULL, PRIMARY KEY (q, a))",
+  "CREATE TRIGGER IF NOT EXISTS answers_v2_count AFTER INSERT ON answers_v2 BEGIN INSERT INTO answer_counts (q, a, c) VALUES (NEW.q, NEW.a, 1) ON CONFLICT (q, a) DO UPDATE SET c = c + 1; END"
 ];
 
 export default {
@@ -46,7 +50,13 @@ export default {
     if (!env.DB) return json({error: "not_configured"}, 503, cors);
 
     try {
-      if (!schemaReady) { await env.DB.batch(SCHEMA.map(s => env.DB.prepare(s))); schemaReady = true; }
+      if (!schemaReady) {
+        await env.DB.batch(SCHEMA.map(s => env.DB.prepare(s)));
+        // one-off: build the totals from answers stored before they existed
+        if (!(await env.DB.prepare("SELECT 1 AS x FROM answer_counts LIMIT 1").first()))
+          await env.DB.prepare("INSERT INTO answer_counts (q, a, c) SELECT q, a, COUNT(*) FROM answers_v2 WHERE NOT EXISTS (SELECT 1 FROM answer_counts) GROUP BY q, a").run();
+        schemaReady = true;
+      }
       if (url.pathname === "/api/stats" && request.method === "GET") return await stats(url, env, cors);
       if (url.pathname === "/api/answers" && request.method === "POST") return await answers(request, env, ctx, cors);
       if (url.pathname === "/api/feedback" && request.method === "POST") return await feedback(request, env, ctx, cors);
@@ -69,7 +79,7 @@ async function stats(url, env, cors) {
   if (!q) return json({error: "bad_question"}, 400, cors);
   const type = QTYPES[q - 1];
   const [rows, fb] = await env.DB.batch([
-    env.DB.prepare("SELECT a, COUNT(*) AS c FROM answers_v2 WHERE q = ? GROUP BY a").bind(q),
+    env.DB.prepare("SELECT a, c FROM answer_counts WHERE q = ?").bind(q),
     env.DB.prepare("SELECT COUNT(*) AS c FROM feedback_v2 WHERE q = ?").bind(q)
   ]);
   let n = 0;
