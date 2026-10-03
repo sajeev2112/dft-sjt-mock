@@ -58,7 +58,7 @@ function normalise(o){
   const s = fresh();
   if (!o || typeof o !== "object") return s;
   if (typeof o.cid === "string" && /^[A-Za-z0-9-]{8,64}$/.test(o.cid)) s.cid = o.cid;
-  s.share = o.share !== false;
+  s.share = true; // anonymous sharing is always on
   s.ts = num(o.ts, 1e14);
   s.view = ["practice", "results", "guide", "settings"].includes(o.view) ? o.view : "practice";
   const sets = o.sets || {};
@@ -73,7 +73,7 @@ function normalise(o){
     }
   }
   s.setId = s.sets[o.setId] && (o.setId === "custom" || PAPER_IDS.includes(o.setId)) ? o.setId : "p1";
-  for (const k of Object.keys(o.att || {})) { const i = +k; if (isQi(i) && Array.isArray(o.att[k])) s.att[i] = o.att[k].slice(-20).map(a => ({g: num(a && a.g, 20), m: num(a && a.m, 20) || 20, t: num(a && a.t, 1e14)})); }
+  for (const k of Object.keys(o.att || {})) { const i = +k; if (isQi(i) && Array.isArray(o.att[k])) s.att[i] = o.att[k].slice(-5).map(a => ({g: num(a && a.g, 20), m: num(a && a.m, 20) || 20, t: num(a && a.t, 1e14)})); }
   for (const d of Object.keys(o.days || {})) { const x = o.days[d]; if (/^\d{4}-\d{2}-\d{2}$/.test(d) && x) s.days[d] = {g: num(x.g), m: num(x.m), n: num(x.n)}; }
   s.hist = (Array.isArray(o.hist) ? o.hist : []).slice(-200).filter(h => h && typeof h === "object").map(h => ({t: num(h.t, 1e14), name: String(h.name || "Set").slice(0, 80), g: num(h.g), m: num(h.m) || 1, n: num(h.n), total: num(h.total), mode: h.mode === "exam" ? "exam" : "practice"}));
   for (const k of Object.keys(o.sent || {})) { const i = +k; if (isQi(i)) s.sent[i] = 1; }
@@ -88,7 +88,6 @@ function carryOver(o){
   const s = fresh();
   if (o && typeof o === "object") {
     if (typeof o.cid === "string") s.cid = o.cid;
-    if (typeof o.share === "boolean") s.share = o.share;
     if (o.days && typeof o.days === "object") s.days = o.days;
     if (Array.isArray(o.hist)) s.hist = o.hist.filter(h => h && typeof h === "object").map(h => Object.assign({}, h, {name: String(h.name || "Set") + " (old version)"}));
   }
@@ -173,6 +172,7 @@ function lastAtt(qi){ const a = S.att[qi]; return a && a.length ? a[a.length - 1
 function addAttempt(s, set, qi, submit = true){
   const sc = qScore(set, qi);
   (s.att[qi] = s.att[qi] || []).push({g:sc.got, m:sc.max, t:Date.now()});
+  if (s.att[qi].length > 5) s.att[qi] = s.att[qi].slice(-5); // keep the last 5 attempts per question
   const d = s.days[today()] = s.days[today()] || {g:0, m:0, n:0};
   d.g += sc.got; d.m += sc.max; d.n++;
   if (submit && s.share && !s.sent[qi] && complete(set, qi)) {
@@ -239,7 +239,7 @@ function statsHtml(qi){
   const d = st.data;
   let h = `<div class="stats" id="stats-${qi}"><p class="xhead">How others answered · ${d.n} ${d.n === 1 ? "person" : "people"}</p>`;
   if (d.n < d.min) {
-    h += `<p class="muted">Community stats appear once ${d.min} people have answered this question. ${S.share ? "Your answer has been counted." : "Turn on anonymous sharing in Settings to add yours."}</p>`;
+    h += `<p class="muted">Community stats appear once ${d.min} people have answered this question. Your answer has been counted.</p>`;
   } else if (isRank(q)) {
     h += `<p class="muted">Each row is one option, in the key’s order. The boxes show what share of people put it 1st, 2nd, 3rd, 4th or 5th.</p><div class="heat" role="table" aria-label="How others ranked each option">`;
     h += `<div class="hrow hhead" role="row"><span role="columnheader"><span class="sr-only">Option</span></span>${["1st","2nd","3rd","4th","5th"].map(n => `<span role="columnheader">${n}</span>`).join("")}<span role="columnheader">Same as key</span></div>`;
@@ -853,7 +853,7 @@ function renderSettingsRaw(){
   const el = document.getElementById("view-settings");
   const standalone = window.matchMedia && window.matchMedia("(display-mode: standalone)").matches;
   let h = `<div class="card"><h2 class="bh">Settings</h2>`;
-  h += `<section class="sset"><h3>Community stats</h3><label class="toggle"><input type="checkbox" id="share" ${S.share ? "checked" : ""}> <span>Share anonymous answers and usage</span></label><p class="muted">When on, the site sends your first attempt at each question, a count of your visits, and any error reports. None of it includes your name, email or IP address; it’s linked only to a random code stored in this browser. Answers power the community stats. Visit counts and error reports are only seen by the site owner, to keep the site running. Turning this off stops all sending; data already sent stays in the totals.</p></section>`;
+  h += `<section class="sset"><h3>Community stats</h3><p class="muted">The site sends your first attempt at each question, a count of your visits, and any error reports. None of it includes your name, email or IP address; it’s linked only to a random code stored in this browser. Answers power the community stats. Visit counts and error reports are only seen by the site owner, to keep the site running.</p></section>`;
   h += `<section class="sset"><h3>How your progress is saved</h3><p class="muted">Your answers, scores and settings are saved automatically in this browser, with a backup copy, so they’re still here when you come back. There’s no account, and nothing leaves your device apart from anonymous answers for the community stats. Progress can be lost if you clear your browsing data, use a private window, or (in Safari) don’t visit for 7 days. Adding the site to your home screen avoids the Safari limit. To carry on across devices automatically, use <b>Sync</b> in the top bar: pick a username and PIN, and your progress saves to the site’s server and loads on any device with the same pair.</p></section>`;
   h += `<section class="sset"><h3>Move your progress to another device</h3><p class="muted">Copy a progress code here, then paste it into Settings on your other device. It replaces the progress there.</p><div class="row"><button type="button" class="btn small primary" data-act="copy-code">Create progress code</button></div>`;
   if (ui.code) h += `<label class="lbl" for="code-out">Your progress code</label><textarea class="code" id="code-out" rows="3" readonly>${ui.code}</textarea>`;
@@ -1048,7 +1048,6 @@ document.addEventListener("click", async e => {
   }
 });
 document.addEventListener("change", e => {
-  if (e.target.id === "share") { S.share = e.target.checked; save(); if (S.share) flush(); }
 });
 function refreshStats(qi){ keepFocus(() => { const box = document.getElementById("stats-" + qi); if (box) box.outerHTML = statsHtml(qi); }); }
 function markSet(){

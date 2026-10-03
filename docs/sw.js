@@ -1,6 +1,6 @@
 // Offline support. The site's own files load network-first, so updates show straight away when online;
 // fonts and the drag library load cache-first. API calls are never cached.
-const VERSION = "d274dae4a8"; // set by tools/build.js
+const VERSION = "470aadd6ec"; // set by tools/build.js
 const CACHE = "dft-sjt-" + VERSION;
 const CORE = [
   "./", "styles.css", "design.css", "questions.js", "guide.js", "app.js", "design.js", "phrases.js", "standards.js",
