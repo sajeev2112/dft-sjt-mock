@@ -6,6 +6,7 @@
 //   POST /api/visit     one anonymous visit per page load (private visitor stats, read in the D1 console)
 //   POST /api/error     a browser error report (message only)
 //   POST /api/sync      save, load or delete progress under a username + PIN (optional cross-device sync; no accounts)
+//   POST /api/explain   "Explain my mistake" (Beta): AI explanation of a wrong answer, checked against the key (see explain.js)
 //   GET  /api/admin     private dashboard data; needs "Authorization: Bearer <ADMIN_KEY>" (a Worker secret)
 //   GET  /api/health    uptime check used by the GitHub Actions alert workflow (counts only, no messages)
 // Answers and feedback use the _v2 tables since the question bank was rewritten (Sept 2026); the old tables are kept but unused.
@@ -16,9 +17,11 @@
 const QTYPES = "rbrrbrrbrbrbrbrrrbrbrbrbrbrrrbbrrbrbrrbrbrbrbrbrbrrbrbrbrbrbrrbrrrbrbrrbrbrbrbbbrrrbrbrbrbrrrbrbrbrrrrbrbrrrbrrrbrbrrbrrbrbrbrbrrbrrrbrrrrbrrbrrbrrrbrbrbrrbrrrb";
 // TYPES:end
 
+import { explainHandler } from "./explain.js";
+
 const CORS_ORIGINS = ["https://sajeev2112.github.io"];
 // Hourly limits per network and endpoint. Generous enough for a whole class on shared Wi-Fi.
-const LIMITS = {answers: 3000, feedback: 100, visit: 600, error: 20, admin: 60, sync: 600, create: 20};
+const LIMITS = {answers: 3000, feedback: 100, visit: 600, error: 20, admin: 60, sync: 600, create: 20, explain: 40};
 const MIN_STATS = 3;
 
 let schemaReady = false;
@@ -34,6 +37,8 @@ const SCHEMA = [
   "CREATE TABLE IF NOT EXISTS sync (name TEXT PRIMARY KEY, salt TEXT NOT NULL, pin TEXT NOT NULL, data TEXT, ts INTEGER NOT NULL DEFAULT 0, updated INTEGER NOT NULL, fails INTEGER NOT NULL DEFAULT 0, locked_until INTEGER NOT NULL DEFAULT 0)",
   // Running totals for community stats, kept up to date as answers arrive, so a stats lookup reads
   // at most 120 rows however many people have answered (instead of recounting every answer).
+  "CREATE TABLE IF NOT EXISTS ai_usage (day TEXT PRIMARY KEY, n REAL NOT NULL)",
+  "CREATE TABLE IF NOT EXISTS explain_cache (k TEXT PRIMARY KEY, v TEXT NOT NULL, t INTEGER NOT NULL)",
   "CREATE TABLE IF NOT EXISTS answer_counts (q INTEGER NOT NULL, a TEXT NOT NULL, c INTEGER NOT NULL, PRIMARY KEY (q, a))",
   "CREATE TRIGGER IF NOT EXISTS answers_v2_count AFTER INSERT ON answers_v2 BEGIN INSERT INTO answer_counts (q, a, c) VALUES (NEW.q, NEW.a, 1) ON CONFLICT (q, a) DO UPDATE SET c = c + 1; END"
 ];
@@ -65,6 +70,7 @@ export default {
       if (url.pathname === "/api/health" && request.method === "GET") return await health(env, cors);
       if (url.pathname === "/api/sync" && request.method === "POST") return await sync(request, env, ctx, cors);
       if (url.pathname === "/api/admin" && request.method === "GET") return await admin(request, env, ctx, cors);
+      if (url.pathname === "/api/explain" && request.method === "POST") return await explainHandler(request, env, ctx, cors, {allow, readJson, json});
       return json({error: "not_found"}, 404, cors);
     } catch (err) {
       console.error(err);

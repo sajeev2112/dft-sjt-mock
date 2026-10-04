@@ -13,6 +13,8 @@
     { "name": "RL_VISIT", "namespace_id": "1003", "simple": { "limit": 30, "period": 60 } },
     { "name": "RL_SYNC", "namespace_id": "1004", "simple": { "limit": 30, "period": 60 } }
   ],
+  // Workers AI for "Explain my mistake" (Beta). Daily use is capped in src/explain.js to stay inside the free allowance.
+  "ai": { "binding": "AI" },
   // Community stats. Tables are created automatically on first use.
   "d1_databases": [
     { "binding": "DB", "database_name": "dft-sjt-stats", "database_id": "178ed023-bba5-4d04-8cd2-3928c7b51858" }

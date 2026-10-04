@@ -363,24 +363,8 @@ function linkCites(text){
     return "(" + t + ")";
   });
 }
-// Your order and the key side by side, joined by lines: a crossing line shows where you went wrong.
-function rankLinksHtml(set, qi){
-  const q = Q[qi], a = set.ans[qi]; if (!a || !a.set) return "";
-  const W = 300, top = 34, gap = 40, xl = 60, xr = W - 60, y = i => top + i * gap, H = top + 4 * gap + 22;
-  const th = i => (i + 1) + ["st","nd","rd","th","th"][i];
-  let lines = "", nodes = "";
-  a.ord.forEach((o, i) => {
-    const j = keyRank(q, o) - 1, d = Math.abs(i - j), cls = d === 0 ? "b4" : d === 1 ? "b3" : "b0";
-    lines += `<path class="rl ${cls}" style="--i:${i}" d="M${xl + 15},${y(i)} C${W / 2},${y(i)} ${W / 2},${y(j)} ${xr - 15},${y(j)}" data-tip="${L[o]}: you put it ${th(i)}, the key has it ${th(j)}${d ? ` (${d} place${d === 1 ? "" : "s"} out)` : ""}"/>`;
-    nodes += `<g class="rn ${cls}"><circle cx="${xl}" cy="${y(i)}" r="15"/><text x="${xl}" y="${y(i) + 5}">${L[o]}</text></g>`;
-  });
-  q.k.split("").forEach((ch, j) => { nodes += `<g class="rn key"><circle cx="${xr}" cy="${y(j)}" r="15"/><text x="${xr}" y="${y(j) + 5}">${ch}</text></g>`; });
-  for (let i = 0; i < 5; i++) nodes += `<text class="rpos" x="${xl - 34}" y="${y(i) + 4}">${i + 1}</text>`;
-  return `<div class="rlinks"><svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Your order compared with the correct order"><text class="rhead" x="${xl}" y="14">You</text><text class="rhead" x="${xr}" y="14">Key</text>${lines}${nodes}</svg>` +
-    `<p class="rlegend"><span><i class="b4"></i>Right place</span><span><i class="b3"></i>One out</span><span><i class="b0"></i>Two or more out</span></p></div>`;
-}
-function crow(pos, o, text, cls, pts){
-  return `<div class="crow ${cls}"><span class="pos">${pos}</span><span class="letter">${L[o]}</span><span class="ctext">${text}</span><span class="pts">${pts}</span></div>`;
+function crow(pos, o, text, cls, pts, note){
+  return `<div class="crow ${cls}"><span class="pos">${pos}</span><span class="letter">${L[o]}</span><span class="ctext">${text}${note ? `<span class="cmove">${note}</span>` : ""}</span><span class="pts">${pts}</span></div>`;
 }
 
 function renderCard(){
@@ -422,9 +406,11 @@ function renderCard(){
     q.o.forEach(([text, why], idx) => { h += `<div class="xitem" style="--i:${idx}"><span class="letter">${L[idx]}</span><div><span class="otext">${text}</span><span class="xwhy"><b>Justification:</b> ${linkCites(why)}</span></div></div>`; });
     h += "</div></div>";
     const sc = qScore(set, qi);
-    h += `<div class="result"><div class="scoreline"><span class="sr-only">${sc.got} out of ${sc.max} marks</span><span class="sv" aria-hidden="true">${sc.got} / ${sc.max} marks</span></div>${rank ? rankLinksHtml(set, qi) : ""}<div class="compare"><div class="ccol"><h4>Your answer</h4><div class="crows">`;
+    h += `<div class="result"><div class="scoreline"><span class="sr-only">${sc.got} out of ${sc.max} marks</span><span class="sv" aria-hidden="true">${sc.got} / ${sc.max} marks</span></div><div class="compare"><div class="ccol"><h4>Your answer</h4><div class="crows">`;
     if (rank) {
-      if (a && a.set) a.ord.forEach((o, pos) => { const pts = optPts(set, qi, o); h += crow(pos + 1, o, q.o[o][0], "b" + pts, pts + "/4"); });
+      const ORD = ["1st", "2nd", "3rd", "4th", "5th"];
+      if (a && a.set) a.ord.forEach((o, pos) => { const pts = optPts(set, qi, o), kr = keyRank(q, o);
+        h += crow(pos + 1, o, q.o[o][0], "b" + pts, pts + "/4", kr === pos + 1 ? "✓ Right place" : `${kr < pos + 1 ? "↑" : "↓"} Belongs ${ORD[kr - 1]}`); });
       else h += `<div class="cempty">Not answered</div>`;
     } else {
       const picks = a ? a.p.slice().sort((x, y) => x - y) : [];
