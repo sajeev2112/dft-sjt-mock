@@ -617,3 +617,16 @@ html.nd .dragging[data-pos]::before{content:attr(data-pos)}
 .xm-notice{margin:0; padding:8px 12px; border-radius:10px; background:var(--near-soft); color:var(--ink); font-size:13.5px}
 .xm-right{margin:2px 0 0; font-size:13.5px; color:var(--good)}
 .xm-principle{margin:0; padding:10px 12px; border-radius:10px; background:var(--surface-2); font-size:14px}
+
+/* touch screens: the grip is a real drag handle (the rest of the row still scrolls the page), and the page can't be pushed sideways */
+html{overflow-x:hidden; overscroll-behavior-x:none}
+body{overflow-x:clip}
+body.is-sorting{touch-action:none; overscroll-behavior:contain}
+@media (pointer:coarse){
+  .rlist .ritem{grid-template-columns:30px 26px 28px minmax(0,1fr) auto; gap:8px; -webkit-touch-callout:none; touch-action:pan-y}
+  .rlist .ritem .grip{display:grid; position:relative; align-self:stretch; touch-action:none; cursor:grab}
+  .rlist .ritem .grip::after{content:""; position:absolute; inset:-6px -8px}
+}
+@media (pointer:coarse) and (max-width:400px){
+  .rlist .ritem{grid-template-columns:28px 22px 24px minmax(0,1fr) auto; gap:6px}
+}

@@ -542,10 +542,13 @@ function initDrag(){
   if (!el || !window.Sortable) return;
   const set = curSet(), qi = curQi();
   const buzz = ms => { try { if (navigator.vibrate && !calm()) navigator.vibrate(ms); } catch(e) {} };
+  // On touch screens the grip is the handle and drags start at once, so the rest of the row still scrolls the page;
+  // with a mouse the whole row drags, as before.
+  const touch = window.matchMedia && matchMedia("(pointer: coarse)").matches;
   sortable = Sortable.create(el, {
     animation: calm() ? 0 : 240, easing: "cubic-bezier(.2,.8,.2,1)",
-    forceFallback: true, fallbackOnBody: true, fallbackTolerance: 3,
-    delayOnTouchOnly: true, delay: 220, touchStartThreshold: 6,
+    forceFallback: true, fallbackOnBody: true, fallbackTolerance: touch ? 0 : 3,
+    ...(touch ? { handle: ".grip", delay: 0, delayOnTouchOnly: false, touchStartThreshold: 0 } : { delayOnTouchOnly: true, delay: 220, touchStartThreshold: 6 }),
     direction: "vertical", swapThreshold: 0.6, invertSwap: false,
     scroll: true, scrollSensitivity: 90, scrollSpeed: 14, bubbleScroll: true,
     filter: ".mvb", preventOnFilter: false, ghostClass: "ghost", chosenClass: "chosen", dragClass: "dragging",
