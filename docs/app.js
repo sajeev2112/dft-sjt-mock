@@ -542,13 +542,13 @@ function initDrag(){
   if (!el || !window.Sortable) return;
   const set = curSet(), qi = curQi();
   const buzz = ms => { try { if (navigator.vibrate && !calm()) navigator.vibrate(ms); } catch(e) {} };
-  // On touch screens the grip is the handle and drags start at once, so the rest of the row still scrolls the page;
-  // with a mouse the whole row drags, as before.
+  // The whole row drags. On touch a short hold picks it up (a quick swipe still scrolls the page), and the grip picks it up at once.
   const touch = window.matchMedia && matchMedia("(pointer: coarse)").matches;
+  const HOLD = touch ? 150 : 220;
   sortable = Sortable.create(el, {
     animation: calm() ? 0 : 240, easing: "cubic-bezier(.2,.8,.2,1)",
     forceFallback: true, fallbackOnBody: true, fallbackTolerance: touch ? 0 : 3,
-    ...(touch ? { handle: ".grip", delay: 0, delayOnTouchOnly: false, touchStartThreshold: 0 } : { delayOnTouchOnly: true, delay: 220, touchStartThreshold: 6 }),
+    delayOnTouchOnly: true, delay: HOLD, touchStartThreshold: touch ? 8 : 6,
     direction: "vertical", swapThreshold: 0.6, invertSwap: false,
     scroll: true, scrollSensitivity: 90, scrollSpeed: 14, bubbleScroll: true,
     filter: ".mvb", preventOnFilter: false, ghostClass: "ghost", chosenClass: "chosen", dragClass: "dragging",
@@ -573,6 +573,13 @@ function initDrag(){
       renderGrid(); renderPanel(); renderTabs();
     }
   });
+  // A press on the grip picks the row up at once; anywhere else waits for the short hold.
+  if (!el._grab) {
+    el._grab = true;
+    const grab = e => { if (sortable) sortable.option("delay", e.target.closest && e.target.closest(".grip") ? 0 : HOLD); };
+    el.addEventListener("pointerdown", grab, true);
+    el.addEventListener("touchstart", grab, { capture: true, passive: true });
+  }
 }
 
 // ---------- quiz builder ----------
@@ -709,10 +716,9 @@ function renderResults(){
     S.hist.slice().reverse().forEach(x => { h += `<tr><td>${new Date(x.t).toLocaleDateString("en-GB", {day:"numeric", month:"short"})}</td><td>${esc(x.name)}</td><td>${x.mode === "exam" ? "Exam" : "Practice"}</td><td>${x.g} / ${x.m} · ${pct(x.g, x.m)}%</td></tr>`; });
     h += `</tbody></table></div>`;
   }
-  h += badgesHtml();
   el.innerHTML = h + `</div>`;
 }
-// ---------- activity and badges ----------
+// ---------- activity ----------
 const dkey = d => d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
 function streaks(){
   const has = k => S.days[k] && S.days[k].n;
@@ -743,33 +749,6 @@ function activityHtml(){
     `<div><b>${st.best}</b><span>best streak</span></div><div><b>${st.days}</b><span>days practised</span></div><div><b>${week7}</b><span>questions this week</span></div></div>` +
     `<div class="acal" role="img" aria-label="Practice calendar for the last ${WEEKS} weeks, ${st.days} days practised"><div class="hmonths">${months}</div><div class="hdays"><span>Mon</span><span></span><span>Wed</span><span></span><span>Fri</span><span></span><span></span></div><div class="hgrid">${cells}</div></div>` +
     `<p class="hkey muted">Less <i class="hc l0"></i><i class="hc l1"></i><i class="hc l2"></i><i class="hc l3"></i><i class="hc l4"></i> More</p>`;
-}
-// Badges are worked out from your saved progress, so they sync and never need storing.
-function badgeList(){
-  const ans = Object.keys(S.att).length, st = streaks(), atts = Object.entries(S.att);
-  const full = f => atts.some(([i, a]) => a.some(x => x.g === x.m) && f(Q[+i]));
-  const mocks = S.hist.filter(h => /mock/i.test(h.name)), papers = S.hist.filter(h => /^Paper \d/.test(h.name));
-  const improved = atts.some(([, a]) => a.length > 1 && a[a.length - 1].g / a[a.length - 1].m > a[0].g / a[0].m);
-  const n = x => Math.min(x[0], x[1]) + "/" + x[1];
-  return [
-    {id:"first", ico:"✦", name:"First steps", how:"Mark your first question", ok: ans >= 1},
-    {id:"q25", ico:"25", name:"Warming up", how:"Answer 25 questions", ok: ans >= 25, prog: n([ans, 25])},
-    {id:"q80", ico:"80", name:"Halfway there", how:"Answer 80 questions", ok: ans >= 80, prog: n([ans, 80])},
-    {id:"all", ico:"★", name:"Completionist", how:`Answer all ${Q.length} questions`, ok: ans >= Q.length, prog: n([ans, Q.length])},
-    {id:"perfect", ico:"20", name:"Perfect ranking", how:"Score 20/20 on a ranking question", ok: full(q => isRank(q))},
-    {id:"best3", ico:"3✓", name:"Hat-trick", how:"Pick all three best options", ok: full(q => !isRank(q))},
-    {id:"adv", ico:"◆", name:"Advanced ace", how:"Full marks on a Paper 4 or 5 question", ok: full(q => q.p >= 4)},
-    {id:"paper", ico:"▤", name:"Paper done", how:"Finish a whole paper", ok: papers.length > 0},
-    {id:"mock", ico:"⏱", name:"Mock survivor", how:"Finish a timed mock", ok: mocks.length > 0},
-    {id:"mock75", ico:"◎", name:"Exam ready", how:"Score 75%+ on a timed mock", ok: mocks.some(h => h.g / h.m >= 0.75)},
-    {id:"streak3", ico:"3d", name:"On a roll", how:"Practise 3 days in a row", ok: st.best >= 3, prog: n([st.best, 3])},
-    {id:"streak7", ico:"7d", name:"Week strong", how:"Practise 7 days in a row", ok: st.best >= 7, prog: n([st.best, 7])},
-    {id:"retry", ico:"↻", name:"Second look", how:"Beat your first score on a question", ok: improved}
-  ];
-}
-function badgesHtml(){
-  const b = badgeList(), got = b.filter(x => x.ok).length;
-  return `<h3 class="bsub">Badges <small class="muted">${got} of ${b.length}</small></h3><div class="badges">` + b.map(x => `<div class="badge${x.ok ? " ok" : ""}" data-tip="${x.ok ? "Earned · " : ""}${x.how}${!x.ok && x.prog ? ` (${x.prog})` : ""}"><span class="bico" aria-hidden="true">${x.ico}</span><b>${x.name}</b><small>${x.ok ? "Earned" : x.prog || "Locked"}</small></div>`).join("") + `</div>`;
 }
 function progressChart(){
   const days = Object.keys(S.days).sort().slice(-30);

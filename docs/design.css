@@ -338,26 +338,12 @@ html.nd mark.kp{color:inherit; background:transparent; padding:0 .1em; margin:0 
 .hgrid .hc:hover{outline:2px solid var(--ink); outline-offset:1px}
 .hkey{display:flex; align-items:center; gap:4px; justify-content:flex-end; font-size:12px}
 .hkey .hc{width:12px; min-width:12px; height:12px}
-.badges{display:grid; grid-template-columns:repeat(auto-fill, minmax(132px, 1fr)); gap:10px; margin-top:6px}
-.badge{display:grid; justify-items:center; text-align:center; gap:4px; padding:14px 10px 12px; border-radius:16px; border:1px dashed var(--line); color:var(--ink-3); background:transparent}
-.badge .bico{width:46px; height:46px; border-radius:50%; display:grid; place-items:center; font:600 15px var(--mono); background:var(--surface-2); color:var(--ink-3); filter:grayscale(1)}
-.badge b{font-size:13.5px; color:var(--ink-2)} .badge small{font:500 11px var(--mono); color:var(--ink-3)}
-.badge.ok{border:1px solid color-mix(in srgb, var(--accent) 40%, var(--line)); background:linear-gradient(160deg, var(--accent-soft), var(--surface)); color:var(--ink)}
-.badge.ok .bico{filter:none; color:var(--accent-ink); background:linear-gradient(135deg, var(--accent), var(--accent-2)); box-shadow:0 6px 16px color-mix(in srgb, var(--accent) 35%, transparent)}
-.badge.ok b{color:var(--ink)} .badge.ok small{color:var(--accent)}
 @media (max-width:640px){ .acts{grid-template-columns:repeat(2, minmax(0, 1fr))} }
 
 /* ---------- hover tooltip ---------- */
 .nd-hovertip{position:fixed; z-index:90; pointer-events:none; max-width:260px; padding:7px 10px; border-radius:9px; background:var(--ink); color:var(--surface); font:500 12.5px/1.35 var(--sans); box-shadow:0 8px 24px rgba(0,0,0,.25); opacity:0; transform:translateY(4px); transition:opacity .12s, transform .12s}
 .nd-hovertip.show{opacity:1; transform:none}
 
-/* ---------- badge toast ---------- */
-.nd-toasts{position:fixed; z-index:85; left:50%; bottom:calc(env(safe-area-inset-bottom, 0px) + 20px); transform:translateX(-50%); display:grid; gap:8px; pointer-events:none}
-.nd-toast{display:flex; align-items:center; gap:12px; padding:10px 18px 10px 10px; border-radius:999px; background:var(--surface); color:var(--ink); border:1px solid color-mix(in srgb, var(--accent) 40%, var(--line)); box-shadow:0 14px 36px rgba(10,30,28,.22); opacity:0; transform:translateY(16px) scale(.95); transition:opacity .3s, transform .4s cubic-bezier(.2,1.4,.4,1)}
-.nd-toast.show{opacity:1; transform:none}
-.nd-toast .bico{width:38px; height:38px; border-radius:50%; display:grid; place-items:center; font:600 13px var(--mono); color:var(--accent-ink); background:linear-gradient(135deg, var(--accent), var(--accent-2))}
-.nd-toast small{display:block; font:500 10.5px var(--mono); letter-spacing:.06em; text-transform:uppercase; color:var(--accent)}
-.nd-toast b{font-size:14.5px}
 
 /* ---------- install card ---------- */
 html.nd .nd-install.nd-only{display:flex!important}
@@ -396,14 +382,12 @@ html.nd .nd-tabbar.nd-only, .nd-tabbar{display:none!important}
   html.nd .top h1{font-size:21px; margin:0}
   html.nd .views{padding:3px; flex-wrap:nowrap}
   html.nd .wrap{padding-bottom:calc(env(safe-area-inset-bottom, 0px) + 96px)}
-  .nd-toasts{bottom:calc(env(safe-area-inset-bottom, 0px) + 86px)}
   .nd-install{flex-wrap:wrap}
 }
 @keyframes nd-pop{0%{transform:scale(.8)}100%{transform:none}}
 
 @media (prefers-reduced-motion: reduce){
   .rlinks .rl{stroke-dashoffset:0} html.nd mark.kp{animation:none} .ring .rfg{animation:none}
-  .nd-toast, .nd-hovertip{transition:none}
 }
 .mtime .pacel{font-weight:600; fill:var(--ink); paint-order:stroke; stroke:var(--surface); stroke-width:4px; stroke-linejoin:round}
 @media (max-width:640px){
@@ -445,7 +429,6 @@ html.nd .nd-progress{will-change:transform}
   html.nd #card:has(> .result) .compare{grid-template-columns:1fr}
   html.nd #card:has(> .result) .rlinks{max-width:none}
   html.nd .mcols{gap:0 40px}
-  html.nd .badges{grid-template-columns:repeat(auto-fill, minmax(150px, 1fr))}
 }
 @media (min-width:2000px){
   html.nd .wrap{max-width:1760px}
@@ -576,9 +559,6 @@ html.nd .gside{top:calc(env(safe-area-inset-top,0px) + var(--hdr, 96px) + 16px)}
 /* mobile tab bar: solid instead of blurred (cheaper to draw while scrolling) */
 @media (max-width:640px){ .nd-tabbar{-webkit-backdrop-filter:none!important; backdrop-filter:none!important; background:var(--surface)!important} }
 
-/* badge toasts sit above the "Back to the question" button when it is showing */
-body:has(#citeback:not([hidden])) .nd-toasts{bottom:calc(env(safe-area-inset-bottom, 0px) + 80px)}
-@media (max-width:640px){ body:has(#citeback:not([hidden])) .nd-toasts{bottom:calc(env(safe-area-inset-bottom, 0px) + 150px)} }
 
 /* the lifted card shows its real position while dragging */
 html.nd .dragging[data-pos]::before{content:attr(data-pos)}
@@ -618,15 +598,25 @@ html.nd .dragging[data-pos]::before{content:attr(data-pos)}
 .xm-right{margin:2px 0 0; font-size:13.5px; color:var(--good)}
 .xm-principle{margin:0; padding:10px 12px; border-radius:10px; background:var(--surface-2); font-size:14px}
 
-/* touch screens: the grip is a real drag handle (the rest of the row still scrolls the page), and the page can't be pushed sideways */
+/* the page can't be pushed sideways; on touch screens the number/grip area picks a row up at once, and the rest of the row picks it up after a short hold */
 html{overflow-x:hidden; overscroll-behavior-x:none}
 body{overflow-x:clip}
-body.is-sorting{touch-action:none; overscroll-behavior:contain}
 @media (pointer:coarse){
-  .rlist .ritem{grid-template-columns:30px 26px 28px minmax(0,1fr) auto; gap:8px; -webkit-touch-callout:none; touch-action:pan-y}
-  .rlist .ritem .grip{display:grid; position:relative; align-self:stretch; touch-action:none; cursor:grab}
-  .rlist .ritem .grip::after{content:""; position:absolute; inset:-6px -8px}
+  .rlist .ritem{position:relative; -webkit-touch-callout:none; touch-action:pan-y}
+  .rlist .ritem .grip{touch-action:none; cursor:grab}
+  .rlist .ritem .grip::after{content:""; position:absolute; inset:-10px -8px -10px -48px}
+}
+@media (pointer:coarse) and (max-width:640px){
+  .rlist .ritem .grip{display:block; position:absolute; left:0; top:0; bottom:0; width:46px}
+  .rlist .ritem .grip svg, .rlist .ritem .grip::after{display:none}
 }
 @media (pointer:coarse) and (max-width:400px){
-  .rlist .ritem{grid-template-columns:28px 22px 24px minmax(0,1fr) auto; gap:6px}
+  .rlist .ritem .grip{width:40px}
+}
+
+/* in a browser tab (Safari's bottom address bar, Chrome's toolbar) the toolbar already covers the home-indicator area, so don't add the safe-area gap on top of it; the installed app keeps it */
+@media (display-mode: browser) and (max-width:640px){
+  .nd-tabbar{bottom:10px}
+  html.nd .wrap{padding-bottom:96px}
+  html.nd .btn.citeback, .citeback{bottom:92px}
 }

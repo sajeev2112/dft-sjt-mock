@@ -219,7 +219,7 @@
 
 
 // ---------- polish pack (trial): page transitions, focus mode, mobile tab bar, tooltips, accent colours,
-// install card and badge toasts ----------
+// install card ----------
 (function(){
   const root = document.documentElement;
   const reduce = () => window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -236,7 +236,7 @@
   };
   applyAccent(get("dft-accent", "teal"));
 
-  // hover/tap tooltips for anything with data-tip (chart bars, calendar days, badges)
+  // hover/tap tooltips for anything with data-tip (chart bars, calendar days)
   const tip = document.createElement("div"); tip.className = "nd-hovertip"; tip.setAttribute("role", "tooltip"); document.body.appendChild(tip);
   let tipFor = null;
   const showTip = (el, x, y) => {
@@ -291,16 +291,6 @@
   const standalone = () => (window.matchMedia && window.matchMedia("(display-mode: standalone)").matches) || navigator.standalone;
   document.querySelector(".layout")?.after(install);
 
-  // badge toasts
-  const toasts = document.createElement("div"); toasts.className = "nd-toasts"; toasts.setAttribute("aria-live", "polite"); document.body.appendChild(toasts);
-  const toast = b => {
-    const t = document.createElement("div"); t.className = "nd-toast";
-    t.innerHTML = `<span class="bico" aria-hidden="true">${b.ico}</span><span><small>Badge earned</small><b>${b.name}</b></span>`;
-    toasts.appendChild(t); requestAnimationFrame(() => t.classList.add("show"));
-    setTimeout(() => { t.classList.remove("show"); setTimeout(() => t.remove(), 400); }, 4200);
-  };
-  let seenBadges = null;
-
   let lastView = null, lastFocus = null;
   function sync(){
     if (typeof S === "undefined") return;
@@ -344,14 +334,6 @@
         Object.keys(ACCENTS).map(a => `<button type="button" class="swatch" data-nd="accent" data-a="${a}" aria-pressed="${a === cur}"><i data-a="${a}"></i>${ACCENTS[a]}</button>`).join("") + `</div>`;
       st.querySelector(".sset")?.before(sec);
     } else st.querySelectorAll(".swatch").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.a === (root.dataset.accent || "teal"))));
-
-    // badges: toast the ones earned since last time (first visit just records them)
-    if (typeof badgeList === "function") {
-      const now = badgeList().filter(b => b.ok);
-      if (seenBadges === null) { try { seenBadges = JSON.parse(get("dft-badges-seen", "null")); } catch(e) { seenBadges = null; } if (!Array.isArray(seenBadges)) { seenBadges = now.map(b => b.id); put("dft-badges-seen", JSON.stringify(seenBadges)); } }
-      const fresh = now.filter(b => !seenBadges.includes(b.id));
-      if (fresh.length) { fresh.forEach((b, i) => setTimeout(() => toast(b), 600 + i * 700)); seenBadges = seenBadges.concat(fresh.map(b => b.id)); put("dft-badges-seen", JSON.stringify(seenBadges)); }
-    }
   }
   let q = false;
   const later = () => { if (q) return; q = true; setTimeout(() => { q = false; sync(); }, 0); };
