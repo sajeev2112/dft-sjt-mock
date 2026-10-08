@@ -1,4 +1,4 @@
-// "Explain my mistake" (Beta): after a wrong answer, asks the Worker (/api/explain) to explain every misplaced option.
+// "Explain my mistake" (Beta): after a wrong answer, asks the Worker (/api/explain) for a short summary plus reasons for the biggest mistakes only.
 // The Worker checks the AI's wording against the key; anything that fails is replaced by the written justification,
 // and this panel says which version you're reading.
 (function(){
@@ -40,17 +40,17 @@
     if (j.perfect) { box.innerHTML = `<p class="muted">Nothing to explain: your answer matches the key.</p>`; return; }
     const where = it => best3 ? (it.move === "out" ? "You chose it, but it isn’t one of the best three." : "You didn’t choose it, but it’s one of the best three.")
       : `You put it <b>${it.you}</b>; it belongs <b>${it.key}</b>.`;
-    const label = it => it.source === "ai" ? "AI explanation · checked against the key"
-      : it.reason === "budget" || it.reason === "unavailable" ? "Written explanation"
-      : "Written explanation · the AI’s version didn’t pass our accuracy check";
-    const allWritten = j.items.every(it => it.source !== "ai");
-    box.innerHTML = `<p class="xhead">Where your answer went wrong <span class="xm-tag">Beta</span></p>` +
-      (j.budget ? `<p class="xm-notice">Today’s AI explanations have run out, so you’re seeing the written explanations. They’ll be back tomorrow.</p>`
-        : allWritten && j.items.some(it => it.reason === "unavailable") ? `<p class="xm-notice">AI explanations aren’t available right now, so you’re seeing the written explanations.</p>` : "") +
+    const aiSum = j.summary && j.summary.source === "ai", anyAi = aiSum || j.items.some(it => it.source === "ai");
+    const allWritten = !anyAi;
+    const note = j.budget ? `<p class="xm-notice">Today’s AI explanations have run out, so you’re seeing the written explanations. They’ll be back tomorrow.</p>`
+      : allWritten && j.items.some(it => it.reason === "unavailable") ? `<p class="xm-notice">AI explanations aren’t available right now, so you’re seeing the written explanations.</p>` : "";
+    const src = anyAi ? (aiSum && j.items.every(it => it.source === "ai") ? "AI explanation · checked against the key" : "Partly AI, partly written · anything the AI got wrong was replaced by the written version") : "Written explanation";
+    box.innerHTML = `<p class="xhead">Where your answer went wrong <span class="xm-tag">Beta</span></p>` + note +
       (j.summary && j.summary.text ? `<p class="xm-sum">${esc(j.summary.text)}</p>` : "") +
-      j.items.map(it => `<div class="xm-row"><p class="xm-what"><span class="letter">${it.letter}</span> ${opt(it.letter)}</p><p class="xm-pos ${it.move}">${where(it)}</p><p>${esc(it.why)}</p><p class="xm-src${it.source === "ai" ? "" : " written"}">${label(it)}</p></div>`).join("") +
+      j.items.map(it => `<div class="xm-row"><p class="xm-what"><span class="letter">${it.letter}</span> ${opt(it.letter)}</p><p class="xm-pos ${it.move}">${where(it)}</p><p>${esc(it.why)}</p></div>`).join("") +
       (j.right && j.right.length ? `<p class="xm-right">✓ ${best3 ? "Right picks" : "In the right place"}: ${j.right.map(c => `<b>${c}</b>${best3 ? "" : " (" + ORD[q.k.indexOf(c)] + ")"}`).join(", ")}</p>` : "") +
-      (j.principle ? `<p class="xm-principle"><b>Principle:</b> ${esc(j.principle)}</p>` : "");
+      (j.principle && !aiSum ? `<p class="xm-principle"><b>Principle:</b> ${esc(j.principle)}</p>` : "") +
+      `<p class="xm-src${anyAi ? "" : " written"}">${src}</p>`;
   }
   new MutationObserver(add).observe(card, {childList: true});
   add();

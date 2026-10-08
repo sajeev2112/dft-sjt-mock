@@ -13,8 +13,8 @@ const AI = { run: async (id, input) => { aiCalls++; await tick();
   const u = input.messages ? input.messages[1].content : input.input;
   if (/Which explanations are wrong/.test(u)) return {response: "NONE", usage: {prompt_tokens: 900, completion_tokens: 2}};
   const p = JSON.parse(u);
-  return {response: JSON.stringify({summary: "You put reporting Tom ahead of giving him the chance to put it right himself.",
-    options: p.wrong_options.map(c => ({letter: c, why: `${c} belongs where the key puts it because it handles Tom's request proportionately and keeps the matter local first.`}))}), usage: {input_tokens: 1500, output_tokens: 300}};
+  return {response: JSON.stringify({summary: "You put reporting Tom too high and a quiet word with him too low. Talk to the person first, and keep things proportionate.",
+    reasons: p.focus.map(c => ({letter: c, why: `${c} belongs where the key puts it because it handles Tom's request proportionately and keeps the matter local first.`}))}), usage: {input_tokens: 1500, output_tokens: 300}};
 } };
 const waits = []; const ctx = {waitUntil: p => waits.push(p)};
 const env = { DB: { prepare: s => new Stmt(s), batch: async st => { await tick(); return st.map(x => x.exec()); } }, AI };
@@ -25,7 +25,7 @@ const q1 = BANK[0], rev = [...q1.k].reverse().join("");
 let [s, j] = await call({q: 1, answer: q1.k}); ok(s === 200 && j.perfect, "perfect answer needs no explanation");
 [s, j] = await call({q: 1, answer: "AAB"}); ok(s === 400, "bad answer rejected");
 [s, j] = await call({q: 1, answer: rev}); const first = aiCalls;
-ok(s === 200 && j.items.length === 4 && j.items.every(i => i.source === "ai") && j.summary.source === "ai" && first === 2, "explained by the AI (writer + checker)");
+ok(s === 200 && j.items.length === 2 && j.items.every(i => i.source === "ai") && j.summary.source === "ai" && first === 2, "explained by the AI (writer + checker)");
 ok(!("model_why" in j.items[0]) && !("fails" in j.items[0]), "internal check details aren't sent to the browser");
 const used = db.prepare("SELECT n FROM ai_usage").get().n;
 ok(used > 0 && used < 140, `real cost settled after the call (${used.toFixed(1)} neurons)`);

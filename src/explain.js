@@ -3,6 +3,7 @@
 //
 // How it stays correct:
 //   1. This code, not the model, works out what was wrong: every misplaced option, and what was over- and under-valued.
+//      The debrief covers only the biggest mistakes (see focusOf): a two-sentence summary and a reason for each.
 //   2. The model only writes the wording, as JSON, from the question's own scenario and justifications.
 //   3. Every sentence is checked: comparisons must agree with the key, standards cited must appear in the justifications,
 //      no outside sources, no hedging or overclaiming, sensible length; then a second model reviews it all against the key.
@@ -12,7 +13,7 @@
 import BANK from "./explain-bank.js";
 
 const L = "ABCDEFGH";
-const MODELS = {"gpt-oss-120b": "@cf/openai/gpt-oss-120b", "llama-3.3-70b": "@cf/meta/llama-3.3-70b-instruct-fp8-fast"};
+const MODELS = {"gpt-oss-120b": "@cf/openai/gpt-oss-120b", "llama-3.3-70b": "@cf/meta/llama-3.3-70b-instruct-fp8-fast", "qwen3.8-27b": "@cf/qwen/qwen3.8-27b", "gpt-oss-20b": "@cf/openai/gpt-oss-20b"};
 // Neurons per million tokens [input, output], from Cloudflare's published prices (approximate, on the high side).
 const NEURONS = {"gpt-oss-120b": [31818, 68182], "llama-3.3-70b": [26668, 204805]};
 const UNKNOWN_RATE = [40000, 210000];
@@ -20,7 +21,7 @@ function neuronsFor(modelKey, inTok, outTok) { const [a, b] = NEURONS[modelKey] 
 const MODEL = "gpt-oss-120b", VERIFIER = "llama-3.3-70b";
 export const DAILY_NEURON_CAP = 9500; // the free plan allows 10,000 a day (resets at 00:00 UTC)
 const RESERVE = 140;                   // set aside before each explanation; the real cost is settled afterwards
-const CACHE_VERSION = "v1";
+const CACHE_VERSION = "v2";
 // Testing on 4 Oct 2026 used most of that day's free allowance on the same Cloudflare account, so live AI calls start
 // the next day (UTC); until then the button shows the written explanations.
 const AI_START_DAY = "2026-10-05";
@@ -34,8 +35,8 @@ export async function explainHandler(request, env, ctx, cors, {allow, readJson, 
   if (!facts) return json({error: "bad_answer"}, 400, cors);
   const base = {ok: true, q: qn, answer: facts.answer, marks: facts.marks, max: facts.max, right: facts.right, principle: q.tk};
   if (!facts.items.length) return json({...base, perfect: true}, 200, cors);
-  const written = reason => json({...base, budget: reason === "budget", summary: {text: "", source: "none"},
-    items: facts.items.map(it => ({...it, why: fallback(q, it), source: "fallback", reason}))}, 200, cors);
+  const written = reason => json({...base, budget: reason === "budget", summary: {text: fallbackSummary(q, facts), source: "written"},
+    items: facts.items.filter(it => facts.focus.includes(it.letter)).map(it => ({...it, why: fallback(q, it), source: "fallback", reason}))}, 200, cors);
 
   const key = `${qn}|${facts.answer}|${CACHE_VERSION}`;
   const hit = await env.DB.prepare("SELECT v FROM explain_cache WHERE k = ?").bind(key).first();
@@ -69,7 +70,7 @@ export function analyse(q, answer) {
       ...[...q.k].filter(c => !picks.includes(c)).map(c => ({letter: c, you: "you didn’t choose it", key: "one of the best three", move: "in"}))];
     const right = picks.filter(c => q.k.includes(c));
     return {type: "best3", answer: picks.join(""), items, right, marks: right.length * 4, max: 12,
-      over: items.filter(i => i.move === "out").map(i => i.letter), under: items.filter(i => i.move === "in").map(i => i.letter)};
+      over: items.filter(i => i.move === "out").map(i => i.letter), under: items.filter(i => i.move === "in").map(i => i.letter), focus: focusOf(items, "best3")};
   }
   const ans = answer.replace(/[^A-E]/g, "");
   if (ans.length !== 5 || new Set(ans).size !== 5) return null;
@@ -83,27 +84,45 @@ export function analyse(q, answer) {
   // over-valued = put higher than it belongs; under-valued = put lower. Biggest misplacements first.
   const over = items.filter(i => i.off < 0).sort((a, b) => a.off - b.off).map(i => i.letter);
   const under = items.filter(i => i.off > 0).sort((a, b) => b.off - a.off).map(i => i.letter);
-  return {type: q.t, answer: ans, items, right, marks, max: 20, over, under};
+  return {type: q.t, answer: ans, items, right, marks, max: 20, over, under, focus: focusOf(items, q.t)};
+}
+// The debrief covers only the biggest mistakes: the two furthest-misplaced options in a ranking; in a best-three, a wrong pick,
+// a missed pick, then (if any) a second wrong pick.
+function focusOf(items, type) {
+  if (type !== "best3") {
+    const hi = items.filter(i => i.off < 0).sort((x, y) => x.off - y.off)[0], lo = items.filter(i => i.off > 0).sort((x, y) => y.off - x.off)[0];
+    return [hi, lo].filter(Boolean).sort((x, y) => Math.abs(y.off) - Math.abs(x.off)).map(i => i.letter);
+  }
+  const outs = items.filter(i => i.move === "out"), ins = items.filter(i => i.move === "in");
+  const rest = outs.length >= ins.length ? outs.slice(1) : ins.slice(1);
+  return [outs[0], ins[0], rest[1] || rest[0]].filter(Boolean).filter((x, i, a) => a.indexOf(x) === i).map(i => i.letter).slice(0, 3);
 }
 
 // ---------- 2. the model explains the whole answer ----------
-const SYSTEM = `You explain mistakes on UK Dental Foundation Training situational judgement test practice questions, for a trainee dentist who has just answered.
-You get the scenario, every option with its CORRECT position and the trainee's position, the official justification for each option, and the list of options the trainee got wrong. The correct positions are settled: never question them.
+const SYSTEM = `You write a short debrief for a UK Dental Foundation Training trainee who has just got a situational judgement question wrong.
+You get the scenario, every option with its CORRECT position and the trainee's position, the official justification for each option, and "focus": the options the trainee got most wrong. The correct positions are settled: never question them.
 
-Write:
-1. "summary": ONE sentence (at most 30 words) saying what the trainee over-valued and under-valued, describing the actions in plain words (for example "You put reporting Tom ahead of giving him the chance to put it right himself"). Use ONLY the options in the over_valued and under_valued lists you are given (lead with the first of each), and never describe an option from one list as belonging to the other. Don't list positions or letters.
-2. "options": for EVERY option in the wrong-options list, "why": one or two sentences (15 to 45 words) explaining why it belongs in its correct position rather than where the trainee put it. Start with the reason, not with its position (the trainee can already see "you put it 1st; it belongs 5th"). Compare it with the options it should sit above or below where that helps.
+Write JSON with:
+1. "summary": exactly TWO sentences, 20 to 40 words in total. Sentence 1 says what the trainee did, in your OWN plain words (a short paraphrase of each action in about 3 to 8 words; never copy the option text): "You put <the first option in over_valued, as an action> too high and <the first option in under_valued, as an action> too low." For "Choose the THREE" questions there is no too high or too low: write "You chose <every action in over_valued> and missed <every action in under_valued>." Sentence 2 states the general principle behind the correct answer, paraphrasing the "principle" field in your own words (about 10 to 18 words). Do NOT repeat specific details that the reasons below will give. Use ONLY options in over_valued and under_valued (all of them, for best-three questions), never describe one from one list as belonging to the other, and never mention letters, positions or the words "over-valued" and "under-valued".
+2. "reasons": for EACH option in the focus list, one entry {"letter","why"}: 18 to 35 words giving the reason it belongs where the key puts it, taken from its justification. Start with the reason, not with the position (the trainee can already see it). State a specific fact from that option's justification: what it does or fails to do. Do not reverse or stretch what the justification says; stay close to its own wording. No filler such as "it completes the best three". Finish by saying how it compares with its "compare_with" option, naming it by letter (for example "so it ranks below D", or for best-three questions "unlike D"); the comparison must agree with the correct positions.
 
-For "Choose the THREE" questions there is no order: never say an option "ranks", "sits above" or "below" another. Say why it is, or is not, one of the best three, and compare it only with options on the other side (a best-three option against one that isn't, or the reverse).
+For "Choose the THREE" questions there is no order: never say an option "ranks", "sits above" or "below" another. Say why it is, or is not, one of the best three, and compare it only with options on the other side.
 
 Rules:
 - Use ONLY facts from the scenario and the justifications. Do not add new facts, laws, guidance or standards.
 - If you cite a standard, copy it exactly as written in a justification, e.g. "(Std 4.2.1)", only where it supports the point. Citing none is fine.
-- Whenever you compare with another option, name it by its letter (for example "it ranks below D" or "unlike B"), never only by describing it, and the comparison must agree with the correct positions.
+- Whenever you compare with another option, name it by its letter (for example "it ranks below D" or "unlike B"), and the comparison must agree with the correct positions.
 - No hedging ("arguably", "might"), no overclaiming ("guarantees", "always") unless a justification says so.
-- British English spelling (prioritise, recognise, organise), speaking to the trainee as "you".
-Reply with JSON only: {"summary":"...","options":[{"letter":"X","why":"..."}]}`;
+- British English spelling, speaking to the trainee as "you".
+Reply with JSON only: {"summary":"...","reasons":[{"letter":"X","why":"..."}]}`;
 
+const sumOver = f => f.type === "best3" ? f.over : (f.over || []).filter(c => f.focus.includes(c));
+const sumUnder = f => f.type === "best3" ? f.under : (f.under || []).filter(c => f.focus.includes(c));
+// the option each focus option should be set against: the other side of the mistake (what you put too high vs what you put too low)
+function compareWith(q, facts, c) {
+  const high = sumOver(facts), low = sumUnder(facts), mine = high.includes(c) ? low : high;
+  return mine.find(x => facts.focus.includes(x)) || mine[0];
+}
 function promptFor(q, facts) {
   const typeLine = q.t === "best3" ? "Choose the THREE most appropriate actions." : q.t === "consider" ? "Rank the considerations from most to least important." : "Rank the actions from most to least appropriate.";
   const n = q.o.length;
@@ -112,11 +131,13 @@ function promptFor(q, facts) {
     const c = L[i];
     const correctPos = q.t === "best3" ? (q.k.includes(c) ? "one of the best three" : "not one of the best three") : ORD[q.k.indexOf(c)];
     const yourPos = q.t === "best3" ? (facts.answer.includes(c) ? "chosen" : "not chosen") : ORD[facts.answer.indexOf(c)];
-    return {letter: c, text: o[0], correct_position: correctPos, your_position: yourPos, justification: o[1]};
+    const out = {letter: c, text: o[0], correct_position: correctPos, your_position: yourPos, justification: o[1]};
+    if (facts.focus.includes(c)) out.compare_with = compareWith(q, facts, c);
+    return out;
   }).slice(0, n);
   const brief = c => `${c}: ${q.o[L.indexOf(c)][0]}`;
-  return JSON.stringify({question_type: typeLine, scenario: q.s, correct_order: correct, options, wrong_options: facts.items.map(i => i.letter),
-    over_valued: (facts.over || []).map(brief), under_valued: (facts.under || []).map(brief)}, null, 1);
+  return JSON.stringify({question_type: typeLine, scenario: q.s, principle: q.tk, correct_order: correct, options, focus: facts.focus,
+    over_valued: sumOver(facts).map(brief), under_valued: sumUnder(facts).map(brief)}, null, 1);
 }
 
 async function runModel(env, modelKey, system, user, maxTokens) {
@@ -181,8 +202,16 @@ function orderClaims(q, text, subject) {
 }
 const UK = [[/\b(prioriti|recogni|organi|minimi|emphasi|reali|summari|apologi|criticis|authori|stabili|utili|categori|familiari|speciali|maximi|normali|finali|centrali|standardi)z(e|es|ed|ing|ation|ations)\b/gi, "$1s$2"], [/\bbehavior/gi, "behaviour"], [/\bcolor/gi, "colour"], [/\bcenter\b/gi, "centre"], [/\banesthe/gi, "anaesthe"], [/\bpediatric/gi, "paediatric"]];
 export function british(t) { let s = String(t || ""); for (const [re, to] of UK) s = s.replace(re, (m, ...g) => typeof to === "string" && to.includes("$") ? m.replace(/z(?=(e|es|ed|ing|ation|ations)$)/i, c => c === "Z" ? "S" : "s") : to); return s; }
-export function check(q, why, minWords = 12, maxWords = 60, subject = null) {
+const wordsOf = t => String(t).toLowerCase().replace(/[^a-z0-9’' ]+/g, " ").split(/\s+/).filter(Boolean);
+function copiedFrom(q, why, run = 6) {
+  const w = wordsOf(why);
+  for (const o of q.o) { const ow = wordsOf(o[0]); for (let i = 0; i + run <= ow.length; i++) { const seg = ow.slice(i, i + run).join(" "); for (let j = 0; j + run <= w.length; j++) if (w.slice(j, j + run).join(" ") === seg) return true; } }
+  return false;
+}
+export function check(q, why, minWords = 12, maxWords = 60, subject = null, noCopy = false) {
   const fails = [], src = q.s + " " + q.o.map(o => o.join(" ")).join(" ");
+  if (noCopy && copiedFrom(q, why)) fails.push("copies the option wording instead of paraphrasing");
+  if (noCopy && /\bOption [A-H]\b|\([A-H]\)|(?<![A-Za-z&’'\/-])[B-H](?![A-Za-z&’'\/])/.test(why)) fails.push("mentions an option letter in the summary");
   why = String(why || "").trim();
   const words = why.split(/\s+/).filter(Boolean).length;
   if (words < minWords) fails.push("too thin"); else if (words > maxWords) fails.push("too long");
@@ -193,13 +222,14 @@ export function check(q, why, minWords = 12, maxWords = 60, subject = null) {
   for (const m of why.matchAll(SOURCES)) if (!src.includes(m[0])) fails.push("outside source: " + m[0]);
   for (const c of orderClaims(q, why, subject)) fails.push("wrong order claim: " + c);
   if (/<|>/.test(why)) fails.push("markup");
+  if (q.t === "best3" && /\b(rank|ranks|ranked|ranking|too high|too low|sits? (above|below)|higher than|lower than)\b/i.test(why)) fails.push("ranking wording in a best-three question");
   return fails;
 }
 // one call checks everything against the full correct order; returns the indexes it rejects
 async function verifyAll(env, verifierKey, q, entries, facts, meter) {
   const order = q.t === "best3" ? `The best three are ${[...q.k].join(", ")}; the others are not.` : `The correct order, most to least appropriate, is ${[...q.k].join(" > ")}.`;
   const opts = q.o.map((o, i) => `${L[i]}: ${o[0]}\n   Justification: ${o[1]}`).join("\n");
-  const sumLabel = facts && facts.over ? `[overall summary; the trainee over-valued ${facts.over.join(", ") || "nothing"} and under-valued ${facts.under.join(", ") || "nothing"}: the summary is wrong if it says otherwise]` : "[overall summary]";
+  const sumLabel = facts && facts.over ? `[overall summary; the trainee over-valued ${sumOver(facts).join(", ") || "nothing"} and under-valued ${sumUnder(facts).join(", ") || "nothing"}: the summary is wrong if it says otherwise]` : "[overall summary]";
   const label = e => e.letter ? (q.t === "best3" ? `[about ${e.letter}, which is ${q.k.includes(e.letter) ? "one of" : "not one of"} the best three]` : `[about ${e.letter}, correct position ${["1st","2nd","3rd","4th","5th"][q.k.indexOf(e.letter)]}]`) : sumLabel;
   const list = entries.map((e, i) => `${i + 1}. ${label(e)} ${e.text}`).join("\n");
   const sys = "You check explanations for a dental training quiz. Reply with the numbers of any explanations that are wrong, separated by commas, or the single word NONE.";
@@ -212,35 +242,52 @@ async function verifyAll(env, verifierKey, q, entries, facts, meter) {
     return nums.length ? nums : entries.map((_, i) => i); // an unreadable verdict rejects everything (safe side)
   } catch { return entries.map((_, i) => i); }
 }
+function fallbackSummary(q, facts) {
+  const t = c => "“" + q.o[L.indexOf(c)][0].replace(/[.]+$/, "") + "”";
+  const list = cs => cs.length > 2 ? `${t(cs[0])} and ${cs.length - 1} other action${cs.length > 2 ? "s" : ""}` : cs.map(t).join(" and ");
+  if (q.t === "best3") return `You chose ${list(facts.over)} and missed ${list(facts.under)}.`;
+  const hi = sumOver(facts)[0], lo = sumUnder(facts)[0];
+  return `You put ${t(hi)} too high and ${t(lo)} too low.`;
+}
 function fallback(q, item) {
   const why = q.o[L.indexOf(item.letter)][1];
   if (q.t === "best3") return item.move === "in" ? `${item.letter} is one of the best three: ${why}` : `${item.letter} isn’t one of the best three: ${why}`;
   return `${item.letter} belongs ${item.key}: ${why}`;
 }
 
-async function explain(env, q, facts, modelKey, verifierKey) {
+export async function explain(env, q, facts, modelKey, verifierKey) {
   const meter = {n: 0};
   const user = promptFor(q, facts);
   let out = null, raw = "", error = null;
   for (let attempt = 0; attempt < 2 && !out; attempt++) {
     try {
-      const r = await runModel(env, modelKey, SYSTEM, attempt ? user + "\n\nYour last reply was not valid JSON in the required shape. Reply with the JSON object only." : user, 1200);
+      const r = await runModel(env, modelKey, SYSTEM, attempt ? user + "\n\nYour last reply was not valid JSON in the required shape. Reply with the JSON object only." : user, 900);
       raw = r.text; meter.n += r.usage.neurons;
-      const p = parseJson(raw); if (p && Array.isArray(p.options)) out = p;
+      const p = parseJson(raw); if (p && Array.isArray(p.reasons)) out = p;
     } catch (e) { error = String(e && e.message || e); }
   }
-  const items = facts.items.map(it => {
-    const r = out && out.options.find(x => x && String(x.letter).toUpperCase() === it.letter);
+  const items = facts.items.filter(it => facts.focus.includes(it.letter)).map(it => {
+    const r = out && out.reasons.find(x => x && String(x.letter).toUpperCase() === it.letter);
     const why = r && typeof r.why === "string" ? british(r.why.trim()) : "";
-    return {...it, model_why: why, fails: r ? check(q, why, 12, 60, it.letter) : ["missing"]};
+    return {...it, model_why: why, fails: r ? check(q, why, 10, 45, it.letter) : ["missing"]};
   });
   const summaryText = out && typeof out.summary === "string" ? british(out.summary.trim()) : "";
-  const summary = {model_why: summaryText, fails: summaryText ? check(q, summaryText, 6, 35) : ["missing"]};
+  const summary = {model_why: summaryText, fails: summaryText ? check(q, summaryText, 15, 55, null, true) : ["missing"]};
   // second opinion on everything that passed the rule checks
   const entries = [summary, ...items].map((e, i) => ({i, text: e.model_why, letter: e.letter, e})).filter(x => !x.e.fails.length);
   if (entries.length) { const bad = await verifyAll(env, verifierKey, q, entries, facts, meter); bad.forEach(k => entries[k].e.fails.push("verifier rejected")); }
+  // one more try at the summary alone if it was rejected, telling the writer what was wrong
+  if (out && summary.fails.length && !summary.fails.includes("missing")) {
+    try {
+      const why = summary.fails.map(f => f === "verifier rejected" ? "a checker found it inconsistent with the correct order or the justifications" : f).join("; ");
+      const r = await runModel(env, modelKey, SYSTEM, user + `\n\nYour earlier summary was rejected because ${why}. Earlier summary: "${summaryText}". Reply with JSON only, {"summary":"..."}, a corrected summary that follows every rule, uses only the options in over_valued and under_valued, and states a specific fact from their justifications.`, 400);
+      meter.n += r.usage.neurons;
+      const p2 = parseJson(r.text), t2 = p2 && typeof p2.summary === "string" ? british(p2.summary.trim()) : "";
+      if (t2) { const f2 = check(q, t2, 15, 55, null, true); if (!f2.length) { const bad = await verifyAll(env, verifierKey, q, [{text: t2}], facts, meter); if (!bad.length) { summary.fails = []; summary.model_why = t2; } else summary.fails = ["verifier rejected"]; } else summary.fails = f2; }
+    } catch (e) {}
+  }
+  const finalSummary = summary.model_why;
   for (const it of items) { it.source = it.fails.length ? "fallback" : "ai"; it.why = it.fails.length ? fallback(q, it) : it.model_why; }
-  summary.source = summary.fails.length ? "none" : "ai"; summary.text = summary.fails.length ? "" : summaryText;
+  summary.source = summary.fails.length ? "written" : "ai"; summary.text = summary.fails.length ? fallbackSummary(q, facts) : finalSummary;
   return {summary, items, right: facts.right, principle: q.tk, neurons: Math.round(meter.n * 10) / 10, error: error ? "model_error" : (out ? null : "bad_reply")};
 }
-
