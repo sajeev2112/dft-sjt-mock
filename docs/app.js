@@ -1136,6 +1136,7 @@ function adopt(data, ts){
 // Upload a few seconds after a change, but at most about once every 45 seconds; leaving the page sends the latest copy.
 let lastPushAt = 0;
 function scheduleSync(){
+  renderSyncButton();
   if (!SY || syncUi.conflict) return;
   clearTimeout(syncTimer); syncTimer = setTimeout(pushSync, Math.max(4000, lastPushAt + 45000 - Date.now()));
 }
@@ -1157,7 +1158,7 @@ async function pushSyncNow(force){
     else if (res.status === 409) await resolveRemoteNewer();
     else if (res.status === 401 || res.status === 404) { syncUi.error = res.status === 404 ? "Your saved progress was deleted on another device, so this device has stopped syncing." : "The PIN for this username has changed, so this device has stopped syncing."; SY = null; saveLink(); syncUi.status = ""; }
     else { syncUi.status = "offline"; syncUi.error = syncErr(res); }
-  } catch(e) { syncUi.status = "offline"; }
+  } catch(e) { syncUi.status = "offline"; syncUi.error = syncErr({body: {}}); }
   renderSyncButton(); if (syncUi.open) renderSyncPanel();
 }
 // The server copy is newer than our last sync: take it if this device hasn't changed since, otherwise ask.
@@ -1179,8 +1180,8 @@ async function syncOnStart(){
       else if (S.ts > (SY.lastTs || 0)) await pushSync();
       else syncUi.status = "saved";
     } else if (res.status === 401 || res.status === 404) { syncUi.error = "Your saved progress was deleted or its PIN changed, so this device has stopped syncing. Your progress here is kept."; SY = null; saveLink(); }
-    else syncUi.status = "offline";
-  } catch(e) { syncUi.status = "offline"; }
+    else { syncUi.status = "offline"; syncUi.error = syncErr(res); }
+  } catch(e) { syncUi.status = "offline"; syncUi.error = syncErr({body: {}}); }
   renderSyncButton(); if (syncUi.open || syncUi.conflict) renderSyncPanel();
 }
 window.addEventListener("pagehide", () => {
@@ -1190,12 +1191,30 @@ window.addEventListener("pagehide", () => {
 });
 window.addEventListener("online", () => { if (SY) pushSync(); });
 const ago = t => { const m = Math.round((Date.now() - t) / 60000); return m < 1 ? "just now" : m < 60 ? `${m} min ago` : m < 1440 ? `${Math.round(m / 60)} h ago` : new Date(t).toLocaleDateString("en-GB", {day: "numeric", month: "short"}); };
+// What the Sync button shows: off, conflict, saving, failed (couldn't reach the server), pending (changes waiting to upload) or synced.
+function syncState(){
+  if (!SY) return "off";
+  if (syncUi.conflict) return "conflict";
+  if (syncUi.status === "saving") return "saving";
+  if (syncUi.status === "offline") return "failed";
+  return S.ts > (SY.lastTs || 0) ? "pending" : "synced";
+}
+let prevSyncStatus = "", lastSyncSay = 0;
 function renderSyncButton(){
   const b = document.getElementById("syncbtn"); if (!b) return;
-  const state = !SY ? "off" : syncUi.conflict ? "conflict" : syncUi.status === "offline" ? "offline" : "on";
+  // a save or load just succeeded: say so for a few seconds ("✓ Synced") and tell screen readers, at most once a minute
+  if (SY && syncUi.status === "saved" && prevSyncStatus !== "saved") {
+    syncUi.okAt = Date.now(); setTimeout(renderSyncButton, 4100);
+    if (Date.now() - lastSyncSay > 60000) { lastSyncSay = Date.now(); announce("Progress synced."); }
+  }
+  prevSyncStatus = syncUi.status;
+  const state = syncState(), flash = state === "synced" && Date.now() - (syncUi.okAt || 0) < 4000;
   b.dataset.state = state; b.setAttribute("aria-expanded", String(syncUi.open));
-  b.querySelector(".slabel").textContent = SY ? SY.name : "Sync";
-  b.title = {off: "Save and continue on another device", on: "Syncing as " + (SY && SY.name), conflict: "Sync needs your attention", offline: "Offline: will sync when you’re back online"}[state];
+  if (flash) b.dataset.flash = "1"; else delete b.dataset.flash;
+  b.querySelector(".slabel").textContent = !SY ? "Sync" : flash ? "✓ Synced" : state === "saving" ? "Saving…" : state === "failed" ? "Not synced" : SY.name;
+  const when = SY && SY.at ? ago(SY.at) : "";
+  b.title = {off: "Save and continue on another device", synced: `Synced as ${SY && SY.name}${when ? " · " + when : ""}`, saving: "Saving your progress…", pending: "Changes are waiting to sync",
+    failed: "Not synced: couldn’t reach the server. It will keep trying. Open to try again.", conflict: "Sync needs your attention"}[state];
 }
 function renderSyncPanel(){
   const v = id => (document.getElementById(id) || {}).value, n = v("sync-name"), p = v("sync-pin");
@@ -1214,9 +1233,10 @@ function renderSyncPanelRaw(){
       <div class="row"><button type="button" class="btn primary" data-act="sync-use-remote">Use the other device’s progress</button><button type="button" class="btn" data-act="sync-keep-local">Keep this device’s progress</button></div>
       <p class="muted">The copy you don’t choose is replaced.</p>`;
   } else if (SY) {
-    const st = syncUi.status === "saving" ? "Saving…" : syncUi.status === "offline" ? "Offline. Changes will sync when you’re back online." : SY.at ? `Last synced ${ago(SY.at)}.` : "";
-    h += `<p>Syncing as <b>${esc(SY.name)}</b>. ${st} Your progress saves automatically a few seconds after each change, and the newest copy loads when you open the site on any device.</p>
-      <div class="row"><button type="button" class="btn small primary" data-act="sync-now"${syncUi.busy ? " disabled" : ""}>Sync now</button><button type="button" class="btn small" data-act="sync-unlink">Stop syncing on this device</button><button type="button" class="btn small danger" data-act="sync-delete">Delete saved progress</button></div>`;
+    const stt = syncState(), line = {synced: `✓ Synced${SY.at ? " " + ago(SY.at) : ""}`, saving: "Saving…", pending: "Changes waiting to sync…", failed: "✕ Not synced. It will keep trying."}[stt];
+    h += `<p class="sstate" data-s="${stt}" role="status">${line}</p>
+      <p>Syncing as <b>${esc(SY.name)}</b>. Your progress saves automatically a few seconds after each change, and the newest copy loads when you open the site on any device.</p>
+      <div class="row"><button type="button" class="btn small primary" data-act="sync-now"${syncUi.busy ? " disabled" : ""}>${stt === "failed" ? "Try again" : "Sync now"}</button><button type="button" class="btn small" data-act="sync-unlink">Stop syncing on this device</button><button type="button" class="btn small danger" data-act="sync-delete">Delete saved progress</button></div>`;
     if (syncUi.confirmDelete) h += `<div class="confirm"><span>Delete the progress saved under “${esc(SY.name)}” from the server? This device keeps its own copy.</span><div class="row"><button type="button" class="btn small danger" data-act="sync-delete-yes">Delete it</button><button type="button" class="btn small" data-act="sync-delete-no">Cancel</button></div></div>`;
   } else if (syncUi.pendingLink) {
     h += `<p>“${esc(syncUi.pendingLink.name)}” already has saved progress. Load it onto this device, or replace it with this device’s progress?</p>
