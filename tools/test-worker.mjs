@@ -90,3 +90,8 @@ let lockedAt = 0; for (let i = 0; i < 6; i++) { const [s, b] = await sy({action:
 console.log(JSON.stringify(["sync locks after wrong PINs", lockedAt, (await sy({action: "load", name: "sajeev", pin: "1234"}))[0]]));
 console.log(JSON.stringify(["pin stored hashed", !db.prepare("SELECT pin FROM sync").get().pin.includes("1234")]));
 console.log(JSON.stringify(["sync delete (other name)", (await sy({action: "save", name: "friend1", pin: "4321", data: "{}"}))[0], (await sy({action: "delete", name: "friend1", pin: "4321"}))[1], (await sy({action: "load", name: "friend1", pin: "4321"}))[0]]));
+
+// Explain-my-mistake thumbs feedback (Q1 ranking; CBADE is not the key, which the explain tests cover in depth)
+const xf = async body => { const r = await worker.fetch(new Request("https://x.dev/api/explain-feedback", {method: "POST", body: JSON.stringify(body), headers: {"CF-Connecting-IP": "4.4.4.4"}}), env, ctx); return [r.status, await r.json()]; };
+console.log(JSON.stringify(["explain feedback stored", (await xf({client: "client-aaaa1", q: 1, answer: "EDCBA", rating: -1}))[1], db.prepare("SELECT q, a, rating FROM explain_feedback").all()]));
+console.log(JSON.stringify(["explain feedback bad rating / question", (await xf({client: "client-aaaa1", q: 1, answer: "EDCBA", rating: 2}))[0], (await xf({client: "client-aaaa1", q: 0, answer: "EDCBA", rating: 1}))[0]]));

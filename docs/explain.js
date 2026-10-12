@@ -10,6 +10,7 @@
     return isRank(Q[qi]) ? (a.set ? a.ord.map(o => L[o]).join("") : "") : a.p.slice().sort((x, y) => x - y).map(o => L[o]).join("");
   };
   const done = {}; // explanations already fetched this visit, so re-renders don't lose them
+  const rated = {}; // thumbs already given this visit (key -> 1 or -1)
   function add(){
     const res = card.querySelector(".result");
     if (!res || card.querySelector(".xmistake") || typeof curSet !== "function") return;
@@ -18,9 +19,12 @@
     const box = document.createElement("div"); box.className = "xmistake";
     res.querySelector(".scoreline").after(box);
     const k = qi + "|" + ans;
-    if (done[k]) { show(box, qi, done[k]); return; }
-    box.innerHTML = `<div class="xm-bar"><button type="button" class="btn small primary xm-go">Explain my mistake</button><span class="xm-tag">Beta</span><span class="xm-note">AI explanation of where your answer went wrong</span></div>`;
-    box.querySelector(".xm-go").addEventListener("click", () => run(box, qi, ans, k));
+    if (done[k]) { show(box, qi, done[k], ans, k); return; }
+    bar(box, qi, ans, k);
+  }
+  function bar(box, qi, ans, k){
+    box.innerHTML = `<div class="xm-bar"><button type="button" class="btn small primary xm-go">Explain my mistake</button><span class="xm-tag">Beta</span><span class="xm-note">AI explanation of where your answer went wrong. It can contain mistakes.</span></div>`;
+    box.querySelector(".xm-go").addEventListener("click", () => done[k] ? show(box, qi, done[k], ans, k) : run(box, qi, ans, k));
   }
   async function run(box, qi, ans, k){
     box.innerHTML = `<p class="muted" role="status">Working out where your answer went wrong…</p>`;
@@ -29,13 +33,13 @@
       const j = await r.json().catch(() => ({}));
       if (r.status === 429) throw new Error("Too many explanations from this network in the last hour. Please try again later.");
       if (!r.ok) throw new Error("Explanations aren’t available right now. Please try again later.");
-      done[k] = j; show(box, qi, j);
+      done[k] = j; show(box, qi, j, ans, k);
       const h = box.querySelector(".xhead"); if (h) { h.setAttribute("tabindex", "-1"); h.focus({preventScroll: true}); }
     } catch (e) {
       box.innerHTML = `<p class="muted">${esc(e.message || "Couldn’t load the explanation.")}</p>`;
     }
   }
-  function show(box, qi, j){
+  function show(box, qi, j, ans, k){
     const q = Q[qi], best3 = q.t === "best3", opt = c => q.o[L.indexOf(c)][0];
     if (j.perfect) { box.innerHTML = `<p class="muted">Nothing to explain: your answer matches the key.</p>`; return; }
     const where = it => best3 ? (it.move === "out" ? "You chose it, but it isn’t one of the best three." : "You didn’t choose it, but it’s one of the best three.")
@@ -45,12 +49,29 @@
     const note = j.budget ? `<p class="xm-notice">Today’s AI explanations have run out, so you’re seeing the written explanations. They’ll be back tomorrow.</p>`
       : allWritten && j.items.some(it => it.reason === "unavailable") ? `<p class="xm-notice">AI explanations aren’t available right now, so you’re seeing the written explanations.</p>` : "";
     const src = anyAi ? (aiSum && j.items.every(it => it.source === "ai") ? "AI explanation · checked against the key" : "Partly AI, partly written · anything the AI got wrong was replaced by the written version") : "Written explanation";
-    box.innerHTML = `<p class="xhead">Where your answer went wrong <span class="xm-tag">Beta</span></p>` + note +
+    box.innerHTML = `<div class="xm-head"><p class="xhead">Where your answer went wrong <span class="xm-tag">Beta</span></p><button type="button" class="xm-hide">Hide</button></div>` + note +
       (j.summary && j.summary.text ? `<p class="xm-sum">${esc(j.summary.text)}</p>` : "") +
       j.items.map(it => `<div class="xm-row"><p class="xm-what"><span class="letter">${it.letter}</span> ${opt(it.letter)}</p><p class="xm-pos ${it.move}">${where(it)}</p><p>${esc(it.why)}</p></div>`).join("") +
       (j.right && j.right.length ? `<p class="xm-right">✓ ${best3 ? "Right picks" : "In the right place"}: ${j.right.map(c => `<b>${c}</b>${best3 ? "" : " (" + ORD[q.k.indexOf(c)] + ")"}`).join(", ")}</p>` : "") +
       (j.principle && !aiSum ? `<p class="xm-principle"><b>Principle:</b> ${esc(j.principle)}</p>` : "") +
-      `<p class="xm-src${anyAi ? "" : " written"}">${src}</p>`;
+      `<p class="xm-src${anyAi ? "" : " written"}">${src}</p>` +
+      (anyAi ? `<p class="xm-caveat">AI explanations can contain mistakes. Check them against the written justifications above.</p>` +
+        `<div class="xm-fb"><button type="button" class="xm-up" data-r="1" aria-label="This explanation helped">👍</button><button type="button" class="xm-down" data-r="-1" aria-label="This explanation didn’t help">👎</button><p class="xm-thanks" role="status" aria-live="polite"></p></div>` : "");
+    box.querySelector(".xm-hide").addEventListener("click", () => { bar(box, qi, ans, k); const g = box.querySelector(".xm-go"); if (g) g.focus(); });
+    if (anyAi) feedback(box, qi, ans, k);
+  }
+  function feedback(box, qi, ans, k){
+    const btns = [...box.querySelectorAll(".xm-fb button")], msg = box.querySelector(".xm-thanks");
+    const thank = r => { btns.forEach(b => { b.disabled = true; b.classList.toggle("chosen", +b.dataset.r === r); }); msg.textContent = "Thanks for the feedback."; };
+    if (rated[k]) { thank(rated[k]); return; }
+    btns.forEach(b => b.addEventListener("click", async () => {
+      const r = +b.dataset.r; btns.forEach(x => x.disabled = true);
+      try {
+        const res = await fetch(API + "/api/explain-feedback", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({client: typeof S !== "undefined" ? S.cid : undefined, q: qi + 1, answer: ans, rating: r})});
+        if (!res.ok) throw new Error(res.status);
+        rated[k] = r; thank(r);
+      } catch (e) { btns.forEach(x => x.disabled = false); msg.textContent = "Couldn’t send that just now."; }
+    }));
   }
   new MutationObserver(add).observe(card, {childList: true});
   add();

@@ -44,7 +44,7 @@
       <button type="button" data-act="view" data-v="results">Results</button>
       <button type="button" data-act="view" data-v="guide">Guide</button>
       <button type="button" data-act="view" data-v="settings">Settings</button>
-      <button type="button" class="syncbtn" id="syncbtn" data-act="sync-open" data-state="off" aria-controls="syncpanel" aria-expanded="false"><span class="sdot" aria-hidden="true"></span><span class="slabel">Sync</span></button>
+      <span class="vacts" role="group" aria-label="Actions"><button type="button" class="syncbtn" id="syncbtn" data-act="sync-open" data-state="off" aria-controls="syncpanel" aria-expanded="false"><span class="sdot" aria-hidden="true"></span><span class="slabel">Sync</span></button></span>
     </nav>
   </header>
   <section class="card syncpanel" id="syncpanel" tabindex="-1" aria-label="Continue on another device" hidden></section>
@@ -57,15 +57,16 @@
       <div class="chart-top">
         <span class="chart-title" id="chart-title"></span>
         <span class="legend">
-          <span><i style="background:var(--surface-2)"></i>Not started</span>
-          <span><i style="background:var(--accent-soft)"></i>Answered</span>
-          <span><i style="background:var(--good-soft)"></i>80%+</span>
-          <span><i style="background:var(--near-soft)"></i>55–79%</span>
-          <span><i style="background:var(--bad-soft)"></i>Under 55%</span>
-          <span><i class="lflag"></i>Flagged</span>
+          <span><i aria-hidden="true" style="background:var(--surface-2)"></i>Not started</span>
+          <span><i class="lm done" aria-hidden="true" style="background:var(--accent-soft)"></i>Answered</span>
+          <span><i class="lm good" aria-hidden="true" style="background:var(--good-soft)"></i>80%+</span>
+          <span><i class="lm near" aria-hidden="true" style="background:var(--near-soft)"></i>55–79%</span>
+          <span><i class="lm bad" aria-hidden="true" style="background:var(--bad-soft)"></i>Under 55%</span>
+          <span><i class="lflag" aria-hidden="true"></i>Flagged</span>
         </span>
       </div>
       <div id="grid"></div>
+      <div class="resetrow" id="resetrow"></div>
     </nav>
     <div class="layout">
       <section class="card" id="card"></section>

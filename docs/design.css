@@ -38,8 +38,8 @@ html.nd .themebtn:hover{color:var(--ink); background:var(--surface)}
 /* hero stats */
 html.nd .nd-stats{display:grid; grid-template-columns:repeat(4, minmax(0, 1fr)); gap:12px; margin:18px 0 6px}
 html.nd .nd-stat{padding:14px 16px; border-radius:var(--r); background:var(--glass); border:1px solid color-mix(in srgb, var(--line) 70%, transparent); box-shadow:var(--elev-1); background:var(--surface)}
-html.nd .nd-stat b{display:block; font:600 26px/1.1 var(--mono); font-variant-numeric:tabular-nums; letter-spacing:-.02em}
-html.nd .nd-stat span{font:500 11.5px var(--mono); letter-spacing:.06em; text-transform:uppercase; color:var(--ink-3)}
+html.nd .nd-stat b{display:block; font:600 1.625rem/1.1 var(--mono); font-variant-numeric:tabular-nums; letter-spacing:-.02em}
+html.nd .nd-stat span{font:500 0.7188rem var(--mono); letter-spacing:.06em; text-transform:uppercase; color:var(--ink-3)}
 html.nd .nd-stat.acc b{color:var(--accent)}
 @media (max-width:640px){ html.nd .nd-stats{grid-template-columns:repeat(2, minmax(0, 1fr))} html.nd .top{margin-inline:-16px; padding-inline:16px} }
 
@@ -47,7 +47,7 @@ html.nd .nd-stat.acc b{color:var(--accent)}
 html.nd .card, html.nd .panel, html.nd .chart{border-radius:var(--r-lg); border-color:color-mix(in srgb, var(--line) 75%, transparent); box-shadow:var(--elev-1)}
 html.nd .card{padding:28px}
 html.nd .panel{top:calc(env(safe-area-inset-top,0px) + 112px)}
-html.nd .scenario{font-size:19.5px; line-height:1.6}
+html.nd .scenario{font-size:1.2188rem; line-height:1.6}
 
 /* paper tabs with progress */
 html.nd .ptab{border-radius:12px; padding:9px 14px 11px; position:relative; overflow:hidden; background:var(--surface); border-color:color-mix(in srgb, var(--line) 80%, transparent)}
@@ -115,7 +115,7 @@ html.nd .themebtn.nd-only{display:grid!important}
 html.nd .nd-gauge .nd-only{display:block!important}
 html.nd .nd-stats{margin:16px 0 4px}
 html.nd .nd-stat{padding:12px 14px}
-html.nd .nd-stat b{font-size:22px}
+html.nd .nd-stat b{font-size:1.375rem}
 html.nd .nav-ind{transition:left .35s cubic-bezier(.2,.8,.2,1), width .35s cubic-bezier(.2,.8,.2,1), top .35s cubic-bezier(.2,.8,.2,1)}
 @media (max-width:640px){
   html.nd .top{position:static; margin:-28px -16px 14px; border-radius:0 0 var(--r) var(--r)}
@@ -149,8 +149,8 @@ html.nd .nd-mockcta{align-items:center; gap:16px; margin:14px 0 4px; padding:18p
 html.nd .nd-mockcta::after{content:""; position:absolute; right:-40px; top:-60px; width:220px; height:220px; border-radius:50%; background:radial-gradient(closest-side, rgba(255,255,255,.22), transparent)}
 html.nd .nd-cta-ico{width:48px; height:48px; flex:none; border-radius:14px; display:grid; place-items:center; background:rgba(255,255,255,.18)}
 html.nd .nd-cta-txt{flex:1; min-width:0; display:grid; gap:2px}
-html.nd .nd-cta-txt b{font:600 19px/1.2 var(--serif)}
-html.nd .nd-cta-txt span{font-size:13.5px; opacity:.9}
+html.nd .nd-cta-txt b{font:600 1.1875rem/1.2 var(--serif)}
+html.nd .nd-cta-txt span{font-size:0.8438rem; opacity:.9}
 html.nd .nd-cta-btn{background:var(--surface)!important; color:var(--accent)!important; border:0!important; font-weight:600; padding:12px 18px; box-shadow:0 6px 18px rgba(0,0,0,.18)!important; position:relative; z-index:1}
 html.nd .nd-cta-btn:hover{transform:translateY(-1px)}
 @media (max-width:640px){ html.nd .nd-mockcta{flex-wrap:wrap} html.nd .nd-cta-btn{width:100%} }
@@ -173,7 +173,7 @@ html.nd .flagbig:hover:not(:disabled){border-color:var(--near); background:var(-
 html.nd .flagbig[aria-pressed="true"]{background:var(--near); color:var(--surface); border-color:var(--near); box-shadow:0 6px 16px color-mix(in srgb, var(--near) 35%, transparent)}
 html.nd .flagbig[aria-pressed="true"] svg path{fill:currentColor; fill-opacity:.35}
 html.nd .flagbig.waved svg{transform-origin:3px 14px; animation:wave .45s ease-out}
-html.nd .flagbtn{font-size:12.5px; padding:7px 12px; border-color:color-mix(in srgb, var(--near) 40%, var(--line)); color:var(--near)}
+html.nd .flagbtn{font-size:0.7812rem; padding:7px 12px; border-color:color-mix(in srgb, var(--near) 40%, var(--line)); color:var(--near)}
 html.nd .cell.flagged::after{border-width:0 14px 14px 0}
 html.nd .cell.flagged{box-shadow:inset 0 0 0 2px color-mix(in srgb, var(--near) 55%, transparent)}
 
@@ -194,10 +194,10 @@ html.nd[data-theme="dark"] .nd-mockcta{background:linear-gradient(120deg, #17393
   border-left:1px solid color-mix(in srgb, var(--accent) 35%, var(--line)); border-top:1px solid color-mix(in srgb, var(--accent) 35%, var(--line)); border-radius:3px 0 0 0}
 .nd-tip.show{opacity:1; transform:none; pointer-events:auto}
 .nd-tip.hide{opacity:0; transform:translateY(-6px) scale(.98)}
-.nd-tip-body{display:grid; gap:4px; font-size:13.5px; line-height:1.45; color:var(--ink-2)}
-.nd-tip-body b{font:600 14.5px var(--sans); color:var(--ink)}
+.nd-tip-body{display:grid; gap:4px; font-size:0.8438rem; line-height:1.45; color:var(--ink-2)}
+.nd-tip-body b{font:600 0.9062rem var(--sans); color:var(--ink)}
 .nd-tip-body strong{color:var(--accent)}
-.nd-tip-x{flex:none; width:28px; height:28px; margin:-4px -2px 0 0; border:0; border-radius:8px; background:transparent; color:var(--ink-3); font-size:18px; line-height:1; cursor:pointer}
+.nd-tip-x{flex:none; width:28px; height:28px; margin:-4px -2px 0 0; border:0; border-radius:8px; background:transparent; color:var(--ink-3); font-size:1.125rem; line-height:1; cursor:pointer}
 .nd-tip-x:hover{background:var(--surface-2); color:var(--ink)}
 /* a thin bar that shrinks as the tip counts down */
 .nd-tip-bar{position:absolute; left:14px; right:14px; bottom:7px; height:3px; border-radius:3px; background:color-mix(in srgb, var(--accent) 22%, transparent); overflow:hidden}
@@ -210,10 +210,10 @@ html.nd .nd-statbtn:disabled{cursor:default}
 html.nd .nd-statbtn:disabled:hover{transform:none; box-shadow:var(--elev-1); border-color:color-mix(in srgb, var(--line) 70%, transparent)}
 html.nd .nd-statbtn:disabled b{color:var(--ink)}
 html.nd .flagbig.nd-only{display:inline-flex!important}
-@media (max-width:640px){ html.nd .card{padding:20px 16px} html.nd .scenario{font-size:17.5px} html.nd .nd-mockcta{padding:16px} }
+@media (max-width:640px){ html.nd .card{padding:20px 16px} html.nd .scenario{font-size:1.0938rem} html.nd .nd-mockcta{padding:16px} }
 @media (max-width:640px){
   html.nd .views{flex-wrap:wrap; overflow:visible; justify-content:center; row-gap:4px}
-  html.nd .views button{padding:7px 10px; font-size:13.5px}
+  html.nd .views button{padding:7px 10px; font-size:0.8438rem}
 }
 @media (prefers-color-scheme: dark){ html.nd:not([data-theme="light"]) .nd-cta-btn{background:#EAF4F2!important; color:#0F4A45!important} }
 html.nd[data-theme="dark"] .nd-cta-btn{background:#EAF4F2!important; color:#0F4A45!important}
@@ -244,7 +244,7 @@ html.nd[data-accent] .nd-mockcta{background:linear-gradient(120deg, color-mix(in
 html.nd[data-accent][data-theme="dark"] .nd-mockcta{background:linear-gradient(120deg, color-mix(in srgb, var(--accent) 24%, #131A20) 0%, color-mix(in srgb, var(--accent) 14%, #161F27) 60%, #1D2A36 100%)}
 html.nd[data-accent] .nd-cta-btn{color:color-mix(in srgb, var(--accent) 80%, #000)!important}
 .swatches{display:flex; flex-wrap:wrap; gap:8px; margin-top:10px}
-.swatch{display:inline-flex; align-items:center; gap:8px; padding:7px 12px 7px 8px; border-radius:999px; border:1px solid var(--line); background:var(--surface); color:var(--ink); font:500 13.5px var(--sans); cursor:pointer}
+.swatch{display:inline-flex; align-items:center; gap:8px; padding:7px 12px 7px 8px; border-radius:999px; border:1px solid var(--line); background:var(--surface); color:var(--ink); font:500 0.8438rem var(--sans); cursor:pointer}
 .swatch i{width:20px; height:20px; border-radius:50%; box-shadow:inset 0 0 0 2px rgba(255,255,255,.35)}
 .swatch i[data-a="teal"]{background:#0E6A62} .swatch i[data-a="indigo"]{background:#4338CA} .swatch i[data-a="plum"]{background:#8A2C6C} .swatch i[data-a="ocean"]{background:#1D5FA8} .swatch i[data-a="slate"]{background:#3E4C63}
 .swatch[aria-pressed="true"]{border-color:var(--accent); box-shadow:0 0 0 2px var(--accent)}
@@ -275,7 +275,7 @@ html.nd mark.kp{color:inherit; background:transparent; padding:0 .1em; margin:0 
 .rlinks .rn circle{fill:var(--surface); stroke-width:2.5}
 .rlinks .rn.b4 circle{stroke:var(--good)} .rlinks .rn.b3 circle{stroke:var(--near)} .rlinks .rn.b0 circle{stroke:var(--bad)} .rlinks .rn.key circle{stroke:var(--ink-3)}
 .rlinks .rn text{font:600 14px var(--mono); fill:var(--ink); text-anchor:middle}
-.rlegend{display:flex; flex-wrap:wrap; gap:4px 14px; margin:6px 0 0; font-size:12.5px; color:var(--ink-2)}
+.rlegend{display:flex; flex-wrap:wrap; gap:4px 14px; margin:6px 0 0; font-size:0.7812rem; color:var(--ink-2)}
 .rlegend span{display:inline-flex; align-items:center; gap:6px}
 .rlegend i{width:16px; height:3px; border-radius:2px} .rlegend i.b4{background:var(--good)} .rlegend i.b3{background:var(--near)} .rlegend i.b0{background:var(--bad)}
 
@@ -288,24 +288,24 @@ html.nd mark.kp{color:inherit; background:transparent; padding:0 .1em; margin:0 
 .ring.good .rfg{stroke:var(--good)} .ring.near .rfg{stroke:var(--near)} .ring.bad .rfg{stroke:var(--bad)}
 @keyframes nd-ring{from{stroke-dashoffset:var(--c)}}
 .mrc{position:absolute; inset:0; display:grid; place-content:center; text-align:center}
-.mrc b{font:600 32px/1 var(--mono); letter-spacing:-.03em}
-.mrc span{font:500 12.5px var(--mono); color:var(--ink-3); margin-top:4px}
+.mrc b{font:600 2rem/1 var(--mono); letter-spacing:-.03em}
+.mrc span{font:500 0.7812rem var(--mono); color:var(--ink-3); margin-top:4px}
 .mside{flex:1; min-width:240px}
-.mverdict{font:600 18px/1.35 var(--serif); margin:0 0 12px}
+.mverdict{font:600 1.125rem/1.35 var(--serif); margin:0 0 12px}
 .mtiles{display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:10px}
 .mtiles div{padding:10px 12px; border-radius:12px; background:var(--surface-2); display:grid}
-.mtiles span{font:500 11px var(--mono); letter-spacing:.06em; text-transform:uppercase; color:var(--ink-3)}
-.mtiles b{font:600 20px/1.2 var(--mono)} .mtiles small{color:var(--ink-3); font-size:12px}
+.mtiles span{font:500 0.6875rem var(--mono); letter-spacing:.06em; text-transform:uppercase; color:var(--ink-3)}
+.mtiles b{font:600 1.25rem/1.2 var(--mono)} .mtiles small{color:var(--ink-3); font-size:0.75rem}
 .mweak{display:grid; gap:8px}
 .mwrow{display:flex; align-items:center; gap:12px; width:100%; text-align:left; padding:10px 12px; border-radius:12px; border:1px solid color-mix(in srgb, var(--line) 80%, transparent); background:var(--surface); color:var(--ink); font:inherit; cursor:pointer; transition:transform .2s, box-shadow .2s, border-color .2s}
 .mwrow:hover{transform:translateX(3px); border-color:var(--accent); box-shadow:var(--elev-1, none)}
 .mwrow .pill{flex:none; min-width:52px; text-align:center}
 .mwt{flex:1; min-width:0; display:grid; gap:2px}
-.mwt b{font-size:14px} .mwt span{font-size:13px; color:var(--ink-2); overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.mwt b{font-size:0.875rem} .mwt span{font-size:0.8125rem; color:var(--ink-2); overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
 .mwgo{color:var(--accent); font-weight:600}
 .mtime svg{display:block; width:100%; height:auto}
 .mtime .gl{stroke:var(--line); stroke-width:1}
-.mtime .ax{font:500 10.5px var(--mono); fill:var(--ink-3)}
+.mtime .ax{font:500 11px var(--mono); fill:var(--ink-3)}
 .mtime .pace{stroke:var(--ink-2); stroke-width:1.5; stroke-dasharray:4 4}
 .mtime .hit{fill:transparent}
 .mtime .tb{cursor:pointer}
@@ -315,18 +315,18 @@ html.nd mark.kp{color:inherit; background:transparent; padding:0 .1em; margin:0 
 @keyframes nd-grow{from{transform:scaleY(0)}}
 .mcols{display:grid; grid-template-columns:1fr 1fr; gap:0 28px}
 .mcols .dom a{color:inherit}
-@media (max-width:640px){ .mcols{grid-template-columns:1fr} .mtiles b{font-size:17px} .mring{width:112px; height:112px} .mrc b{font-size:26px} }
+@media (max-width:640px){ .mcols{grid-template-columns:1fr} .mtiles b{font-size:1.0625rem} .mring{width:112px; height:112px} .mrc b{font-size:1.625rem} }
 
 /* ---------- activity dashboard ---------- */
 .acts{display:grid; grid-template-columns:repeat(4, minmax(0, 1fr)); gap:10px; margin-bottom:14px}
 .acts > div{padding:12px 14px; border-radius:14px; background:var(--surface-2); display:grid}
-.acts b{font:600 24px/1.1 var(--mono)}
-.acts span{font:500 11px var(--mono); letter-spacing:.06em; text-transform:uppercase; color:var(--ink-3)}
+.acts b{font:600 1.5rem/1.1 var(--mono)}
+.acts span{font:500 0.6875rem var(--mono); letter-spacing:.06em; text-transform:uppercase; color:var(--ink-3)}
 .acts .streak.lit{background:linear-gradient(135deg, var(--near-soft), var(--surface-2))}
 .acts .streak.lit b{color:var(--near)}
 .acal{display:grid; grid-template-columns:auto 1fr; grid-template-rows:auto auto; gap:4px 6px; overflow-x:auto; padding-bottom:4px}
-.hmonths{grid-column:2; display:grid; grid-template-columns:repeat(20, 1fr); gap:4px; font:500 10.5px var(--mono); color:var(--ink-3); min-width:300px}
-.hdays{grid-column:1; grid-row:2; display:grid; grid-template-rows:repeat(7, 1fr); gap:4px; font:500 10px var(--mono); color:var(--ink-3); align-items:center}
+.hmonths{grid-column:2; display:grid; grid-template-columns:repeat(20, 1fr); gap:4px; font:500 0.6875rem var(--mono); color:var(--ink-3); min-width:300px}
+.hdays{grid-column:1; grid-row:2; display:grid; grid-template-rows:repeat(7, 1fr); gap:4px; font:500 0.6875rem var(--mono); color:var(--ink-3); align-items:center}
 .hgrid{grid-column:2; grid-row:2; display:grid; grid-template-columns:repeat(20, 1fr); grid-template-rows:repeat(7, auto); gap:4px; min-width:300px}
 .hc{display:block; aspect-ratio:1; border-radius:4px; background:var(--surface-2); min-width:10px; max-height:22px}
 .hc.l1{background:color-mix(in srgb, var(--accent) 28%, var(--surface-2))}
@@ -336,12 +336,12 @@ html.nd mark.kp{color:inherit; background:transparent; padding:0 .1em; margin:0 
 .hc.out{visibility:hidden}
 .hc.today{outline:2px solid var(--ink-2); outline-offset:1px}
 .hgrid .hc:hover{outline:2px solid var(--ink); outline-offset:1px}
-.hkey{display:flex; align-items:center; gap:4px; justify-content:flex-end; font-size:12px}
+.hkey{display:flex; align-items:center; gap:4px; justify-content:flex-end; font-size:0.75rem}
 .hkey .hc{width:12px; min-width:12px; height:12px}
 @media (max-width:640px){ .acts{grid-template-columns:repeat(2, minmax(0, 1fr))} }
 
 /* ---------- hover tooltip ---------- */
-.nd-hovertip{position:fixed; z-index:90; pointer-events:none; max-width:260px; padding:7px 10px; border-radius:9px; background:var(--ink); color:var(--surface); font:500 12.5px/1.35 var(--sans); box-shadow:0 8px 24px rgba(0,0,0,.25); opacity:0; transform:translateY(4px); transition:opacity .12s, transform .12s}
+.nd-hovertip{position:fixed; z-index:90; pointer-events:none; max-width:260px; padding:7px 10px; border-radius:9px; background:var(--ink); color:var(--surface); font:500 0.7812rem/1.35 var(--sans); box-shadow:0 8px 24px rgba(0,0,0,.25); opacity:0; transform:translateY(4px); transition:opacity .12s, transform .12s}
 .nd-hovertip.show{opacity:1; transform:none}
 
 
@@ -350,13 +350,13 @@ html.nd .nd-install.nd-only{display:flex!important}
 html.nd .nd-install[hidden]{display:none!important}
 .nd-install{align-items:center; gap:14px; margin:18px 0 0; padding:14px 14px 14px 16px; border-radius:var(--r-lg, 18px); background:var(--glass, var(--surface)); border:1px solid color-mix(in srgb, var(--accent) 30%, var(--line)); box-shadow:var(--elev-1, none)}
 .nd-install img{border-radius:11px; flex:none}
-.nd-install div{flex:1; min-width:0; display:grid; gap:2px; font-size:13.5px; color:var(--ink-2)}
-.nd-install b{font-size:15px; color:var(--ink)} .nd-install strong{color:var(--accent)}
+.nd-install div{flex:1; min-width:0; display:grid; gap:2px; font-size:0.8438rem; color:var(--ink-2)}
+.nd-install b{font-size:0.9375rem; color:var(--ink)} .nd-install strong{color:var(--accent)}
 
 /* ---------- focus mode during a timed mock ---------- */
 html.nd .nd-focusbar.nd-only{display:flex!important}
 html.nd .nd-focusbar[hidden]{display:none!important}
-.nd-focusbar{align-items:center; justify-content:space-between; gap:12px; margin:0 0 12px; padding:8px 8px 8px 14px; border-radius:12px; background:var(--surface-2); font-size:13.5px; color:var(--ink-2)}
+.nd-focusbar{align-items:center; justify-content:space-between; gap:12px; margin:0 0 12px; padding:8px 8px 8px 14px; border-radius:12px; background:var(--surface-2); font-size:0.8438rem; color:var(--ink-2)}
 .nd-focusbar b{color:var(--ink)}
 html.nd-focus .top, html.nd-focus #view-practice > .sub, html.nd-focus .nd-stats, html.nd-focus .nd-mockcta, html.nd-focus .setbar,
 html.nd-focus .chart-top .legend, html.nd-focus .foot, html.nd-focus .nd-tabbar, html.nd-focus #panel .note, html.nd-focus #panel .saved,
@@ -373,13 +373,13 @@ html.nd .nd-tabbar.nd-only, .nd-tabbar{display:none!important}
   html.nd body .nd-tabbar.nd-only{display:grid!important}
   .nd-tabbar{position:fixed; z-index:60; left:10px; right:10px; bottom:calc(env(safe-area-inset-bottom, 0px) + 10px); grid-template-columns:repeat(4, 1fr); gap:4px; padding:6px; border-radius:20px;
     background:color-mix(in srgb, var(--surface) 82%, transparent); -webkit-backdrop-filter:saturate(1.6) blur(16px); backdrop-filter:saturate(1.6) blur(16px); border:1px solid color-mix(in srgb, var(--line) 70%, transparent); box-shadow:0 10px 30px rgba(10,30,28,.18)}
-  .nd-tabbar button{display:grid; justify-items:center; gap:2px; padding:7px 4px 6px; border:0; border-radius:14px; background:transparent; color:var(--ink-3); font:600 11px var(--sans); cursor:pointer; transition:color .2s, background .2s}
+  .nd-tabbar button{display:grid; justify-items:center; gap:2px; padding:7px 4px 6px; border:0; border-radius:14px; background:transparent; color:var(--ink-3); font:600 0.6875rem var(--sans); cursor:pointer; transition:color .2s, background .2s}
   .nd-tabbar button[aria-current="page"]{color:var(--accent); background:var(--accent-soft)}
   .nd-tabbar button[aria-current="page"] svg{animation:nd-pop .35s cubic-bezier(.2,1.6,.4,1)}
   html.nd .views [data-v], html.nd .views .nav-ind{display:none!important}
   html.nd .top{display:flex; align-items:center; justify-content:space-between; gap:10px; padding-block:12px}
   html.nd .top .eyebrow{display:none}
-  html.nd .top h1{font-size:21px; margin:0}
+  html.nd .top h1{font-size:1.3125rem; margin:0}
   html.nd .views{padding:3px; flex-wrap:nowrap}
   html.nd .wrap{padding-bottom:calc(env(safe-area-inset-bottom, 0px) + 96px)}
   .nd-install{flex-wrap:wrap}
@@ -413,13 +413,13 @@ html.nd .nd-progress{will-change:transform}
 @media (min-width:1640px){
   html.nd .wrap{max-width:1560px; padding-inline:36px}
   html.nd .top{margin-inline:-36px; padding-inline:36px}
-  html.nd body{font-size:16px}
+  html.nd body{font-size:1rem}
   html.nd .layout{grid-template-columns:minmax(0,1fr) 380px; gap:30px}
   html.nd .card{padding:34px 38px}
-  html.nd .scenario{font-size:21px; max-width:72ch}
-  html.nd .otext{font-size:16px}
+  html.nd .scenario{font-size:1.3125rem; max-width:72ch}
+  html.nd .otext{font-size:1rem}
   html.nd .cell{height:42px}
-  html.nd .nd-stat b{font-size:25px}
+  html.nd .nd-stat b{font-size:1.5625rem}
   /* after answering: explanations on the left, your score and the key on the right */
   html.nd #card:has(> .result){display:grid; grid-template-columns:minmax(0,1.1fr) minmax(0,1fr); column-gap:34px; grid-auto-flow:row dense; align-items:start}
   html.nd #card:has(> .result) > *{grid-column:1 / -1}
@@ -432,8 +432,8 @@ html.nd .nd-progress{will-change:transform}
 }
 @media (min-width:2000px){
   html.nd .wrap{max-width:1760px}
-  html.nd body{font-size:17px}
-  html.nd .scenario{font-size:22px}
+  html.nd body{font-size:1.0625rem}
+  html.nd .scenario{font-size:1.375rem}
 }
 
 /* ---------- pattern guide: full width, with a sticky contents list on wider screens ---------- */
@@ -450,7 +450,7 @@ html.nd .gsec{scroll-margin-top:calc(env(safe-area-inset-top,0px) + 120px)}
 }
 @media (min-width:1640px){
   html.nd .gwrap{grid-template-columns:270px minmax(0,1fr); gap:0 56px}
-  html.nd .gsec p, html.nd .gsec li{font-size:16px}
+  html.nd .gsec p, html.nd .gsec li{font-size:1rem}
 }
 
 /* ---------- settings: sections as tiles on wider screens ---------- */
@@ -462,11 +462,11 @@ html.nd .gsec{scroll-margin-top:calc(env(safe-area-inset-top,0px) + 120px)}
 }
 
 /* community stats heatmap: clearer labels and legend */
-html.nd .stats .hhead span{font:500 11px var(--mono); color:var(--ink-3); text-align:center}
+html.nd .stats .hhead span{font:500 0.6875rem var(--mono); color:var(--ink-3); text-align:center}
 html.nd .stats .hhead span:last-child{text-align:right; line-height:1.2}
-html.nd .stats .hcell{height:34px; border-radius:8px; font-size:12px}
+html.nd .stats .hcell{height:34px; border-radius:8px; font-size:0.75rem}
 html.nd .stats .hcell.key{outline:2px solid var(--ink); outline-offset:-2px; box-shadow:0 0 0 2px var(--surface) inset}
-.hlegend{display:flex; flex-wrap:wrap; gap:6px 18px; margin:0; font-size:12.5px; color:var(--ink-2)}
+.hlegend{display:flex; flex-wrap:wrap; gap:6px 18px; margin:0; font-size:0.7812rem; color:var(--ink-2)}
 .hlegend span{display:inline-flex; align-items:center; gap:4px}
 .hlegend .hcell{display:inline-block; width:18px; height:14px; border-radius:4px}
 .hlegend span > .hcell:last-of-type{margin-right:4px}
@@ -475,25 +475,25 @@ html.nd .stats .hcell.key{outline:2px solid var(--ink); outline-offset:-2px; box
 a.cite{color:var(--accent); font-weight:600; text-decoration:underline; text-decoration-color:color-mix(in srgb, var(--accent) 40%, transparent); text-underline-offset:2px; border-radius:3px}
 a.cite:hover{text-decoration-color:var(--accent); background:var(--accent-soft)}
 .stdfind{display:block; margin:12px 0 10px}
-.stdfind input{width:100%; max-width:460px; font:15px var(--sans); padding:10px 14px; border-radius:12px; border:1px solid var(--line); background:var(--surface); color:var(--ink)}
+.stdfind input{width:100%; max-width:460px; font:0.9375rem var(--sans); padding:10px 14px; border-radius:12px; border:1px solid var(--line); background:var(--surface); color:var(--ink)}
 .stdfind input:focus{outline:none; border-color:var(--accent); box-shadow:0 0 0 3px color-mix(in srgb, var(--accent) 20%, transparent)}
 .stdnav{margin:4px 0 8px}
-.stdnav a{font-size:12.5px}
+.stdnav a{font-size:0.7812rem}
 .stdp{margin-top:20px; scroll-margin-top:calc(env(safe-area-inset-top,0px) + 120px)}
-.stdp h4{display:flex; align-items:baseline; gap:10px; font:600 17px/1.3 var(--serif); color:var(--ink); letter-spacing:0; text-transform:none; margin:0 0 8px}
-.stdp h4 .sn{flex:none; display:inline-grid; place-items:center; width:28px; height:28px; border-radius:9px; background:var(--accent); color:var(--accent-ink); font:600 13px var(--mono)}
+.stdp h4{display:flex; align-items:baseline; gap:10px; font:600 1.0625rem/1.3 var(--serif); color:var(--ink); letter-spacing:0; text-transform:none; margin:0 0 8px}
+.stdp h4 .sn{flex:none; display:inline-grid; place-items:center; width:28px; height:28px; border-radius:9px; background:var(--accent); color:var(--accent-ink); font:600 0.8125rem var(--mono)}
 .stdlist{display:grid; gap:2px; border-left:2px solid var(--surface-2); padding-left:10px}
-.std{display:grid; grid-template-columns:62px 1fr; gap:10px; padding:6px 10px; border-radius:9px; font-size:14px; line-height:1.45; scroll-margin-top:calc(env(safe-area-inset-top,0px) + 140px)}
-.std .sn{font:600 12.5px/1.6 var(--mono); color:var(--ink-3)}
+.std{display:grid; grid-template-columns:62px 1fr; gap:10px; padding:6px 10px; border-radius:9px; font-size:0.875rem; line-height:1.45; scroll-margin-top:calc(env(safe-area-inset-top,0px) + 140px)}
+.std .sn{font:600 0.7812rem/1.6 var(--mono); color:var(--ink-3)}
 .std.d2{font-weight:600; margin-top:6px; background:color-mix(in srgb, var(--surface-2) 60%, transparent)}
 .std.d2 .sn{color:var(--accent)}
 .std.d3{color:var(--ink-2)}
 .std.hit, .gdoc.hit{animation:nd-hit 2.4s ease-out}
 @keyframes nd-hit{0%,35%{background:color-mix(in srgb, var(--near) 26%, transparent); box-shadow:0 0 0 2px var(--near)}100%{background:transparent; box-shadow:0 0 0 2px transparent}}
 .std.d2.hit{animation-name:nd-hit}
-.stdsrc{display:inline-block; margin-top:8px; font-size:13px; color:var(--accent)}
+.stdsrc{display:inline-block; margin-top:8px; font-size:0.8125rem; color:var(--accent)}
 .gdoc{padding:14px 16px; margin-top:12px; border-radius:14px; border:1px solid color-mix(in srgb, var(--line) 75%, transparent); scroll-margin-top:calc(env(safe-area-inset-top,0px) + 120px)}
-.gdoc h4{font:600 16px/1.3 var(--serif); color:var(--ink); letter-spacing:0; text-transform:none; margin:0 0 6px}
+.gdoc h4{font:600 1rem/1.3 var(--serif); color:var(--ink); letter-spacing:0; text-transform:none; margin:0 0 6px}
 .gdoc ul{margin:0}
 html.nd .btn.citeback, .citeback{position:fixed; z-index:62; left:50%; transform:translateX(-50%); bottom:calc(env(safe-area-inset-bottom,0px) + 22px); box-shadow:0 10px 28px rgba(10,30,28,.28)!important; animation:nd-enter .3s cubic-bezier(.2,.8,.2,1)}
 .citeback[hidden]{display:none}
@@ -566,18 +566,18 @@ html.nd .dragging[data-pos]::before{content:attr(data-pos)}
 /* small phones: roomier ranking text, two-column mock tiles, a capped Sync button */
 @media (max-width:400px){
   .ritem{grid-template-columns:28px 24px minmax(0,1fr) auto; gap:6px; padding:9px 8px}
-  .ritem::before{width:28px; height:28px; font-size:14px}
+  .ritem::before{width:28px; height:28px; font-size:0.875rem}
   .mvb{width:30px}
 }
 @media (max-width:360px){ .mtiles{grid-template-columns:repeat(2, minmax(0, 1fr))} }
 @media (max-width:640px){ html.nd .syncbtn .slabel{max-width:7em; overflow:hidden; text-overflow:ellipsis; white-space:nowrap} }
 
 /* skip link: hidden until focused */
-.skiplink{position:fixed; left:12px; top:-60px; z-index:100; padding:10px 14px; border-radius:10px; border:0; background:var(--accent); color:var(--accent-ink); font:600 14px var(--sans); cursor:pointer; transition:top .15s}
+.skiplink{position:fixed; left:12px; top:-60px; z-index:100; padding:10px 14px; border-radius:10px; border:0; background:var(--accent); color:var(--accent-ink); font:600 0.875rem var(--sans); cursor:pointer; transition:top .15s}
 .skiplink:focus{top:12px}
 
 /* "Your answer" rows say where a misplaced option belongs (replaces the line graph) */
-.crow .cmove{display:block; margin-top:3px; font:600 12px var(--mono); letter-spacing:.02em}
+.crow .cmove{display:block; margin-top:3px; font:600 0.75rem var(--mono); letter-spacing:.02em}
 .crow.b4 .cmove{color:var(--good)} .crow.b3 .cmove, .crow.b2 .cmove{color:var(--near)} .crow.b1 .cmove, .crow.b0 .cmove{color:var(--bad)}
 /* one place out is a near miss, not a match: amber, not green */
 .crow.b3{background:var(--near-soft)} .crow.b3 .pts, .crow.b3 .pos{color:var(--near)}
@@ -585,18 +585,18 @@ html.nd .dragging[data-pos]::before{content:attr(data-pos)}
 /* ---------- "Explain my mistake" (Beta) ---------- */
 .xmistake{margin:10px 0 4px; padding:12px 14px; border-radius:14px; border:1px dashed color-mix(in srgb, var(--accent) 50%, var(--line)); display:grid; gap:8px}
 .xm-bar{display:flex; flex-wrap:wrap; align-items:center; gap:8px 10px}
-.xm-tag{display:inline-flex; align-items:center; width:auto; margin-left:6px; padding:2px 9px; border-radius:999px; background:var(--near-soft); color:var(--near); font:600 11px/1.6 var(--mono); letter-spacing:.04em; text-transform:uppercase; vertical-align:middle}
+.xm-tag{display:inline-flex; align-items:center; width:auto; margin-left:6px; padding:2px 9px; border-radius:999px; background:var(--near-soft); color:var(--near); font:600 0.6875rem/1.6 var(--mono); letter-spacing:.04em; text-transform:uppercase; vertical-align:middle}
 .xm-bar .xm-tag{margin-left:0}
-.xm-note{font-size:13px; color:var(--ink-3)}
+.xm-note{font-size:0.8125rem; color:var(--ink-3)}
 .xm-row{display:grid; gap:4px; padding:8px 0; border-top:1px solid color-mix(in srgb, var(--line) 70%, transparent)} .xm-row p{margin:0}
 .xm-what{display:flex; gap:8px; align-items:flex-start; font-weight:600} .xm-what .letter{flex:none}
-.xm-pos{font-size:13.5px; color:var(--ink-2)} .xm-pos b{color:var(--ink)}
+.xm-pos{font-size:0.8438rem; color:var(--ink-2)} .xm-pos b{color:var(--ink)}
 .xm-pos.higher b:last-child, .xm-pos.in{color:var(--good)} .xm-pos.lower b:last-child, .xm-pos.out{color:var(--bad)}
-.xm-src{margin:0; font:500 11.5px var(--mono); color:var(--ink-3)} .xm-src.written{color:var(--near)}
-.xm-sum{margin:0; font:600 15.5px/1.45 var(--serif)}
-.xm-notice{margin:0; padding:8px 12px; border-radius:10px; background:var(--near-soft); color:var(--ink); font-size:13.5px}
-.xm-right{margin:2px 0 0; font-size:13.5px; color:var(--good)}
-.xm-principle{margin:0; padding:10px 12px; border-radius:10px; background:var(--surface-2); font-size:14px}
+.xm-src{margin:0; font:500 0.7188rem var(--mono); color:var(--ink-3)} .xm-src.written{color:var(--near)}
+.xm-sum{margin:0; font:600 0.9688rem/1.45 var(--serif)}
+.xm-notice{margin:0; padding:8px 12px; border-radius:10px; background:var(--near-soft); color:var(--ink); font-size:0.8438rem}
+.xm-right{margin:2px 0 0; font-size:0.8438rem; color:var(--good)}
+.xm-principle{margin:0; padding:10px 12px; border-radius:10px; background:var(--surface-2); font-size:0.875rem}
 
 /* the page can't be pushed sideways; on touch screens the number/grip area picks a row up at once, and the rest of the row picks it up after a short hold */
 html{overflow-x:hidden; overscroll-behavior-x:none}
@@ -620,3 +620,86 @@ body{overflow-x:clip}
   html.nd .wrap{padding-bottom:96px}
   html.nd .btn.citeback, .citeback{bottom:92px}
 }
+
+/* ---- from fix-touch.css ---- */
+/* Accessibility fixes (Oct 2026): touch targets, non-colour status marks, grouped top-bar actions, quiet Reset.
+   Loads after styles.css and design.css, so equal-specificity rules here win. */
+
+/* ---------- top bar: navigation tabs, then a separate "Actions" group ---------- */
+.views .vacts{display:flex; align-items:stretch; gap:4px; position:relative; z-index:1; margin-left:4px; padding-left:9px}
+.views .vacts::before{content:""; position:absolute; left:0; top:20%; bottom:20%; width:1px; background:var(--line)}
+@media (max-width:640px){
+  /* the section tabs move to the bottom bar on phones, so no divider is needed */
+  .views .vacts{margin-left:0; padding-left:0}
+  .views .vacts::before{display:none}
+}
+
+/* ---------- question grid: a mark as well as a colour for each status ---------- */
+.cell::before{position:absolute; top:3px; left:4px; font:700 9px/1 var(--sans); pointer-events:none}
+.cell.done::before{content:"\2022"; font-size:12px; top:1px; color:var(--accent)}   /* • answered */
+.cell.good::before{content:"\2713"; color:var(--good)}                               /* ✓ 80%+ */
+.cell.near::before{content:"\2248"; color:var(--near)}                               /* ≈ 55–79% */
+.cell.bad::before{content:"\2715"; color:var(--bad)}                                 /* ✕ under 55% */
+html.nd .cell.flagged::after, .cell.flagged::after{content:"\2691"; top:3px; right:4px; width:auto; height:auto; border:0; border-radius:0; font:9px/1 var(--sans); color:var(--near); pointer-events:none}  /* ⚑ flagged */
+.legend i{display:inline-grid; place-items:center; width:14px; height:14px; font:700 9px/1 var(--sans)}
+.legend i.lm.done::after{content:"\2022"; font-size:12px; color:var(--accent)}
+.legend i.lm.good::after{content:"\2713"; color:var(--good)}
+.legend i.lm.near::after{content:"\2248"; color:var(--near)}
+.legend i.lm.bad::after{content:"\2715"; color:var(--bad)}
+.legend i.lflag{width:14px; height:14px; border:1px solid var(--line); border-radius:3px; background:var(--surface-2)}
+.legend i.lflag::after{content:"\2691"; font-weight:400; color:var(--near)}
+
+/* ---------- Reset: a quiet red text button under the grid ---------- */
+.resetrow{margin-top:10px; text-align:right}
+.resetrow:empty{display:none}
+.resetrow .confirm{text-align:left}
+.resetlink{display:inline-flex; align-items:center; padding:6px 4px; border:0; border-radius:8px; background:none; color:var(--bad); font:500 0.8125rem var(--sans); cursor:pointer}
+.resetlink:hover{text-decoration:underline; text-underline-offset:3px}
+html.nd-focus .resetrow{display:none!important}
+
+/* ---------- touch targets on phones and touch screens: 44px where the layout allows ---------- */
+@media (pointer:coarse), (max-width:640px){
+  html.nd .btn{min-height:44px}
+  html.nd .views .syncbtn{min-height:44px}
+  html.nd .flagbtn{min-height:44px; padding:0 14px}
+  html.nd .ptab{min-height:44px; padding-top:11px; padding-bottom:13px}
+  .nd-tip-x{width:44px; height:44px; margin:-12px -8px -8px 0}
+  .foot a{display:inline-flex; align-items:center; min-height:44px; padding:0 4px}
+  .resetlink{min-height:44px; padding:0 8px}
+
+  /* ranking arrows: real 40x40 buttons, 8px apart */
+  .rlist .mv{gap:8px}
+  .rlist .mvb{width:40px; height:40px; font-size:1rem; border-radius:10px}
+
+  /* question grid: taller cells; columns grow to fill the row */
+  html.nd .cell{height:44px}
+  #grid .flat{grid-template-columns:repeat(auto-fill, minmax(44px, 1fr))}
+}
+/* touch tablets: 16 across would make cells too narrow, so show each arch as two rows of 8 */
+@media (pointer:coarse) and (max-width:879px){
+  #grid .arch{grid-template-columns:repeat(8, minmax(0, 1fr))}
+  #grid .mid{display:none}
+}
+/* narrow phones: 8 across can't reach 44px wide, so use 4 wider columns */
+@media (max-width:459px){
+  #grid .arch{grid-template-columns:repeat(4, minmax(0, 1fr))}
+}
+
+@media (pointer:coarse){ html.nd .themebtn{width:44px; height:44px} }
+
+/* the Advanced chip shares a row with the 44px Flag button; keep it its natural height */
+.chips{align-items:center}
+
+/* ---- from fix-explain.css ---- */
+/* "Explain my mistake": hide button, AI caveat and thumbs feedback */
+.xm-head{display:flex; align-items:center; justify-content:space-between; gap:8px}
+.xm-head .xhead{margin:0}
+.xm-hide{min-height:44px; min-width:44px; padding:0 12px; border:0; background:none; font:inherit; font-size:0.8125rem; color:var(--ink-3); text-decoration:underline; cursor:pointer}
+.xm-hide:hover{color:var(--ink)}
+.xm-caveat{margin:0; font-size:0.75rem; color:var(--ink-3)}
+.xm-fb{display:flex; flex-wrap:wrap; align-items:center; gap:4px 8px}
+.xm-fb button{width:44px; height:44px; min-width:44px; padding:0; border:1px solid var(--line); border-radius:12px; background:var(--surface-2); font-size:1.125rem; line-height:1; cursor:pointer}
+.xm-fb button:disabled{cursor:default; opacity:.5}
+.xm-fb button.chosen:disabled{opacity:1; border-color:var(--accent)}
+.xm-thanks{margin:0; font-size:0.8125rem; color:var(--ink-3)}
+.xm-hide:focus-visible, .xm-fb button:focus-visible{outline:2px solid var(--accent); outline-offset:2px}

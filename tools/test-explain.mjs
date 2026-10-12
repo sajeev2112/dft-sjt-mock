@@ -45,4 +45,20 @@ db.prepare("UPDATE ai_usage SET n = 0").run();
 // per-network limit (D1 fallback counter, 40 an hour)
 let limited = 0; for (let n = 0; n < 45; n++) { const i = (n * 7) % 160; const qq = BANK[i]; const a = qq.t === "best3" ? "ABC" : [...qq.k].reverse().join(""); const [st] = await call({q: i + 1, answer: a, n}, "5.5.5.5"); if (st === 429) limited++; }
 ok(limited > 0, `hourly limit per network applies (${limited} of 45 refused)`);
+// thumbs up/down on an explanation (POST /api/explain-feedback)
+const fb = async (body, ip = "6.6.6.6") => { const r = await worker.fetch(new Request("https://x.dev/api/explain-feedback", {method: "POST", body: JSON.stringify(body), headers: {"CF-Connecting-IP": ip}}), env, ctx); return [r.status, await r.json()]; };
+const rows = () => db.prepare("SELECT client, q, a, rating FROM explain_feedback ORDER BY client").all();
+[s, j] = await fb({client: "client-aaaa1", q: 1, answer: rev.toLowerCase(), rating: 1}); ok(s === 200 && j.ok, "thumbs up stored");
+ok(rows().length === 1 && rows()[0].q === 1 && rows()[0].a === rev && rows()[0].rating === 1, "stored row: question, canonical answer letters, rating");
+[s, j] = await fb({client: "client-aaaa1", q: 1, answer: rev, rating: -1}); ok(s === 200 && rows().length === 1 && rows()[0].rating === -1, "later click replaces the earlier one (one row per client, question and answer)");
+[s, j] = await fb({q: 1, answer: rev, rating: 1}); ok(s === 200 && rows().length === 2 && rows().some(r => r.client === "anonymous"), "no client id: stored under a shared anonymous id");
+[s, j] = await fb({client: "client-aaaa1", q: 1, answer: rev, rating: 0}); ok(s === 400 && j.error === "bad_rating", "rating 0 rejected");
+[s, j] = await fb({client: "client-aaaa1", q: 1, answer: rev, rating: "1"}); ok(s === 400, "rating as text rejected");
+[s, j] = await fb({client: "client-aaaa1", q: 1, answer: rev, rating: 5}); ok(s === 400, "rating 5 rejected");
+[s, j] = await fb({client: "client-aaaa1", q: 9999, answer: rev, rating: 1}); ok(s === 400 && j.error === "bad_question", "unknown question rejected");
+[s, j] = await fb({client: "client-aaaa1", q: 1, answer: "AAB", rating: 1}); ok(s === 400 && j.error === "bad_answer", "bad answer letters rejected");
+[s, j] = await fb({client: "client-aaaa1", q: 1, answer: q1.k, rating: 1}); ok(s === 400, "a perfect answer has no explanation to rate");
+ok(rows().length === 2, "rejected requests store nothing");
+let fbLimited = 0; for (let n = 0; n < 70; n++) { const [st] = await fb({client: "client-bbbb2", q: 1, answer: rev, rating: 1}, "7.7.7.7"); if (st === 429) fbLimited++; }
+ok(fbLimited === 10, `feedback hourly limit per network applies (${fbLimited} of 70 refused, expect 10)`);
 console.log(`${pass} passed, ${fail} failed`);

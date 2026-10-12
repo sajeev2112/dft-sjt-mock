@@ -292,7 +292,7 @@ function focusKey(el){
   return "[data-act=\"" + a.dataset.act + "\"]" + ["k", "o", "d", "mode", "id", "kind", "arg", "v", "a", "nd"].filter(k => a.dataset[k] != null).map(k => `[data-${k}="${CSS.escape(a.dataset[k])}"]`).join("");
 }
 function keepFocus(fn){
-  const was = document.activeElement, key = focusKey(was), box = was && was.closest && was.closest("#panel, #card, #view-settings, #syncpanel, #view-results");
+  const was = document.activeElement, key = focusKey(was), box = was && was.closest && was.closest("#panel, #card, #view-settings, #syncpanel, #view-results, #resetrow");
   fn();
   if (!was || was === document.body || document.activeElement !== document.body) return;
   let t = key && document.querySelector(key);
@@ -345,6 +345,11 @@ function renderGrid(){
     h = `<div class="flat">${list.map((qi, k) => cellHtml(set, qi, k, false)).join("")}</div>`;
   }
   document.getElementById("grid").innerHTML = h;
+  // Reset sits quietly under the grid, away from the main controls; it still asks before clearing anything.
+  const name = setName(S.setId);
+  document.getElementById("resetrow").innerHTML = ui.confirmReset
+    ? `<div class="confirm"><span>Clear the answers and timer for ${esc(name)}? Your Results history is kept.</span><div class="row"><button type="button" class="btn small danger" data-act="reset-yes">Clear ${esc(name)}</button><button type="button" class="btn small" data-act="reset-no">Cancel</button></div></div>`
+    : `<button type="button" class="resetlink" data-act="reset">Reset ${esc(name)}</button>`;
 }
 
 // After an answer is revealed, the cues that drive the key are highlighted in the scenario.
@@ -667,8 +672,6 @@ function renderPanelRaw(){
   h += `<div><p class="plabel">Flagged · ${fl.length}</p>` + (fl.length
     ? `<div class="flaglist">${fl.map(([qi, k]) => `<button type="button" class="fchip${k === set.cur ? " cur" : ""}" data-act="go" data-k="${k}" aria-label="Go to flagged question ${k + 1}">${k + 1}</button>`).join("")}</div><button type="button" class="btn small" data-act="next-flag">Next flagged</button>`
     : `<p class="muted">Flag a question (or press F) to come back to it. Flags stay until you remove them.</p>`) + `</div>`;
-  if (ui.confirmReset) h += `<div class="confirm"><span>Clear the answers and timer for ${esc(name)}? Your Results history is kept.</span><div class="row"><button type="button" class="btn small danger" data-act="reset-yes">Clear ${esc(name)}</button><button type="button" class="btn small" data-act="reset-no">Cancel</button></div></div>`;
-  else h += `<button type="button" class="btn small danger" data-act="reset">Reset ${esc(name)}</button>`;
   h += storageOk
     ? `<p class="saved">✓ Progress saved on this device. It stays when you come back in this browser.</p>`
     : `<p class="saved warn">This browser isn’t saving progress (it may be a private window). Use a normal window, or copy a progress code in Settings.</p>`;
@@ -985,8 +988,8 @@ document.addEventListener("click", async e => {
     case "mark-yes": markSet(); break;
     case "mark-no": ui.confirmMark = false; renderPanel(); break;
     case "timer": { const inBar = !!b.closest("#mockbar"); timerOn = !timerOn; if (isMock(set)) { renderCard(); announce(timerOn ? "Clock running." : "Clock paused."); } renderPanel(); document.querySelector(inBar ? '#mockbar [data-act="timer"]' : '#panel [data-act="timer"]')?.focus(); break; }
-    case "reset": ui.confirmReset = true; renderPanel(); break;
-    case "reset-no": ui.confirmReset = false; renderPanel(); break;
+    case "reset": ui.confirmReset = true; keepFocus(renderGrid); break;
+    case "reset-no": ui.confirmReset = false; keepFocus(renderGrid); break;
     case "reset-yes":
       curList().forEach(i => { delete set.ans[i]; delete set.chk[i]; });
       set.marked = false; set.el = 0; set.cur = 0; set.logged = false; delete set.qt; ui.warned = {}; if (isMock(set)) set.started = false; timerOn = false; ui.confirmReset = false; ui.summary = false; save(); render();
@@ -1199,21 +1202,21 @@ function syncState(){
   if (syncUi.status === "offline") return "failed";
   return S.ts > (SY.lastTs || 0) ? "pending" : "synced";
 }
-let prevSyncStatus = "", lastSyncSay = 0;
+let prevSyncState = "";
+const narrow = window.matchMedia ? matchMedia("(max-width:640px)") : {matches: false};
+if (narrow.addEventListener) narrow.addEventListener("change", () => renderSyncButton());
 function renderSyncButton(){
   const b = document.getElementById("syncbtn"); if (!b) return;
-  // a save or load just succeeded: say so for a few seconds ("✓ Synced") and tell screen readers, at most once a minute
-  if (SY && syncUi.status === "saved" && prevSyncStatus !== "saved") {
-    syncUi.okAt = Date.now(); setTimeout(renderSyncButton, 4100);
-    if (Date.now() - lastSyncSay > 60000) { lastSyncSay = Date.now(); announce("Progress synced."); }
-  }
-  prevSyncStatus = syncUi.status;
-  const state = syncState(), flash = state === "synced" && Date.now() - (syncUi.okAt || 0) < 4000;
+  const state = syncState();
+  // Routine successes stay quiet; screen readers hear about it only when syncing recovers after a failure.
+  if (prevSyncState === "failed" && state === "synced") announce("Sync is working again.");
+  prevSyncState = state;
   b.dataset.state = state; b.setAttribute("aria-expanded", String(syncUi.open));
-  if (flash) b.dataset.flash = "1"; else delete b.dataset.flash;
-  b.querySelector(".slabel").textContent = !SY ? "Sync" : flash ? "✓ Synced" : state === "saving" ? "Saving…" : state === "failed" ? "Not synced" : SY.name;
+  // On a phone the label is the status, so a long username is never cut off; the name is in the tooltip and the panel.
+  const word = {synced: "Synced", saving: "Saving…", pending: "Waiting", failed: "Not synced", conflict: "Needs a look"}[state];
+  b.querySelector(".slabel").textContent = !SY ? "Sync" : state === "saving" ? "Saving…" : state === "failed" ? "Not synced" : narrow.matches ? word : SY.name;
   const when = SY && SY.at ? ago(SY.at) : "";
-  b.title = {off: "Save and continue on another device", synced: `Synced as ${SY && SY.name}${when ? " · " + when : ""}`, saving: "Saving your progress…", pending: "Changes are waiting to sync",
+  b.title = {off: "Save and continue on another device", synced: `Synced as ${SY && SY.name}${when ? " · " + when : ""}`, saving: "Saving your progress…", pending: `Changes are waiting to sync (${SY && SY.name})`,
     failed: "Not synced: couldn’t reach the server. It will keep trying. Open to try again.", conflict: "Sync needs your attention"}[state];
 }
 function renderSyncPanel(){

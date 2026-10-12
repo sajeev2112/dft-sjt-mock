@@ -7,6 +7,7 @@
 //   POST /api/error     a browser error report (message only)
 //   POST /api/sync      save, load or delete progress under a username + PIN (optional cross-device sync; no accounts)
 //   POST /api/explain   "Explain my mistake" (Beta): AI explanation of a wrong answer, checked against the key (see explain.js)
+//   POST /api/explain-feedback  thumbs up/down on an explanation (question, answer letters, +1/-1; no free text)
 //   GET  /api/admin     private dashboard data; needs "Authorization: Bearer <ADMIN_KEY>" (a Worker secret)
 //   GET  /api/health    uptime check used by the GitHub Actions alert workflow (counts only, no messages)
 // Answers and feedback use the _v2 tables since the question bank was rewritten (Sept 2026); the old tables are kept but unused.
@@ -17,11 +18,12 @@
 const QTYPES = "rbrrbrrbrbrbrbrrrbrbrbrbrbrrrbbrrbrbrrbrbrbrbrbrbrrbrbrbrbrbrrbrrrbrbrrbrbrbrbbbrrrbrbrbrbrrrbrbrbrrrrbrbrrrbrrrbrbrrbrrbrbrbrbrrbrrrbrrrrbrrbrrbrrrbrbrbrrbrrrbrbrrrbrbrrrbrbrrrbrrbrrbrbrrrrbr";
 // TYPES:end
 
-import { explainHandler } from "./explain.js";
+import { explainHandler, analyse } from "./explain.js";
+import BANK from "./explain-bank.js";
 
 const CORS_ORIGINS = ["https://sajeev2112.github.io"];
 // Hourly limits per network and endpoint. Generous enough for a whole class on shared Wi-Fi.
-const LIMITS = {answers: 3000, feedback: 100, visit: 600, error: 20, admin: 60, sync: 600, create: 20, explain: 40};
+const LIMITS = {answers: 3000, feedback: 100, visit: 600, error: 20, admin: 60, sync: 600, create: 20, explain: 40, explainfb: 60};
 const MIN_STATS = 3;
 
 let schemaReady = false;
@@ -39,6 +41,7 @@ const SCHEMA = [
   // at most 120 rows however many people have answered (instead of recounting every answer).
   "CREATE TABLE IF NOT EXISTS ai_usage (day TEXT PRIMARY KEY, n REAL NOT NULL)",
   "CREATE TABLE IF NOT EXISTS explain_cache (k TEXT PRIMARY KEY, v TEXT NOT NULL, t INTEGER NOT NULL)",
+  "CREATE TABLE IF NOT EXISTS explain_feedback (client TEXT NOT NULL, q INTEGER NOT NULL, a TEXT NOT NULL, rating INTEGER NOT NULL, t INTEGER NOT NULL, PRIMARY KEY (client, q, a))",
   "CREATE TABLE IF NOT EXISTS answer_counts (q INTEGER NOT NULL, a TEXT NOT NULL, c INTEGER NOT NULL, PRIMARY KEY (q, a))",
   "CREATE TRIGGER IF NOT EXISTS answers_v2_count AFTER INSERT ON answers_v2 BEGIN INSERT INTO answer_counts (q, a, c) VALUES (NEW.q, NEW.a, 1) ON CONFLICT (q, a) DO UPDATE SET c = c + 1; END"
 ];
@@ -71,6 +74,7 @@ export default {
       if (url.pathname === "/api/sync" && request.method === "POST") return await sync(request, env, ctx, cors);
       if (url.pathname === "/api/admin" && request.method === "GET") return await admin(request, env, ctx, cors);
       if (url.pathname === "/api/explain" && request.method === "POST") return await explainHandler(request, env, ctx, cors, {allow, readJson, json});
+      if (url.pathname === "/api/explain-feedback" && request.method === "POST") return await explainFeedback(request, env, ctx, cors);
       return json({error: "not_found"}, 404, cors);
     } catch (err) {
       console.error(err);
@@ -137,6 +141,22 @@ async function feedback(request, env, ctx, cors) {
   await env.DB.prepare(
     "INSERT INTO feedback_v2 (client, q, comment, t) VALUES (?, ?, ?, ?) ON CONFLICT (client, q) DO UPDATE SET comment = excluded.comment, t = excluded.t"
   ).bind(body.client, q, comment || null, Date.now()).run();
+  return json({ok: true}, 200, cors);
+}
+
+// Thumbs up/down on an "Explain my mistake" result. One row per person, question and answer; a later click replaces the earlier one.
+// q and the answer letters are checked against the question bank exactly as /api/explain does. No free text is stored.
+async function explainFeedback(request, env, ctx, cors) {
+  const body = await readJson(request, 1024);
+  const q = BANK[Number(body && body.q) - 1];
+  if (!q) return json({error: "bad_question"}, 400, cors);
+  const facts = analyse(q, String(body.answer || "").toUpperCase());
+  if (!facts || !facts.items.length) return json({error: "bad_answer"}, 400, cors);
+  if (body.rating !== 1 && body.rating !== -1) return json({error: "bad_rating"}, 400, cors);
+  if (!(await allow(request, env, ctx, 1, "explainfb"))) return json({error: "rate_limited"}, 429, cors);
+  await env.DB.prepare(
+    "INSERT INTO explain_feedback (client, q, a, rating, t) VALUES (?, ?, ?, ?, ?) ON CONFLICT (client, q, a) DO UPDATE SET rating = excluded.rating, t = excluded.t"
+  ).bind(validClient(body.client) ? body.client : "anonymous", Number(body.q), facts.answer, body.rating, Date.now()).run();
   return json({ok: true}, 200, cors);
 }
 
