@@ -710,13 +710,13 @@ function renderResults(){
   h += activityHtml();
   h += `<h3 class="bsub">Progress over time</h3>` + progressChart();
   h += `<h3 class="bsub">By area</h3><div class="doms wide">` + Object.keys(DOMAINS).map(d => { const x = byD[d]; return `<div class="dom"><span>${DOMAINS[d]} <small class="muted">${x.n}/${x.total}</small></span><span>${x.n ? pct(x.g, x.m) + "%" : "–"}</span><div class="bar"><i style="width:${pct(x.g, x.m)}%"></i></div></div>`; }).join("") + `</div>`;
-  h += `<h3 class="bsub">By theme</h3><div class="tscroll"><table class="rtable"><thead><tr><th>Theme</th><th>Answered</th><th>Average</th><th></th></tr></thead><tbody>`;
+  h += `<h3 class="bsub">By theme</h3><div class="tscroll"><table class="rtable rt-theme"><thead><tr><th>Theme</th><th>Answered</th><th>Average</th><th></th></tr></thead><tbody>`;
   const themeOrder = themesSorted.concat(Object.keys(THEMES).filter(t => !byG[t].n));
   themeOrder.forEach(t => { const x = byG[t]; h += `<tr><td><a href="#guide-${t}">${THEMES[t]}</a></td><td>${x.n}/${x.total}</td><td>${x.n ? `<span class="pill ${band(x.g, x.m)}">${pct(x.g, x.m)}%</span>` : "–"}</td><td><button type="button" class="btn small" data-act="build" data-kind="theme" data-arg="${t}">Practise</button></td></tr>`; });
   h += `</tbody></table></div>`;
   h += `<h3 class="bsub">By paper</h3><div class="doms wide">` + PAPER_IDS.map(id => { const P = PAPERS[id]; let pg = 0, pm = 0, n = 0; range(P.from, P.to).forEach(i => { const a = lastAtt(i); if (a) { pg += a.g; pm += a.m; n++; } }); return `<div class="dom"><span>${P.name} <small class="muted">${n}/32</small></span><span>${n ? pct(pg, pm) + "%" : "–"}</span><div class="bar"><i style="width:${pct(pg, pm)}%"></i></div></div>`; }).join("") + `</div>`;
   if (S.hist.length) {
-    h += `<h3 class="bsub">Completed sets</h3><div class="tscroll"><table class="rtable"><thead><tr><th>Date</th><th>Set</th><th>Mode</th><th>Score</th></tr></thead><tbody>`;
+    h += `<h3 class="bsub">Completed sets</h3><div class="tscroll"><table class="rtable rt-hist"><thead><tr><th>Date</th><th>Set</th><th>Mode</th><th>Score</th></tr></thead><tbody>`;
     S.hist.slice().reverse().forEach(x => { h += `<tr><td>${new Date(x.t).toLocaleDateString("en-GB", {day:"numeric", month:"short"})}</td><td>${esc(x.name)}</td><td>${x.mode === "exam" ? "Exam" : "Practice"}</td><td>${x.g} / ${x.m} · ${pct(x.g, x.m)}%</td></tr>`; });
     h += `</tbody></table></div>`;
   }
