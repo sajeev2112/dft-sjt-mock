@@ -7,7 +7,8 @@ const PAPERS = {
   p3:{name:"Paper 3", from:64, to:96},
   p4:{name:"Paper 4 · Advanced", from:96, to:128, note:"harder than the live test"},
   p5:{name:"Paper 5 · Advanced", from:128, to:160, note:"harder than the live test"},
-  p6:{name:"Paper 6 · Advanced", from:160, to:192, note:"harder than the live test"}
+  p6:{name:"Paper 6 · Advanced", from:160, to:192, note:"harder than the live test"},
+  p7:{name:"Paper 7 · Advanced", from:192, to:224, note:"harder than the live test"}
 };
 const PAPER_IDS = Object.keys(PAPERS).filter(id => Q.length >= PAPERS[id].to);
 const PACE = 112.5; // seconds per item at live-test pace (105 min / 56)
@@ -29,7 +30,7 @@ function shuffle(a){ a = a.slice(); for (let i = a.length - 1; i > 0; i--) { con
 // ---------- state ----------
 const STORE = "dft-sjt-mock-v5", V4 = "dft-sjt-mock-v4";
 function newSet(extra){ return Object.assign({ans:{}, chk:{}, marked:false, el:0, cur:0, mode:"practice", logged:false}, extra || {}); }
-function fresh(){ return {v:5, ts:0, cid:uid(), share:true, view:"practice", setId:"p1", sets:{p1:newSet(), p2:newSet(), p3:newSet(), p4:newSet(), p5:newSet(), p6:newSet(), custom:null}, att:{}, days:{}, hist:[], sent:{}, outbox:[], fb:{}, flags:{}}; }
+function fresh(){ return {v:5, ts:0, cid:uid(), share:true, view:"practice", setId:"p1", sets:{p1:newSet(), p2:newSet(), p3:newSet(), p4:newSet(), p5:newSet(), p6:newSet(), p7:newSet(), custom:null}, att:{}, days:{}, hist:[], sent:{}, outbox:[], fb:{}, flags:{}}; }
 let S = fresh();
 // Rebuilds state from untrusted JSON (localStorage, IndexedDB or a pasted progress code),
 // keeping only well-formed values so nothing odd can reach the page or crash rendering.
