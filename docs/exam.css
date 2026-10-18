@@ -1,0 +1,169 @@
+/* Exam-style timed mock overlay (docs/exam.js). Everything is scoped under #exam, except the two rules that hide
+   the app and stop the page scrolling while the overlay is open (html.ex-open is only set while it is). */
+html.ex-open, html.ex-open body{overflow:hidden !important; height:100%}
+html.ex-open body > :not(#exam){display:none !important}
+
+#exam{--bg:#fff; --fg:#000; --sel:#00008b; --card:#fff; --line:#dde3ea; --mut:#4a5560; --lnk:#006DAA;
+  position:fixed; inset:0; z-index:2147483000; display:flex; flex-direction:column; background:#fff; color:#000;
+  font:16px/1.4 Tahoma, Arial, Helvetica, sans-serif; text-align:left; letter-spacing:normal; -webkit-text-size-adjust:100%; text-size-adjust:100%}
+#exam *, #exam *::before, #exam *::after{box-sizing:border-box}
+#exam button, #exam select, #exam input{font-family:inherit; letter-spacing:normal}
+#exam [hidden]{display:none !important}
+#exam .ex-sr{position:absolute !important; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; border:0}
+#exam :focus{outline:none}
+#exam :focus-visible{outline:3px solid #f90; outline-offset:2px}
+#exam svg{flex:none}
+#exam .ex-main:focus-visible{outline:none} /* focus lands here on each new screen; the ring would frame the whole pane */
+
+/* colour schemes recolour the content pane; boxes and borders follow the text colour */
+#exam.ex-s-k-ly{--bg:#ffffe0; --fg:#000; --card:var(--bg)}
+#exam.ex-s-k-w{--bg:#fff; --fg:#000}
+#exam.ex-s-k-y{--bg:#ff0; --fg:#000; --card:var(--bg)}
+#exam.ex-s-b-w{--bg:#fff; --fg:#0000cd; --lnk:#0000cd}
+#exam.ex-s-b-y{--bg:#ff0; --fg:#0000cd; --card:var(--bg); --lnk:#0000cd}
+#exam.ex-s-ly-k{--bg:#000; --fg:#ffffe0; --sel:#6cf}
+#exam.ex-s-w-k{--bg:#000; --fg:#fff; --sel:#6cf}
+#exam.ex-s-y-k{--bg:#000; --fg:#ff0; --sel:#6cf}
+#exam.ex-s-w-b{--bg:#039; --fg:#fff; --sel:#ff0}
+#exam.ex-s-y-b{--bg:#039; --fg:#ff0; --sel:#fff}
+#exam:is(.ex-s-k-ly, .ex-s-k-y, .ex-s-b-y, .ex-s-ly-k, .ex-s-w-k, .ex-s-y-k, .ex-s-w-b, .ex-s-y-b){--card:var(--bg); --line:var(--fg); --mut:var(--fg); --lnk:var(--fg)}
+#exam.ex-s-b-w{--line:#0000cd; --mut:#0000cd}
+
+/* the four bands */
+#exam .ex-frame{display:flex; flex-direction:column; flex:1; min-height:0}
+#exam .ex-title{background:#006DAA; color:#fff; min-height:52px; display:flex; align-items:center; gap:12px; padding:0 8px 0 14px; padding-top:env(safe-area-inset-top, 0)}
+#exam .ex-ttl{flex:1; min-width:0; font-size:21px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+#exam .ex-tc{display:flex; flex-direction:column; align-items:flex-end; justify-content:center; font-size:15px; line-height:1.15; white-space:nowrap}
+#exam .ex-tline, #exam .ex-cline{display:flex; align-items:center; gap:4px; min-height:24px}
+#exam .ex-ib{background:transparent; border:0; color:#fff; width:26px; height:24px; padding:0; display:inline-grid; place-items:center; cursor:pointer}
+#exam .ex-ib:hover{color:#ff0}
+#exam .ex-time, #exam .ex-count{font-variant-numeric:tabular-nums}
+#exam .ex-tool{background:#4678BE; color:#fff; min-height:32px; display:flex; align-items:center; justify-content:space-between; gap:8px; padding:2px 8px; flex-wrap:wrap}
+#exam .ex-tl, #exam .ex-tr{display:flex; align-items:center; gap:10px; flex-wrap:wrap}
+#exam .ex-tr{margin-left:auto}
+#exam .ex-tb{background:transparent; border:0; color:#fff; font-size:15px; display:inline-flex; align-items:center; gap:6px; padding:3px 6px; cursor:pointer}
+#exam .ex-tb:hover{color:#ff0}
+#exam .ex-scheme{width:170px; height:24px; font-size:14px; color:#0b2a4a; background:#e8eff8; border:1px solid #0b2a4a; border-radius:0; padding:0 4px; cursor:pointer}
+#exam .ex-main{flex:1; min-height:0; overflow:auto; overscroll-behavior:contain; -webkit-overflow-scrolling:touch; padding:18px; background:var(--bg); color:var(--fg)}
+#exam .ex-nav{background:#006DAA; color:#fff; min-height:35px; border-top:2px solid #fff; display:flex; justify-content:space-between; flex-wrap:wrap; padding-bottom:env(safe-area-inset-bottom, 0)}
+#exam .ex-ng{display:flex; flex-wrap:wrap}
+#exam .ex-nr{margin-left:auto}
+#exam .ex-nb{background:transparent; border:0; color:#fff; font-size:18.7px; line-height:1; min-height:35px; padding:0 14px; display:inline-flex; align-items:center; gap:7px; cursor:pointer}
+#exam .ex-nl .ex-nb{border-right:1px solid #fff}
+#exam .ex-nr .ex-nb{border-left:1px solid #fff}
+#exam .ex-nb:hover, #exam .ex-nb:focus-visible, #exam .ex-tb:focus-visible, #exam .ex-ib:focus-visible{color:#ff0}
+#exam :is(.ex-title, .ex-tool, .ex-nav) :focus-visible{outline:2px solid #ff0; outline-offset:-3px}
+
+/* content */
+#exam .ex-main p{margin:0 0 14px}
+#exam .ex-h{font-size:22px; font-weight:bold; margin:0 0 16px}
+#exam .ex-ul{margin:0 0 14px; padding-left:1.4em}
+#exam .ex-ul li{margin-bottom:8px}
+#exam .ex-note{border:2px solid var(--fg); padding:12px 14px 0; margin:0 0 16px; max-width:780px}
+#exam .ex-panel{border:1px solid var(--fg); padding:12px 14px 0; margin:0 0 14px; max-width:780px}
+#exam .ex-agree{display:inline-flex; align-items:center; gap:10px; margin:0 0 16px; cursor:pointer; min-height:32px}
+#exam .ex-agree input, #exam .ex-ck input, #exam .ex-svo input{width:18px; height:18px; margin:0; flex:none; accent-color:#006DAA}
+#exam .ex-sbtn{font-size:15px; color:var(--fg); background:transparent; border:1px solid var(--fg); padding:3px 10px; margin-left:6px; cursor:pointer}
+#exam .ex-scen, #exam .ex-instr, #exam .ex-opt, #exam .ex-slot, #exam .ex-ck, #exam .ex-ghost{font-family:Arial, Helvetica, sans-serif; font-size:16px}
+#exam .ex-q{max-width:1100px}
+#exam .ex-instr{margin-top:6px}
+
+/* Part One: ranking with numbered slots (left) and fixed home cells (right) */
+#exam .ex-rank{display:grid; grid-template-columns:2.2em minmax(0, 420px) minmax(0, 420px); column-gap:16px; row-gap:4px; margin-top:16px}
+#exam .ex-num{grid-column:1; align-self:center; justify-self:end; font-weight:bold; font-size:28px; line-height:1}
+#exam .ex-slot{grid-column:2; min-height:60px; border:1px solid var(--fg); background:var(--bg); color:var(--fg); display:flex; align-items:center; justify-content:center; text-align:center; padding:6px 10px}
+#exam .ex-home{grid-column:3; min-height:60px; display:flex}
+#exam .ex-opt{flex:1; border:1px solid var(--fg); background:var(--bg); color:var(--fg); display:flex; align-items:center; justify-content:center; text-align:center; padding:6px 10px}
+#exam .ex-opt, #exam .ex-slot.ex-full{cursor:grab; touch-action:none; user-select:none; -webkit-user-select:none; -webkit-touch-callout:none}
+#exam .ex-sel{outline:2px solid var(--sel); outline-offset:-2px}
+#exam .ex-sel:focus-visible{outline:3px solid var(--sel); outline-offset:-3px; box-shadow:0 0 0 3px #f90}
+#exam .ex-src{opacity:.35}
+#exam .ex-over{outline:2px dashed var(--sel); outline-offset:-4px; background:color-mix(in srgb, var(--sel) 12%, var(--bg))}
+#exam .ex-home.ex-over{outline-offset:0}
+#exam .ex-ghost{position:fixed; left:0; top:0; z-index:10; pointer-events:none; display:flex; align-items:center; justify-content:center; text-align:center; padding:6px 10px; border:2px solid var(--sel); background:var(--bg); color:var(--fg); opacity:.92; cursor:grabbing}
+#exam .ex-r1{grid-row:1} #exam .ex-r2{grid-row:2} #exam .ex-r3{grid-row:3} #exam .ex-r4{grid-row:4} #exam .ex-r5{grid-row:5}
+
+/* Part Two: choose three */
+#exam .ex-b3{margin-top:14px; max-width:900px}
+#exam .ex-ck{display:flex; align-items:flex-start; gap:12px; margin:0 0 18px; cursor:pointer}
+#exam .ex-ck input{margin-top:1px}
+
+/* review screen */
+#exam.ex-rvw.ex-s-default .ex-main{background:#f1f4f7}
+#exam .ex-rvcard{background:var(--card); color:var(--fg); border-radius:8px; padding:18px 20px 20px; max-width:1100px; margin:0 auto}
+#exam:not(.ex-s-default):not(.ex-s-k-w) .ex-rvcard{border:1px solid var(--line)}
+#exam .ex-rvhead{display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap}
+#exam .ex-rvh{font-size:26px; font-weight:bold; margin:0}
+#exam .ex-pbtn{background:#006DAA; color:#fff; border:0; border-radius:6px; padding:8px 18px; min-height:38px; font-size:16px; cursor:pointer}
+#exam .ex-pbtn:disabled{opacity:.5; cursor:default}
+#exam .ex-tabs{display:flex; gap:24px; border-bottom:1px solid var(--line); margin:16px 0 14px}
+#exam .ex-tab{background:none; border:0; border-bottom:3px solid transparent; margin-bottom:-1px; padding:8px 2px; font-size:16px; color:var(--fg); cursor:pointer; display:inline-flex; align-items:center; gap:6px}
+#exam .ex-tab[aria-selected="true"]{border-bottom-color:var(--lnk); font-weight:bold}
+#exam .ex-info{display:inline-grid; place-items:center; width:16px; height:16px; border-radius:50%; border:1px solid currentColor; font-size:11px; font-weight:bold; font-family:Georgia, serif; line-height:1}
+#exam .ex-tblw{overflow-x:auto; border:1px solid var(--line); border-radius:8px; background:var(--card)}
+#exam .ex-tbl{width:100%; border-collapse:collapse; color:var(--fg)}
+#exam .ex-tbl th{text-align:left; font-size:13px; letter-spacing:.04em; color:var(--mut); padding:10px 14px; border-bottom:1px solid var(--line); white-space:nowrap}
+#exam .ex-tbl td{padding:8px 14px; border-bottom:1px solid var(--line); vertical-align:middle}
+#exam .ex-tbl tbody tr:last-child td{border-bottom:0}
+#exam .ex-tbl .ex-grp th{font-size:14px; letter-spacing:0; color:var(--fg); background:color-mix(in srgb, var(--fg) 5%, var(--card))}
+#exam .ex-pill{display:inline-block; padding:2px 10px; border-radius:999px; font-size:13px; font-weight:bold; white-space:nowrap}
+#exam .ex-pill.ok{color:#1d6b34; background:#e3f4e8}
+#exam .ex-pill.no{color:#8a5300; background:#fdf0d9}
+#exam .ex-fl{color:var(--lnk); vertical-align:-2px}
+#exam .ex-link{background:none; border:0; color:var(--lnk); text-decoration:underline; font-size:16px; padding:6px 4px; cursor:pointer}
+#exam .ex-empty{padding:14px; margin:0}
+
+/* survey */
+#exam .ex-sv{border:1px solid var(--line); margin:0 0 14px; padding:10px 14px 12px; max-width:860px}
+#exam .ex-sv legend{padding:0 4px; font-weight:bold}
+#exam .ex-svo{display:flex; flex-wrap:wrap; gap:6px 18px}
+#exam .ex-svo label{display:inline-flex; align-items:center; gap:8px; cursor:pointer; min-height:32px}
+
+/* dialogs: centred blue panel, page behind not dimmed */
+#exam .ex-layer{position:absolute; inset:0; z-index:20; display:flex; align-items:center; justify-content:center; padding:16px}
+#exam .ex-dlg{background:#2e6da4; color:#fff; width:min(520px, 100%); min-width:min(340px, 100%); border:1px solid #1d4f7c; padding-bottom:12px; font-size:15px}
+#exam .ex-dt{font-size:13px; padding:6px 10px; border-bottom:1px solid rgba(255,255,255,.7)}
+#exam .ex-dbody{display:flex; gap:14px; align-items:flex-start; padding:16px 16px 12px}
+#exam .ex-dm{flex:1}
+#exam .ex-ic{flex:none; width:30px; height:30px; display:grid; place-items:center; font:bold 18px/1 Georgia, serif}
+#exam .ex-ic.info{border-radius:50%; background:#fff; color:#2e6da4}
+#exam .ex-ic.warn{background:#ffd400; color:#000; clip-path:polygon(50% 0, 100% 100%, 0 100%); padding-top:8px; font-family:Arial, sans-serif}
+#exam .ex-dbtns{display:flex; justify-content:center; gap:12px}
+#exam .ex-db{background:transparent; color:#fff; border:1px solid #fff; min-width:64px; min-height:30px; padding:4px 14px; font-size:15px; cursor:pointer}
+#exam .ex-db:hover, #exam .ex-db:focus-visible{color:#ff0; border-color:#ff0}
+#exam .ex-db:focus-visible{outline:2px solid #ff0; outline-offset:2px}
+/* glossary and instructions windows */
+#exam .ex-win{position:absolute; left:7.5%; top:7.5%; width:85%; height:85%; background:#fff; color:#000; border:3px solid #006DAA; display:flex; flex-direction:column}
+#exam .ex-wbar{background:#006DAA; color:#fff; display:flex; align-items:center; justify-content:space-between; min-height:34px; padding-left:10px}
+#exam .ex-wt{display:inline-flex; align-items:center; gap:8px; font-size:17px}
+#exam .ex-wx{background:transparent; border:0; border-left:1px solid #fff; color:#fff; font-size:24px; line-height:1; width:44px; align-self:stretch; cursor:pointer}
+#exam .ex-wx:hover, #exam .ex-wx:focus-visible{color:#ff0}
+#exam .ex-wbody{flex:1; overflow:auto; padding:16px 20px}
+#exam .ex-gh{text-align:center; font-size:20px; font-weight:bold; margin:0 0 14px}
+#exam .ex-gt{width:100%; border-collapse:collapse}
+#exam .ex-gt th, #exam .ex-gt td{text-align:left; vertical-align:top; padding:7px 10px; border:1px solid #b9c4cf}
+#exam .ex-gt th{font-weight:bold; background:#eef3f8}
+#exam .ex-gt td:first-child{width:30%; font-weight:bold}
+
+/* narrow screens: slots above the options, bigger touch targets, no sideways scrolling */
+@media (max-width:699px){
+  #exam .ex-title{padding-left:10px; gap:8px}
+  #exam .ex-ttl{font-size:16px}
+  #exam .ex-tc{font-size:14px; flex-direction:row; align-items:center; gap:2px}
+  #exam .ex-ib{width:44px; height:44px}
+  #exam .ex-tline, #exam .ex-cline{min-height:0}
+  #exam .ex-tb, #exam .ex-scheme, #exam .ex-pbtn, #exam .ex-link, #exam .ex-tab, #exam .ex-sbtn, #exam .ex-db{min-height:44px}
+  #exam .ex-scheme{width:150px}
+  #exam .ex-nb{min-height:44px; font-size:16px; padding:0 10px}
+  #exam .ex-main{padding:14px 12px}
+  #exam .ex-rank{grid-template-columns:1.6em minmax(0, 1fr); column-gap:8px}
+  #exam .ex-num{font-size:22px}
+  #exam .ex-home{grid-column:2}
+  #exam .ex-home.ex-r1{grid-row:6; margin-top:16px} #exam .ex-home.ex-r2{grid-row:7} #exam .ex-home.ex-r3{grid-row:8} #exam .ex-home.ex-r4{grid-row:9} #exam .ex-home.ex-r5{grid-row:10}
+  #exam .ex-ck{min-height:44px; align-items:center}
+  #exam .ex-agree, #exam .ex-svo label{min-height:44px}
+  #exam .ex-tbl th, #exam .ex-tbl td{padding:6px 8px}
+  #exam .ex-win{left:8px; top:8px; width:calc(100% - 16px); height:calc(100% - 16px)}
+  #exam .ex-gt td:first-child{width:38%}
+}
+@media (prefers-reduced-motion: reduce){ #exam *{transition:none !important; animation:none !important; scroll-behavior:auto !important} }

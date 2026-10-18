@@ -30,6 +30,8 @@
   const cta = document.createElement("div"); cta.className = "nd-mockcta nd-only"; stats.after(cta);
   const revFlag = document.createElement("button"); revFlag.type = "button"; revFlag.className = "ptab nd-revflag nd-only"; revFlag.dataset.act = "build"; revFlag.dataset.kind = "flagged";
   document.querySelector(".setbar").appendChild(revFlag);
+  const revMis = document.createElement("button"); revMis.type = "button"; revMis.className = "ptab nd-revflag nd-revmis nd-only"; revMis.dataset.act = "build"; revMis.dataset.kind = "mistakes";
+  document.querySelector(".setbar").appendChild(revMis);
 
   // ripple on press
   document.addEventListener("pointerdown", e => {
@@ -109,6 +111,7 @@
       }
       const nf = Object.keys(S.flags || {}).length;
       revFlag.hidden = !nf; const rf = `⚑ Review flagged <small>${nf}</small>`; if (revFlag.innerHTML !== rf) revFlag.innerHTML = rf;
+      const nm = (typeof mistakesList === "function") ? mistakesList().length : 0; revMis.hidden = !nm; const rm = `↻ My mistakes <small>${nm}</small>`; if (revMis.innerHTML !== rm) revMis.innerHTML = rm;
     }
 
     // paper tabs: progress underline

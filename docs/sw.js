@@ -1,9 +1,9 @@
 // Offline support. The site's own files load network-first, so updates show straight away when online;
 // fonts and the drag library load cache-first. API calls are never cached.
-const VERSION = "089dac44b8"; // set by tools/build.js
+const VERSION = "32beb77f50"; // set by tools/build.js
 const CACHE = "dft-sjt-" + VERSION;
 const CORE = [
-  "./", "styles.css", "design.css", "questions.js", "guide.js", "app.js", "design.js", "phrases.js", "standards.js", "explain.js",
+  "./", "styles.css", "design.css", "questions.js", "guide.js", "app.js", "design.js", "phrases.js", "standards.js", "explain.js", "exam.js", "exam.css",
   "manifest.webmanifest", "icon.svg", "icon-192.png", "icon-512.png", "apple-touch-icon.png"
 ];
 // Cached too, but a CDN hiccup mustn't stop an update installing.

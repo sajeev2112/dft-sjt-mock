@@ -54,6 +54,7 @@ function cleanSet(x, list){
   for (const k of Object.keys(x.ans || {})) { const i = +k; if (isQi(i) && list.includes(i)) { const a = cleanAns(i, x.ans[k]); if (a) set.ans[i] = a; } }
   for (const k of Object.keys(x.chk || {})) { const i = +k; if (isQi(i) && list.includes(i) && x.chk[k]) set.chk[i] = true; }
   if (x.qt && typeof x.qt === "object") { set.qt = {}; for (const k of Object.keys(x.qt)) { const i = +k; if (isQi(i) && list.includes(i)) set.qt[i] = Math.floor(num(x.qt[k], 1e5)); } }
+  if (x.qs && typeof x.qs === "object") { set.qs = {}; for (const k of Object.keys(x.qs)) { const i = +k; if (isQi(i) && list.includes(i)) set.qs[i] = Math.floor(num(x.qs[k], 1e5)); } }
   return set;
 }
 function normalise(o){
@@ -75,7 +76,7 @@ function normalise(o){
     }
   }
   s.setId = s.sets[o.setId] && (o.setId === "custom" || PAPER_IDS.includes(o.setId)) ? o.setId : "p1";
-  for (const k of Object.keys(o.att || {})) { const i = +k; if (isQi(i) && Array.isArray(o.att[k])) s.att[i] = o.att[k].slice(-5).map(a => ({g: num(a && a.g, 20), m: num(a && a.m, 20) || 20, t: num(a && a.t, 1e14)})); }
+  for (const k of Object.keys(o.att || {})) { const i = +k; if (isQi(i) && Array.isArray(o.att[k])) s.att[i] = o.att[k].slice(-5).map(a => { const r = {g: num(a && a.g, 20), m: num(a && a.m, 20) || 20, t: num(a && a.t, 1e14)}; const sec = Math.floor(num(a && a.s, 3600)); if (sec > 0) r.s = sec; return r; }); }
   for (const d of Object.keys(o.days || {})) { const x = o.days[d]; if (/^\d{4}-\d{2}-\d{2}$/.test(d) && x) s.days[d] = {g: num(x.g), m: num(x.m), n: num(x.n)}; }
   s.hist = (Array.isArray(o.hist) ? o.hist : []).slice(-200).filter(h => h && typeof h === "object").map(h => ({t: num(h.t, 1e14), name: String(h.name || "Set").slice(0, 80), g: num(h.g), m: num(h.m) || 1, n: num(h.n), total: num(h.total), mode: h.mode === "exam" ? "exam" : "practice"}));
   for (const k of Object.keys(o.sent || {})) { const i = +k; if (isQi(i)) s.sent[i] = 1; }
@@ -97,7 +98,7 @@ function carryOver(o){
   return normalise(s);
 }
 const ui0 = {rewritten:false};
-let timerOn = false;
+let timerOn = false; let autoPausedSet = null; // the practice set whose timer paused itself when an answer was checked; it restarts on the next question
 // Progress lives in localStorage, with a debounced backup copy in IndexedDB in case one store is cleared.
 let storageOk = true, savedAt = 0, idbTimer = null;
 function save(now, quiet){
@@ -174,7 +175,9 @@ function lastAtt(qi){ const a = S.att[qi]; return a && a.length ? a[a.length - 1
 // ---------- recording attempts and community submissions ----------
 function addAttempt(s, set, qi, submit = true){
   const sc = qScore(set, qi);
-  (s.att[qi] = s.att[qi] || []).push({g:sc.got, m:sc.max, t:Date.now()});
+  const spent = set.qs && set.qs[qi] > 0 ? Math.min(3600, set.qs[qi]) : 0; // seconds the practice timer ran on this question
+  (s.att[qi] = s.att[qi] || []).push(spent ? {g:sc.got, m:sc.max, t:Date.now(), s:spent} : {g:sc.got, m:sc.max, t:Date.now()});
+  if (set.qs) delete set.qs[qi];
   if (s.att[qi].length > 5) s.att[qi] = s.att[qi].slice(-5); // keep the last 5 attempts per question
   const d = s.days[today()] = s.days[today()] || {g:0, m:0, n:0};
   d.g += sc.got; d.m += sc.max; d.n++;
@@ -378,6 +381,7 @@ function renderCard(){
   const card = document.getElementById("card");
   if (ui.building) { card.innerHTML = builderHtml(); destroyDrag(); animateCard("build"); return; }
   const set = curSet();
+  if (mockLive(set) && window.Exam && Exam.open()) return; // exam overlay (exam.js): a running timed mock is always shown full-screen
   if (isMock(set) && !set.started && !set.marked) { card.innerHTML = mockIntroHtml(set); destroyDrag(); animateCard("intro"); return; }
   if (isMock(set) && set.marked && ui.summary) { card.innerHTML = mockSummaryHtml(set); destroyDrag(); animateCard("summary"); return; }
   const list = curList(), k = set.cur, qi = curQi(), q = Q[qi], a = set.ans[qi], rev = revealed(set, qi), rank = isRank(q);
@@ -531,11 +535,12 @@ function mockSummaryHtml(set){
   h += `<div><h3 class="bsub">By theme</h3><div class="doms">` + Object.keys(thm).sort((a, b) => thm[a][0] / thm[a][1] - thm[b][0] / thm[b][1]).map(g => bar(`<a href="#guide-${g}">${THEMES[g]}</a>`, thm[g][0], thm[g][1], ` <small class="muted">${thm[g][2]}</small>`)).join("") + `</div></div></div>`;
   h += `<div class="actions"><button type="button" class="btn" data-act="build" data-kind="mock">New timed mock</button><div class="act-r">` +
     (nf ? `<button type="button" class="btn" data-act="review-flagged">Review ${nf} flagged</button>` : "") +
-    `<button type="button" class="btn" data-act="review-q" data-k="${weak[0] ? weak[0].k : 0}">Review weakest</button><button type="button" class="btn primary" data-act="review">Review all answers</button></div></div>`;
+    (mistakesList().length ? `<button type="button" class="btn" data-act="build" data-kind="mistakes">Quiz my ${Math.min(20, mistakesList().length)} mistakes</button>` : "") + `<button type="button" class="btn" data-act="review-q" data-k="${weak[0] ? weak[0].k : 0}">Review weakest</button><button type="button" class="btn primary" data-act="review">Review all answers</button></div></div>`;
   return h;
 }
 function timeUp(){
-  timerOn = false; ui.building = false;
+  if (window.Exam && Exam.onTimeUp()) return; // exam overlay (exam.js): shows Time Expired, then its own completion screen and survey
+  timerOn = false; autoPausedSet = null; ui.building = false;
   markSet(); S.view = "practice"; if (location.hash && location.hash !== "#practice") location.hash = "practice";
   announce("Time is up. Your mock has been marked."); render();
 }
@@ -590,18 +595,21 @@ function initDrag(){
 }
 
 // ---------- quiz builder ----------
+// every question whose latest attempt lost marks, most recent first
+function mistakesList(){ return Q.map((_, i) => i).filter(i => { const x = lastAtt(i); return x && x.g < x.m; }).sort((x, y) => lastAtt(y).t - lastAtt(x).t); }
 function weakList(){ return Q.map((_, i) => i).filter(i => { const a = lastAtt(i); return a && a.g / a.m < 0.7; }).sort((x, y) => { const a = lastAtt(x), b = lastAtt(y); return a.g / a.m - b.g / b.m; }); }
 function pickFresh(pool, n){
   const unseen = shuffle(pool.filter(i => !S.att[i])), seen = shuffle(pool.filter(i => S.att[i]));
   return unseen.concat(seen).slice(0, n);
 }
 function builderHtml(){
-  const weak = weakList().length, c = S.sets.custom;
+  const weak = weakList().length, mist = mistakesList().length, c = S.sets.custom;
   const themeCounts = {}; Q.forEach(q => themeCounts[q.g] = (themeCounts[q.g] || 0) + 1);
   let h = `<h2 class="bh">Build a quiz</h2><p class="muted">${c ? `Starting a new quiz replaces “${esc(c.name)}”. Your scores so far are kept in Results.` : "Pick a format. Your scores are saved in Results."}</p><div class="bgrid">`;
   h += `<button type="button" class="bcard" data-act="build" data-kind="quick"><b>Quick 10</b><span>10 random questions from all papers, unseen ones first. Practice mode.</span></button>`;
   h += `<button type="button" class="bcard" data-act="build" data-kind="mock"><b>Timed mock · 56 in 105 min</b><span>Random questions from every paper in the live test’s mix, with a countdown, flags and a summary at the end.</span></button>`;
   h += `<button type="button" class="bcard" data-act="build" data-kind="weak"${weak ? "" : " disabled"}><b>Weak spots</b><span>${weak ? `Up to 20 of the ${weak} questions you last scored under 70% on, lowest first.` : "Nothing yet: questions you score under 70% on will appear here."}</span></button>`;
+  h += `<button type="button" class="bcard" data-act="build" data-kind="mistakes"${mist ? "" : " disabled"}><b>My mistakes</b><span>${mist ? `${mist > 20 ? `Up to 20 of the ${mist} questions` : `The ${mist} question${mist === 1 ? "" : "s"}`} where your latest attempt lost marks, most recent first.` : "Nothing yet: questions where you lose marks will appear here."}</span></button>`;
   const nf = Object.keys(S.flags).length;
   h += `<button type="button" class="bcard" data-act="build" data-kind="flagged"${nf ? "" : " disabled"}><b>Flagged questions</b><span>${nf ? `The ${nf} question${nf === 1 ? "" : "s"} you’ve flagged to come back to. Practice mode.` : "Nothing flagged yet: use the flag on any question to collect it here."}</span></button>`;
   h += `</div><h3 class="bsub">Focus on an area</h3><div class="chips wrap">` + Object.keys(DOMAINS).map(d => `<button type="button" class="chipbtn" data-act="build" data-kind="area" data-arg="${d}">${DOMAINS[d]}</button>`).join("") + `</div>`;
@@ -620,16 +628,18 @@ function buildQuiz(kind, arg){
   if (kind === "quick") { list = pickFresh(all, 10); name = "Quick 10"; }
   else if (kind === "mock") {
     const r = shuffle(all.filter(i => isRank(Q[i]))).slice(0, 37), b = shuffle(all.filter(i => !isRank(Q[i]))).slice(0, 19);
-    list = shuffle(r.concat(b)); name = "Timed mock"; mode = "exam";
+    list = r.concat(b); name = "Timed mock"; mode = "exam"; // exam overlay: Part One = all ranking items, Part Two = all best-three (each already shuffled)
   }
   else if (kind === "flagged") { list = Object.keys(S.flags).map(Number).filter(isQi).sort((x, y) => x - y); name = "Flagged questions"; }
   else if (kind === "weak") { list = weakList().slice(0, 20); name = "Weak spots"; }
+  else if (kind === "mistakes") { list = mistakesList().slice(0, 20); name = "My mistakes"; }
   else if (kind === "area") { list = shuffle(pickFresh(all.filter(i => Q[i].d === arg), 12)); name = DOMAINS[arg]; }
   else if (kind === "theme") { list = shuffle(all.filter(i => Q[i].g === arg)); name = THEMES[arg]; }
   if (!list.length) return;
   S.sets.custom = newSet(Object.assign({name, kind, list, mode, created:Date.now()}, kind === "mock" ? {limit: MOCK_SECS, started: false} : {}));
-  S.setId = "custom"; S.view = "practice"; ui.building = false; ui.warn = false; ui.summary = false; ui.warned = {}; timerOn = false;
+  S.setId = "custom"; S.view = "practice"; ui.building = false; ui.warn = false; ui.summary = false; ui.warned = {}; timerOn = false; autoPausedSet = null;
   save(); location.hash = "practice"; render(); scrollToCard();
+  if (kind === "mock" && window.Exam) Exam.open(); // exam overlay (exam.js) takes over for a new timed mock
 }
 
 // ---------- side panel ----------
@@ -667,7 +677,7 @@ function renderPanelRaw(){
   if (mock) {
     if (set.started) h += `<div class="divider"></div><div><p class="plabel">${set.marked ? "Time used" : "Time left"} · of ${fmt(set.limit)}</p><div class="clock"><span class="t" id="clock">${fmt(Math.floor(set.marked ? Math.min(set.el, set.limit) : left(set)))}</span>${set.marked ? "" : `<button type="button" class="btn small" data-act="timer">${timerOn ? "Pause" : "Resume"}</button>`}</div>${set.marked ? "" : `<p class="muted" id="pace">At live-test pace you’d be on question ${paceK} of ${list.length}.</p>`}</div>`;
   } else {
-    h += `<div class="divider"></div><div><p class="plabel">Timer · target ${fmt(target)}</p><div class="clock"><span class="t" id="clock">${fmt(set.el)}</span><button type="button" class="btn small" data-act="timer">${timerOn ? "Pause" : (set.el ? "Resume" : "Start")}</button></div><p class="muted" id="pace">At live-test pace you’d be on question ${paceK} of this set.</p></div>`;
+    h += `<div class="divider"></div><div><p class="plabel">Timer · target ${fmt(target)}</p><div class="clock"><span class="t" id="clock">${fmt(set.el)}</span><button type="button" class="btn small" data-act="timer">${timerOn ? "Pause" : (set.el ? "Resume" : "Start")}</button></div>${timerOn || autoPausedSet === S.setId ? `<p class="muted">${autoPausedSet === S.setId ? "Paused while you read the answer. It restarts on the next question." : "Pauses when you check an answer and restarts on the next question."}</p>` : ""}<p class="muted" id="pace">At live-test pace you’d be on question ${paceK} of this set.</p></div>`;
   }
   const fl = list.map((qi, k) => [qi, k]).filter(([qi]) => flagged(qi));
   h += `<div><p class="plabel">Flagged · ${fl.length}</p>` + (fl.length
@@ -708,9 +718,22 @@ function renderResults(){
   if (weakest.length) {
     h += `<div class="callout"><p class="xhead">Your weakest themes</p>` + weakest.map(t => `<div class="wrow"><span><b>${THEMES[t]}</b> · ${pct(byG[t].g, byG[t].m)}% over ${byG[t].n} question${byG[t].n === 1 ? "" : "s"}</span><span class="row"><a class="btn small" href="#guide-${t}">Read playbook</a><button type="button" class="btn small primary" data-act="build" data-kind="theme" data-arg="${t}">Practise</button></span></div>`).join("") + `</div>`;
   }
+  { const nm = mistakesList().length; if (nm) h += `<div class="callout"><p class="xhead">My mistakes</p><div class="wrow"><span>${nm} question${nm === 1 ? "" : "s"} where your latest attempt lost marks.</span><button type="button" class="btn small primary" data-act="build" data-kind="mistakes">Quiz my ${Math.min(20, nm)}</button></div></div>`; }
   h += activityHtml();
   h += `<h3 class="bsub">Progress over time</h3>` + progressChart();
   h += `<h3 class="bsub">By area</h3><div class="doms wide">` + Object.keys(DOMAINS).map(d => { const x = byD[d]; return `<div class="dom"><span>${DOMAINS[d]} <small class="muted">${x.n}/${x.total}</small></span><span>${x.n ? pct(x.g, x.m) + "%" : "–"}</span><div class="bar"><i style="width:${pct(x.g, x.m)}%"></i></div></div>`; }).join("") + `</div>`;
+  { // time per question, from practice sessions where the timer was running
+    const timed = Q.map((_, i) => i).map(i => { const atts = S.att[i] || []; for (let k = atts.length - 1; k >= 0; k--) if (atts[k].s > 0) return {i, s: atts[k].s, g: atts[k].g, m: atts[k].m}; return null; }).filter(Boolean);
+    if (timed.length) {
+      const avg = list => list.length ? Math.round(list.reduce((t, x) => t + x.s, 0) / list.length) : 0, byT = t => timed.filter(x => Q[x.i].t === t);
+      const mm = s => Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0");
+      const types = [["Ranking", byT("rank")], ["Considerations", byT("consider")], ["Best three", byT("best3")]].filter(([, l]) => l.length);
+      const slow = timed.slice().sort((x, y) => y.s - x.s).slice(0, 5);
+      h += `<h3 class="bsub">Time per question</h3><p class="muted">From practice questions answered with the timer running. The live test allows about ${mm(Math.round(PACE))} each.</p>`;
+      h += `<div class="mtiles"><div><span>Average</span><b>${mm(avg(timed))}</b><small>over ${timed.length} timed question${timed.length === 1 ? "" : "s"}</small></div>` + types.map(([n, l]) => `<div><span>${n}</span><b>${mm(avg(l))}</b><small>${l.length} question${l.length === 1 ? "" : "s"}</small></div>`).join("") + `</div>`;
+      h += `<p class="plabel">Slowest questions</p>` + slow.map(x => `<div class="wrow"><span><b>Q${x.i + 1}</b> · ${esc(THEMES[Q[x.i].g] || "")}</span><span>${mm(x.s)} · ${pct(x.g, x.m)}%</span><button type="button" class="btn small" data-act="open-q" data-qi="${x.i}">Open</button></div>`).join("");
+    }
+  }
   h += `<h3 class="bsub">By theme</h3><div class="tscroll"><table class="rtable rt-theme"><thead><tr><th>Theme</th><th>Answered</th><th>Average</th><th></th></tr></thead><tbody>`;
   const themeOrder = themesSorted.concat(Object.keys(THEMES).filter(t => !byG[t].n));
   themeOrder.forEach(t => { const x = byG[t]; h += `<tr><td><a href="#guide-${t}">${THEMES[t]}</a></td><td>${x.n}/${x.total}</td><td>${x.n ? `<span class="pill ${band(x.g, x.m)}">${pct(x.g, x.m)}%</span>` : "–"}</td><td><button type="button" class="btn small" data-act="build" data-kind="theme" data-arg="${t}">Practise</button></td></tr>`; });
@@ -883,10 +906,15 @@ async function readCode(code){
 function scrollToCard(){ const c = document.getElementById("card"); if (c) c.scrollIntoView({block:"nearest"}); }
 function focusCard(){ const el = document.querySelector("#card .qnum, #card .bh"); if (el) el.focus({preventScroll: true}); }
 function announce(msg){ const el = document.getElementById("status"); if (!el) return; el.textContent = ""; setTimeout(() => { el.textContent = msg; }, 30); }
+// Practice timer: it pauses by itself when you check an answer and restarts when you move on to a question you haven't checked.
+function resumeAfterCheck(set, qi){
+  if (autoPausedSet === S.setId && !timerOn && !isMock(set) && !set.marked && !revealed(set, qi)) { timerOn = true; autoPausedSet = null; announce("Timer running."); }
+}
 function go(k){
   const set = curSet(), list = curList();
   set.cur = Math.max(0, Math.min(list.length - 1, k));
   ui.warn = false; ui.confirmMark = false; ui.confirmReset = false; ui.fbOpen = null; ui.building = false;
+  resumeAfterCheck(set, list[set.cur]);
   persistAsIs(); render(); scrollToCard(); // moving between questions isn't a change to your answers
 }
 function fromHash(){
@@ -937,19 +965,21 @@ document.addEventListener("click", async e => {
     case "skip": if (S.view !== "practice") location.hash = "practice"; setTimeout(() => { scrollToCard(); focusCard(); }, 0); break;
     case "dismiss-notice": ui0.rewritten = false; render(); break;
     case "view": if (location.hash === "#" + b.dataset.v) fromHash(); else location.hash = b.dataset.v; break;
-    case "set": S.setId = b.dataset.id; ui.building = false; ui.summary = false; ui.warn = false; ui.confirmMark = ui.confirmReset = false; timerOn = false; persistAsIs(); render(); document.querySelector(`#ptabs [data-id="${b.dataset.id}"]`)?.focus({preventScroll: true}); break;
+    case "set": S.setId = b.dataset.id; ui.building = false; ui.summary = false; ui.warn = false; ui.confirmMark = ui.confirmReset = false; timerOn = false; autoPausedSet = null; persistAsIs(); render(); document.querySelector(`#ptabs [data-id="${b.dataset.id}"]`)?.focus({preventScroll: true}); break;
     case "new": ui.building = !ui.building; render(); scrollToCard(); break;
     case "cancel-build": ui.building = false; render(); break;
     case "build": buildQuiz(b.dataset.kind, b.dataset.arg); break;
     case "mock-quick": {
       const c = S.sets.custom;
-      if (c && isMock(c) && !c.marked) { S.setId = "custom"; ui.building = false; ui.summary = false; save(); render(); scrollToCard(); }
+      if (c && isMock(c) && !c.marked) { S.setId = "custom"; ui.building = false; ui.summary = false; save(); if (window.Exam && Exam.open()) break; render(); scrollToCard(); } // exam overlay resumes the mock
       else buildQuiz("mock");
       break;
     }
-    case "mock-start": set.started = true; set.el = 0; delete set.qt; timerOn = true; ui.warned = {}; save(); render(); focusCard(); announce(`Mock started. You have ${Math.round(set.limit / 60)} minutes.`); break;
+    case "mock-start": if (window.Exam && Exam.open()) break; // exam overlay (exam.js): its Ready To Begin dialog starts the clock
+      set.started = true; set.el = 0; delete set.qt; timerOn = true; ui.warned = {}; save(); render(); focusCard(); announce(`Mock started. You have ${Math.round(set.limit / 60)} minutes.`); break;
     case "summary": ui.summary = true; render(); scrollToCard(); break;
     case "review": ui.summary = false; go(0); focusCard(); break;
+    case "open-q": { const q = +b.dataset.qi, id = PAPER_IDS.find(i => q >= PAPERS[i].from && q < PAPERS[i].to); if (!id) break; S.setId = id; S.view = "practice"; ui.building = false; ui.summary = false; ui.warn = false; ui.confirmMark = ui.confirmReset = false; timerOn = false; autoPausedSet = null; S.sets[id].cur = q - PAPERS[id].from; persistAsIs(); render(); focusCard(); break; }
     case "review-q": ui.summary = false; go(+b.dataset.k); focusCard(); break;
     case "review-flagged": { ui.summary = false; const k = curList().findIndex(flagged); go(k < 0 ? 0 : k); focusCard(); break; }
     case "flag": toggleFlag(qi); break;
@@ -979,21 +1009,23 @@ document.addEventListener("click", async e => {
     }
     case "check":
       if (!complete(set, qi)) return;
-      set.chk[qi] = true; addAttempt(S, set, qi); logSetIfDone(S.setId); save(); render(); flush();
+      set.chk[qi] = true; addAttempt(S, set, qi); logSetIfDone(S.setId);
+      if (timerOn && !isMock(set)) { timerOn = false; autoPausedSet = S.setId; announce("Timer paused while you read the answer."); }
+      save(); render(); flush();
       { const sc = qScore(set, qi); announce(`${sc.got} out of ${sc.max} marks. The correct answer is shown below the explanations.`); }
       document.querySelector("#card .scoreline")?.setAttribute("tabindex", "-1"); document.querySelector("#card .scoreline")?.focus({preventScroll: true});
       break;
-    case "retry": delete set.ans[qi]; delete set.chk[qi]; ui.fbOpen = null; ui.warn = false; save(); render(); focusCard(); break;
+    case "retry": delete set.ans[qi]; delete set.chk[qi]; if (set.qs) delete set.qs[qi]; ui.fbOpen = null; ui.warn = false; resumeAfterCheck(set, qi); save(); render(); focusCard(); break;
     case "mode": if (isMock(set) || set.marked) break; if (b.dataset.mode !== set.mode) { set.mode = b.dataset.mode; ui.confirmMark = false; save(); render(); document.querySelector(`#panel [data-act="mode"][data-mode="${b.dataset.mode}"]`)?.focus(); } break;
     case "mark": { const n = curList().filter(i => complete(set, i)).length; if (n < curList().length) { ui.confirmMark = true; renderPanel(); } else markSet(); break; }
     case "mark-yes": markSet(); break;
     case "mark-no": ui.confirmMark = false; renderPanel(); break;
-    case "timer": { const inBar = !!b.closest("#mockbar"); timerOn = !timerOn; if (isMock(set)) { renderCard(); announce(timerOn ? "Clock running." : "Clock paused."); } renderPanel(); document.querySelector(inBar ? '#mockbar [data-act="timer"]' : '#panel [data-act="timer"]')?.focus(); break; }
+    case "timer": { const inBar = !!b.closest("#mockbar"); timerOn = !timerOn; autoPausedSet = null; if (isMock(set)) { renderCard(); announce(timerOn ? "Clock running." : "Clock paused."); } renderPanel(); document.querySelector(inBar ? '#mockbar [data-act="timer"]' : '#panel [data-act="timer"]')?.focus(); break; }
     case "reset": ui.confirmReset = true; keepFocus(renderGrid); break;
     case "reset-no": ui.confirmReset = false; keepFocus(renderGrid); break;
     case "reset-yes":
       curList().forEach(i => { delete set.ans[i]; delete set.chk[i]; });
-      set.marked = false; set.el = 0; set.cur = 0; set.logged = false; delete set.qt; ui.warned = {}; if (isMock(set)) set.started = false; timerOn = false; ui.confirmReset = false; ui.summary = false; save(); render();
+      set.marked = false; set.el = 0; set.cur = 0; set.logged = false; delete set.qt; ui.warned = {}; if (isMock(set)) set.started = false; timerOn = false; autoPausedSet = null; ui.confirmReset = false; ui.summary = false; save(); render();
       break;
     case "show-stats": {
       const focusStats = () => { const t = document.querySelector(`#stats-${qi} .xhead, #stats-${qi} p`); if (t) { t.setAttribute("tabindex", "-1"); t.focus({preventScroll: true}); } };
@@ -1024,13 +1056,13 @@ document.addEventListener("click", async e => {
     case "load-code": { const v = (document.getElementById("code-in") || {}).value || ""; if (!v.trim()) { ui.codeMsg = "Paste a code first."; renderSettings(); break; } ui.pending = v; ui.confirmLoad = true; ui.codeMsg = ""; renderSettings(); document.getElementById("code-in").value = v; break; }
     case "load-no": ui.confirmLoad = false; renderSettings(); break;
     case "load-yes":
-      try { S = await readCode(ui.pending || ""); S.view = "settings"; timerOn = false; save(true); ui.codeMsg = "Progress loaded."; flush(); }
+      try { S = await readCode(ui.pending || ""); S.view = "settings"; timerOn = false; autoPausedSet = null; save(true); ui.codeMsg = "Progress loaded."; flush(); }
       catch(err) { ui.codeMsg = /^This browser/.test(err && err.message) ? err.message : "That code couldn’t be read. Check you copied all of it."; }
       ui.confirmLoad = false; ui.pending = ""; render(); break;
     case "install": if (installPrompt) { installPrompt.prompt(); installPrompt = null; renderSettings(); } break;
     case "wipe": ui.confirmWipe = true; renderSettings(); break;
     case "wipe-no": ui.confirmWipe = false; renderSettings(); break;
-    case "wipe-yes": { if (SY) { SY = null; saveLink(); syncUi.conflict = null; syncUi.status = ""; renderSyncButton(); } const cid = S.cid; S = fresh(); S.cid = cid; S.view = "settings"; ui.confirmWipe = false; timerOn = false; save(true); render(); break; }
+    case "wipe-yes": { if (SY) { SY = null; saveLink(); syncUi.conflict = null; syncUi.status = ""; renderSyncButton(); } const cid = S.cid; S = fresh(); S.cid = cid; S.view = "settings"; ui.confirmWipe = false; timerOn = false; autoPausedSet = null; save(true); render(); break; }
   }
 });
 document.addEventListener("change", e => {
@@ -1039,7 +1071,7 @@ document.addEventListener("change", e => {
 function refreshStats(qi){ keepFocus(() => { const box = document.getElementById("stats-" + qi); if (box) box.outerHTML = statsHtml(qi); }); }
 function markSet(){
   const set = curSet(), list = curList();
-  set.marked = true; timerOn = false; ui.confirmMark = false;
+  set.marked = true; timerOn = false; autoPausedSet = null; ui.confirmMark = false;
   list.forEach(qi => { if (started(set, qi) && !set.chk[qi]) { set.chk[qi] = true; addAttempt(S, set, qi); } });
   if (isMock(set)) { ui.summary = true; set.cur = 0; }
   logSetIfDone(S.setId); save(); render(); flush();
@@ -1079,6 +1111,7 @@ setInterval(() => {
   const whole = Math.floor(carry); if (!whole) return;
   carry -= whole; set.el += whole; tick += whole;
   if (live && S.view === "practice" && !ui.building && !ui.summary) { const qi = curQi(); set.qt = set.qt || {}; set.qt[qi] = (set.qt[qi] || 0) + whole; }
+  if (!live && S.view === "practice" && !ui.building && !ui.summary) { const qi = curQi(); if (!revealed(set, qi)) { set.qs = set.qs || {}; set.qs[qi] = (set.qs[qi] || 0) + whole; } } // per-question time for Results
   const c = document.getElementById("clock"), p = document.getElementById("pace");
   if (live) {
     set.el = Math.min(set.limit, set.el);
@@ -1133,7 +1166,7 @@ function syncErr(res){ if (res.body.error === "locked") return `Too many wrong P
 function adopt(data, ts){
   const view = S.view, setId = S.setId, n = normalise(JSON.parse(data));
   S = n; S.view = view; S.ts = ts;
-  if (S.sets[setId]) S.setId = setId; else timerOn = false;
+  if (S.sets[setId]) S.setId = setId; else { timerOn = false; autoPausedSet = null; }
   ui.summary = false; ui.confirmMark = ui.confirmReset = false; persistAsIs();
   SY.lastTs = ts; SY.at = Date.now(); saveLink(); render();
 }
