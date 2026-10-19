@@ -73,6 +73,17 @@ console.log(JSON.stringify(["admin no password", (await adminCall(null))[0]]));
 console.log(JSON.stringify(["admin wrong password", (await adminCall("Bearer nope"))[0]]));
 const [ok, data] = await adminCall("Bearer correct horse battery staple");
 console.log(JSON.stringify(["admin ok", ok, Object.keys(data), data.totals]));
+// Time per question and timed-mock completion (feed the dashboard)
+await call("POST", "/api/answers", {client: "timer-aaaa1", items: [{q: 3, a: "01234", s: 42}, {q: 4, a: "01234", s: 5000}]});
+await call("POST", "/api/answers", {client: "timer-bbbb2", items: [{q: 3, a: "01234", s: 60}]});
+await call("POST", "/api/answers", {client: "timer-bbbb2", items: [{q: 3, a: "01234", s: 600}]}); // repeat is ignored
+const run = Date.now() - 1000;
+const mk = (client, r, event, mode) => call("POST", "/api/mock", {client, run: r, event, mode});
+console.log(JSON.stringify(["mock start ok", (await mk("mock-aaaa11", run, "start", "exam"))[0], "bad run rejected", (await mk("mock-aaaa11", 5, "start"))[0], "bad event rejected", (await mk("mock-aaaa11", run, "nope"))[0], "bad client rejected", (await mk("x", run, "start"))[0]]));
+await mk("mock-aaaa11", run, "finish", "exam"); await mk("mock-bbbb22", run, "start", "plain"); await mk("mock-cccc33", run, "start", "plain"); await mk("mock-cccc33", run, "expired", "plain");
+const [, d2] = await adminCall("Bearer correct horse battery staple", "9.9.8.8");
+console.log(JSON.stringify(["times", d2.times.filter(t => t.q === 3 || t.q === 4), "(expect q3 n=2 avg 51 from two people, the repeat ignored; q4 none because 5000 is over 900)"]));
+console.log(JSON.stringify(["mocks", d2.mocks.map(m => [m.mode, m.st, m.n]).sort(), "(expect exam finish 1, plain expired 1, plain live 1)"]));
 let lim = 0; for (let i = 0; i < 70; i++) { const [s] = await adminCall("Bearer guess" + i, "8.8.8.8"); if (s === 429) { lim = i + 1; break; } }
 console.log(JSON.stringify(["admin guesses rate limited at attempt", lim]));
 

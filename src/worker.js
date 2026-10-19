@@ -5,6 +5,7 @@
 //   POST /api/feedback  "I disagree with this key", with an optional comment
 //   POST /api/visit     one anonymous visit per page load (private visitor stats, read in the D1 console)
 //   POST /api/error     a browser error report (message only)
+//   POST /api/mock      a timed mock started or finished (random run number only; feeds the dashboard's completion rate)
 //   POST /api/sync      save, load or delete progress under a username + PIN (optional cross-device sync; no accounts)
 //   POST /api/explain   "Explain my mistake" (Beta): AI explanation of a wrong answer, checked against the key (see explain.js)
 //   POST /api/explain-feedback  thumbs up/down on an explanation (question, answer letters, +1/-1; no free text)
@@ -18,12 +19,12 @@
 const QTYPES = "rbrrbrrbrbrbrbrrrbrbrbrbrbrrrbbrrbrbrrbrbrbrbrbrbrrbrbrbrbrbrrbrrrbrbrrbrbrbrbbbrrrbrbrbrbrrrbrbrbrrrrbrbrrrbrrrbrbrrbrrbrbrbrbrrbrrrbrrrrbrrbrrbrrrbrbrbrrbrrrbrbrrrbrbrrrbrbrrrbrrbrrbrbrrrrbrrbrrbrbrrrbrrrbrbrrbrrbrrbrrbrrr";
 // TYPES:end
 
-import { explainHandler, analyse } from "./explain.js";
+import { explainHandler, analyse, DAILY_NEURON_CAP } from "./explain.js";
 import BANK from "./explain-bank.js";
 
 const CORS_ORIGINS = ["https://sajeev2112.github.io"];
 // Hourly limits per network and endpoint. Generous enough for a whole class on shared Wi-Fi.
-const LIMITS = {answers: 3000, feedback: 100, visit: 600, error: 20, admin: 60, sync: 600, create: 20, explain: 40, explainfb: 60};
+const LIMITS = {answers: 3000, feedback: 100, visit: 600, error: 20, admin: 60, sync: 600, create: 20, explain: 40, explainfb: 60, mock: 120};
 const MIN_STATS = 3;
 
 let schemaReady = false;
@@ -42,6 +43,8 @@ const SCHEMA = [
   "CREATE TABLE IF NOT EXISTS ai_usage (day TEXT PRIMARY KEY, n REAL NOT NULL)",
   "CREATE TABLE IF NOT EXISTS explain_cache (k TEXT PRIMARY KEY, v TEXT NOT NULL, t INTEGER NOT NULL)",
   "CREATE TABLE IF NOT EXISTS explain_feedback (client TEXT NOT NULL, q INTEGER NOT NULL, a TEXT NOT NULL, rating INTEGER NOT NULL, t INTEGER NOT NULL, PRIMARY KEY (client, q, a))",
+  "CREATE TABLE IF NOT EXISTS answer_times (client TEXT NOT NULL, q INTEGER NOT NULL, s INTEGER NOT NULL, PRIMARY KEY (client, q))",
+  "CREATE TABLE IF NOT EXISTS mock_runs (client TEXT NOT NULL, run INTEGER NOT NULL, mode TEXT NOT NULL, started INTEGER NOT NULL, ended INTEGER, status TEXT, PRIMARY KEY (client, run))",
   "CREATE TABLE IF NOT EXISTS answer_counts (q INTEGER NOT NULL, a TEXT NOT NULL, c INTEGER NOT NULL, PRIMARY KEY (q, a))",
   "CREATE TRIGGER IF NOT EXISTS answers_v2_count AFTER INSERT ON answers_v2 BEGIN INSERT INTO answer_counts (q, a, c) VALUES (NEW.q, NEW.a, 1) ON CONFLICT (q, a) DO UPDATE SET c = c + 1; END"
 ];
@@ -70,6 +73,7 @@ export default {
       if (url.pathname === "/api/feedback" && request.method === "POST") return await feedback(request, env, ctx, cors);
       if (url.pathname === "/api/visit" && request.method === "POST") return await visit(request, env, ctx, cors);
       if (url.pathname === "/api/error" && request.method === "POST") return await clientError(request, env, ctx, cors);
+      if (url.pathname === "/api/mock" && request.method === "POST") return await mockEvent(request, env, ctx, cors);
       if (url.pathname === "/api/health" && request.method === "GET") return await health(env, cors);
       if (url.pathname === "/api/sync" && request.method === "POST") return await sync(request, env, ctx, cors);
       if (url.pathname === "/api/admin" && request.method === "GET") return await admin(request, env, ctx, cors);
@@ -121,14 +125,31 @@ async function answers(request, env, ctx, cors) {
   const items = [], seen = new Set();
   for (const it of body.items.slice(0, 100)) {
     const q = toQ(it && it.q);
-    if (q && !seen.has(q) && typeof it.a === "string" && validAnswer(QTYPES[q - 1], it.a)) { seen.add(q); items.push([q, it.a]); }
+    if (q && !seen.has(q) && typeof it.a === "string" && validAnswer(QTYPES[q - 1], it.a)) { seen.add(q); items.push([q, it.a, Number.isInteger(it.s) && it.s >= 1 && it.s <= 900 ? it.s : 0]); }
   }
   if (!items.length) return json({ok: true, stored: 0}, 200, cors);
   if (!(await allow(request, env, ctx, items.length, "answers"))) return json({error: "rate_limited"}, 429, cors);
   const now = Date.now();
-  await env.DB.batch(items.map(([q, a]) =>
-    env.DB.prepare("INSERT OR IGNORE INTO answers_v2 (client, q, a, t) VALUES (?, ?, ?, ?)").bind(body.client, q, a, now)));
+  // s = seconds the practice timer ran on that question (optional; kept once per person and question, like the answer)
+  const stmts = items.map(([q, a]) => env.DB.prepare("INSERT OR IGNORE INTO answers_v2 (client, q, a, t) VALUES (?, ?, ?, ?)").bind(body.client, q, a, now));
+  for (const [q, , sec] of items) if (sec) stmts.push(env.DB.prepare("INSERT OR IGNORE INTO answer_times (client, q, s) VALUES (?, ?, ?)").bind(body.client, q, sec));
+  await env.DB.batch(stmts);
   return json({ok: true, stored: items.length}, 200, cors);
+}
+
+// A timed mock started or ended. "run" is the mock's own creation time (a number), so nothing identifying is sent.
+async function mockEvent(request, env, ctx, cors) {
+  const body = await readJson(request, 512);
+  const run = Number(body && body.run), now = Date.now();
+  if (!body || !validClient(body.client) || !Number.isSafeInteger(run) || run < 1e12 || run > now + 86400000) return json({error: "bad_request"}, 400, cors);
+  const mode = body.mode === "exam" ? "exam" : "plain";
+  if (!(await allow(request, env, ctx, 1, "mock"))) return json({error: "rate_limited"}, 429, cors);
+  if (body.event === "start")
+    await env.DB.prepare("INSERT INTO mock_runs (client, run, mode, started) VALUES (?, ?, ?, ?) ON CONFLICT (client, run) DO UPDATE SET started = excluded.started, ended = NULL, status = NULL, mode = excluded.mode").bind(body.client, run, mode, now).run();
+  else if (body.event === "finish" || body.event === "expired")
+    await env.DB.prepare("INSERT INTO mock_runs (client, run, mode, started, ended, status) VALUES (?, ?, ?, ?, ?, ?) ON CONFLICT (client, run) DO UPDATE SET ended = excluded.ended, status = excluded.status").bind(body.client, run, mode, now, now, body.event).run();
+  else return json({error: "bad_request"}, 400, cors);
+  return json({ok: true}, 200, cors);
 }
 
 async function feedback(request, env, ctx, cors) {
@@ -261,16 +282,33 @@ async function admin(request, env, ctx, cors) {
   const given = (request.headers.get("Authorization") || "").replace(/^Bearer\s+/i, "");
   if (!(await sameSecret(given, env.ADMIN_KEY))) return json({error: "unauthorised"}, 401, noStore);
   const q = sql => env.DB.prepare(sql);
-  const [visits, totals, answersByDay, dist, feedback, errors] = await env.DB.batch([
+  const now = Date.now();
+  // Of the people first seen at least N days ago, how many came back on a later day within N days.
+  const back = n => q(`SELECT COUNT(*) AS n, COALESCE(SUM(EXISTS (SELECT 1 FROM visits w WHERE w.client = f.client AND w.day > f.d AND w.day <= date(f.d, '+${n} day'))), 0) AS back FROM (SELECT client, MIN(day) AS d FROM visits GROUP BY client) f WHERE f.d <= date('now', '-${n} day')`);
+  const [visits, totals, answersByDay, dist, feedback, errors, aiDays, aiVotes, aiCache, syncTot, syncDays, newDays, back7, back30, times, mocks] = await env.DB.batch([
     q("SELECT day, COUNT(*) AS visitors, SUM(views) AS views, SUM(app) AS app FROM visits GROUP BY day ORDER BY day DESC LIMIT 120"),
     q("SELECT (SELECT COUNT(DISTINCT client) FROM visits) AS visitors, (SELECT COUNT(*) FROM (SELECT client FROM visits GROUP BY client HAVING COUNT(*) > 1)) AS returning_visitors, (SELECT COUNT(DISTINCT client) FROM visits WHERE app = 1) AS app_users, (SELECT COUNT(DISTINCT client) FROM answers_v2) AS answering, (SELECT COUNT(*) FROM answers_v2) AS answers, (SELECT COUNT(*) FROM feedback_v2) AS feedback"),
     q("SELECT date(t / 1000, 'unixepoch') AS day, COUNT(*) AS answers, COUNT(DISTINCT client) AS people FROM answers_v2 GROUP BY day ORDER BY day DESC LIMIT 120"),
     q("SELECT q, a, COUNT(*) AS c FROM answers_v2 GROUP BY q, a"),
     q("SELECT q, comment, t FROM feedback_v2 ORDER BY t DESC LIMIT 300"),
-    q("SELECT t, kind, msg FROM errors ORDER BY t DESC LIMIT 50")
+    q("SELECT t, kind, msg FROM errors ORDER BY t DESC LIMIT 50"),
+    q("SELECT day, n FROM ai_usage ORDER BY day DESC LIMIT 90"),
+    q("SELECT q, COALESCE(SUM(rating = 1), 0) AS up, COALESCE(SUM(rating = -1), 0) AS down FROM explain_feedback GROUP BY q"),
+    q("SELECT COUNT(*) AS n FROM explain_cache"),
+    // Sync accounts: counts only. Names, PINs and saved data are never sent to the dashboard.
+    q(`SELECT COUNT(*) AS total, COALESCE(SUM(locked_until > ${now}), 0) AS locked, COALESCE(SUM(updated > ${now - 7 * 864e5}), 0) AS active7, COALESCE(SUM(updated > ${now - 30 * 864e5}), 0) AS active30 FROM sync`),
+    q("SELECT date(updated / 1000, 'unixepoch') AS day, COUNT(*) AS n FROM sync GROUP BY day ORDER BY day DESC LIMIT 90"),
+    q("SELECT d AS day, COUNT(*) AS n FROM (SELECT client, MIN(day) AS d FROM visits GROUP BY client) GROUP BY d ORDER BY d DESC LIMIT 120"),
+    back(7), back(30),
+    q("SELECT q, COUNT(*) AS n, AVG(s) AS avg FROM answer_times GROUP BY q"),
+    // A run with no end that began over 3 hours ago (a mock lasts 105 minutes) counts as not finished; a newer one is still in progress.
+    q(`SELECT mode, CASE WHEN status IS NOT NULL THEN status WHEN started > ${now - 3 * 3600000} THEN 'live' ELSE 'abandoned' END AS st, COUNT(*) AS n, COALESCE(AVG(CASE WHEN ended IS NOT NULL THEN ended - started END), 0) AS ms, COALESCE(MAX(started), 0) AS last FROM mock_runs GROUP BY mode, st`)
   ]);
   return json({generated: Date.now(), totals: totals.results[0], visits: visits.results.reverse(), answersByDay: answersByDay.results.reverse(),
-    distributions: dist.results, feedback: feedback.results, errors: errors.results}, 200, noStore);
+    distributions: dist.results, feedback: feedback.results, errors: errors.results,
+    ai: {cap: DAILY_NEURON_CAP, days: aiDays.results.reverse(), votes: aiVotes.results, cached: aiCache.results[0].n},
+    sync: {...syncTot.results[0], days: syncDays.results.reverse()},
+    newVisitors: newDays.results.reverse(), retention: {d7: back7.results[0], d30: back30.results[0]}, times: times.results, mocks: mocks.results}, 200, noStore);
 }
 // Compares secrets via their SHA-256 digests so the check takes the same time whatever is typed.
 async function sameSecret(a, b) {

@@ -394,7 +394,7 @@
   // "Yes" on Ready To Begin starts the clock exactly as the app's own "mock-start" does.
   function startClock(){
     const set = mock(); if (!set) return;
-    set.started = true; set.el = 0; delete set.qt; setClock(true);
+    set.started = true; set.el = 0; delete set.qt; setClock(true); if (typeof mockEvent === "function") mockEvent("start", set, "exam");
     try { ui.warned = {}; } catch(e) {}
     save(); go(parts(set).one.length ? "part1" : "part2");
   }

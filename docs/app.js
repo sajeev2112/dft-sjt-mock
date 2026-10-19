@@ -183,7 +183,9 @@ function addAttempt(s, set, qi, submit = true){
   d.g += sc.got; d.m += sc.max; d.n++;
   if (submit && s.share && !s.sent[qi] && complete(set, qi)) {
     const a = set.ans[qi];
-    s.outbox.push({q:qi + 1, a: isRank(Q[qi]) ? a.ord.join("") : a.p.slice().sort((x, y) => x - y).join("")});
+    const item = {q:qi + 1, a: isRank(Q[qi]) ? a.ord.join("") : a.p.slice().sort((x, y) => x - y).join("")};
+    if (spent) item.s = spent;
+    s.outbox.push(item);
     s.sent[qi] = 1;
     if (s.outbox.length > 300) s.outbox = s.outbox.slice(-300);
   }
@@ -214,6 +216,11 @@ function flush(){
     }
   })().finally(() => { flushP = null; });
   return flushP;
+}
+// Tells the dashboard a timed mock started or ended (anonymous: random browser code and the mock's creation time only).
+function mockEvent(ev, set, mode){
+  if (!S.share || location.protocol === "file:" || !set || !set.created) return;
+  try { fetch(API + "/api/mock", {method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({client:S.cid, run:set.created, event:ev, mode: mode || (window.Exam && Exam.isOpen() ? "exam" : "plain")}), keepalive:true}).catch(() => {}); } catch(e) {}
 }
 function logSetIfDone(id){
   const set = S.sets[id], list = listOf(id);
@@ -976,7 +983,7 @@ document.addEventListener("click", async e => {
       break;
     }
     case "mock-start": if (window.Exam && Exam.open()) break; // exam overlay (exam.js): its Ready To Begin dialog starts the clock
-      set.started = true; set.el = 0; delete set.qt; timerOn = true; ui.warned = {}; save(); render(); focusCard(); announce(`Mock started. You have ${Math.round(set.limit / 60)} minutes.`); break;
+      set.started = true; set.el = 0; delete set.qt; timerOn = true; ui.warned = {}; save(); mockEvent("start", set, "plain"); render(); focusCard(); announce(`Mock started. You have ${Math.round(set.limit / 60)} minutes.`); break;
     case "summary": ui.summary = true; render(); scrollToCard(); break;
     case "review": ui.summary = false; go(0); focusCard(); break;
     case "open-q": { const q = +b.dataset.qi, id = PAPER_IDS.find(i => q >= PAPERS[i].from && q < PAPERS[i].to); if (!id) break; S.setId = id; S.view = "practice"; ui.building = false; ui.summary = false; ui.warn = false; ui.confirmMark = ui.confirmReset = false; timerOn = false; autoPausedSet = null; S.sets[id].cur = q - PAPERS[id].from; persistAsIs(); render(); focusCard(); break; }
@@ -1071,7 +1078,9 @@ document.addEventListener("change", e => {
 function refreshStats(qi){ keepFocus(() => { const box = document.getElementById("stats-" + qi); if (box) box.outerHTML = statsHtml(qi); }); }
 function markSet(){
   const set = curSet(), list = curList();
+  const wasLive = mockLive(set), ranOut = wasLive && left(set) <= 0;
   set.marked = true; timerOn = false; autoPausedSet = null; ui.confirmMark = false;
+  if (wasLive) mockEvent(ranOut ? "expired" : "finish", set);
   list.forEach(qi => { if (started(set, qi) && !set.chk[qi]) { set.chk[qi] = true; addAttempt(S, set, qi); } });
   if (isMock(set)) { ui.summary = true; set.cur = 0; }
   logSetIfDone(S.setId); save(); render(); flush();

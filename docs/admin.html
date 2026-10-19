@@ -58,6 +58,20 @@
 .cmt{background:var(--surface-2); border-radius:10px; padding:10px 12px; font-size:14px}
 .cmt .cm{font:500 12px var(--mono); color:var(--ink-3); margin-bottom:4px}
 .empty{color:var(--ink-3); font-size:14px}
+.meter{height:8px; border-radius:4px; background:var(--surface-2); margin-top:8px; overflow:hidden}
+.meter span{display:block; height:100%; background:var(--accent)}
+.card .tiles6,.card .chartcard{margin-bottom:14px}
+.alerts{display:grid; gap:8px}
+.alert{margin:0; padding:10px 14px; border-radius:10px; font-size:14px; border:1px solid}
+.alert.red{background:var(--bad-soft); color:var(--bad); border-color:var(--bad)}
+.alert.amber{background:var(--near-soft); color:var(--near); border-color:var(--near)}
+.alert a{color:inherit; text-decoration:underline; margin-left:6px}
+.alertok{margin:0; font-size:13px; color:var(--good)}
+.auto{font-size:13px}
+.qtools{display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin:10px 0}
+.qtools input[type=search]{flex:1 1 220px; font:14px var(--sans); padding:8px 10px; border:1px solid var(--line); border-radius:8px; background:var(--surface); color:var(--ink)}
+.qtools input:focus{outline:2px solid var(--accent); outline-offset:1px}
+.card .plabel{margin:16px 0 6px}
 @media (max-width:760px){ .charts{grid-template-columns:1fr} }
 </style>
 </head>
