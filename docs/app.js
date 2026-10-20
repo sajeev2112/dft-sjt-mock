@@ -72,7 +72,7 @@ function normalise(o){
     if (list.length) {
       s.sets.custom = Object.assign(cleanSet(c, list), {list, name: typeof c.name === "string" ? c.name.slice(0, 60) : "Quiz",
         kind: typeof c.kind === "string" ? c.kind.slice(0, 10) : "quick", created: num(c.created, 1e14),
-        limit: Math.floor(num(c.limit, 20000)), started: !!c.started});
+        limit: Math.floor(num(c.limit, 20000)), started: !!c.started, left: !!c.left});
     }
   }
   s.setId = s.sets[o.setId] && (o.setId === "custom" || PAPER_IDS.includes(o.setId)) ? o.setId : "p1";

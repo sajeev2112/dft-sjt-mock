@@ -284,7 +284,9 @@
   }
   function toolHtml(set){
     const qs = st.stage === "q" || st.stage === "rq", f = qs && !!st.flags[set.list[st.k]];
-    const l = st.stage === "review" ? `<button type="button" class="ex-tb" id="ex-b-instr" data-x="instr" data-key="t" aria-keyshortcuts="Alt+T">${I.doc}<span>${ul("Instructions", "t")}</span></button>` : "";
+    let l = st.stage === "review" ? `<button type="button" class="ex-tb" id="ex-b-instr" data-x="instr" data-key="t" aria-keyshortcuts="Alt+T">${I.doc}<span>${ul("Instructions", "t")}</span></button>` : "";
+    // Not part of the real test, but this is a practice mock: you can always leave it (see exitMock).
+    if (RUN.includes(st.stage)) l += `<button type="button" class="ex-tb ex-exit" id="ex-b-exit" data-x="exit" data-key="x" aria-keyshortcuts="Alt+X"><span>${ul("Exit mock", "x")}</span></button>`;
     let r = qs ? `<button type="button" class="ex-tb${f ? " on" : ""}" id="ex-b-flag" data-x="flag" data-key="f" aria-pressed="${f}" aria-keyshortcuts="Alt+F">${I.flag(f, "#ffd400")}<span>${ul("Flag for Review", "F")}</span></button>` : "";
     r += `<select class="ex-scheme" id="ex-scheme" aria-label="Colour Scheme (now ${SCHEMES[st.scheme]})"><option value="" hidden selected>Colour Scheme</option>${Object.keys(SCHEMES).map(k => `<option value="${k}">${SCHEMES[k]}${k === st.scheme ? " ✓" : ""}</option>`).join("")}</select>`;
     return `<div class="ex-tl">${l}</div><div class="ex-tr">${r}</div>`;
@@ -407,6 +409,26 @@
     const pre = PRE.includes(st.stage);
     dialog({title:"End Exam", msg:"You have chosen to end this exam.<br><br>Are you sure you want to end this exam?", icon:"info", def:1, btns:[["Yes", "Y", () => pre ? leave() : go("survey")], ["No", "N", null]]});
   }
+  // Leaving a running mock: pause and come back later, mark what has been answered, or throw the mock away.
+  function exitMock(){
+    dialog({title:"Exit mock", msg:"What would you like to do with this mock?<br><br><b>Leave for now</b> pauses the clock and keeps your answers, and you can resume from the Practice page.<br><b>Mark it now</b> ends the mock and marks what you have answered.<br><b>Discard</b> deletes it without marking.", icon:"info", def:3,
+      btns:[["Leave for now", "L", leaveForNow], ["Mark it now", "M", markNow], ["Discard", "D", () => setTimeout(confirmDiscard, 0)], ["Keep going", "K", null]]});
+  }
+  function leaveForNow(){
+    const set = mock(); if (!set) return;
+    set.left = true; setClock(false); persist(); try { S.setId = "p1"; S.view = "practice"; ui.building = false; } catch(e) {} save();
+    closeDom(); appRender();
+  }
+  function markNow(){ const set = mock(); if (set) { setClock(false); set.left = false; } finish(); }
+  function confirmDiscard(){
+    dialog({title:"Discard mock", msg:"This deletes the mock and your answers in it. Nothing is marked or saved to your results.<br><br>Are you sure?", icon:"warn", def:1,
+      btns:[["Yes", "Y", discard], ["No", "N", null]]});
+  }
+  function discard(){
+    setClock(false); clearState(); closeDom();
+    try { S.sets.custom = null; S.setId = "p1"; S.view = "practice"; ui.building = false; ui.summary = false; } catch(e) {}
+    save(); appRender();
+  }
   // Before the clock starts, End Exam simply leaves; the mock stays unstarted in the app.
   function leave(){ clearState(); closeDom(); appRender(); try { focusCard(); } catch(e) {} }
   // After the survey: close the overlay and hand over to the app's own mock marking and summary.
@@ -521,6 +543,7 @@
       case "count": st.hideN = !st.hideN; persist(); draw(); say(st.hideN ? "Item counter hidden." : "Item counter shown."); break;
       case "review": go("review"); break;
       case "end": endExam(); break;
+      case "exit": exitMock(); break;
       case "endrev": endReview(); break;
       case "skiptut": go("instr"); break;
       case "tab": st.tab = b.dataset.t === "flagged" ? "flagged" : "all"; persist(); draw(); break;
@@ -609,6 +632,7 @@
     if (root) return true;
     try {
       const set = mock(); if (!set || set.marked) return false;
+      set.left = false;
       const ord = partOrder(set.list); if (!ord.length) return false;
       if (ord.join() !== set.list.join()) { const cur = set.list[set.cur]; set.list = ord; set.cur = Math.max(0, ord.indexOf(cur)); save(); }
       st = load(set);
@@ -644,7 +668,7 @@
     } catch(e) { return false; }
   }
   // On page load: reopen a started mock, or one whose pre-start screens were open.
-  function resume(){ const set = mock(); if (!set || set.marked || root) return false; return set.started || savedFor(set) ? open() : false; }
+  function resume(){ const set = mock(); if (!set || set.marked || set.left || root) return false; return set.started || savedFor(set) ? open() : false; }
 
   window.Exam = {open, resume, isOpen: () => !!root, onTimeUp};
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", resume); else setTimeout(resume, 0);

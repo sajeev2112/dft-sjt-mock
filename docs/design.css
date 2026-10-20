@@ -420,7 +420,18 @@ html.nd .nd-progress{will-change:transform}
   html.nd .otext{font-size:1rem}
   html.nd .cell{height:42px}
   html.nd .nd-stat b{font-size:1.5625rem}
-  /* after answering: explanations on the left, your score and the key on the right */
+  html.nd .mcols{gap:0 40px}
+}
+@media (min-width:2000px){
+  html.nd .wrap{max-width:1760px}
+  html.nd body{font-size:1.0625rem}
+  html.nd .scenario{font-size:1.375rem}
+}
+
+/* ---------- after answering: explanations on the left, your score and the key on the right ----------
+   From 1100px wide (a 13-inch laptop and up) the card uses two columns. Below 1640px there is no room for the score panel beside
+   the card as well, so while a result is showing the panel drops underneath, laid out as a row, and the card gets the full width. */
+@media (min-width:1100px){
   html.nd #card:has(> .result){display:grid; grid-template-columns:minmax(0,1.1fr) minmax(0,1fr); column-gap:34px; grid-auto-flow:row dense; align-items:start}
   html.nd #card:has(> .result) > *{grid-column:1 / -1}
   html.nd #card:has(> .result) > .xcol{grid-column:1}
@@ -428,12 +439,12 @@ html.nd .nd-progress{will-change:transform}
   html.nd #card:has(> .result) > .actions{margin-top:22px}
   html.nd #card:has(> .result) .compare{grid-template-columns:1fr}
   html.nd #card:has(> .result) .rlinks{max-width:none}
-  html.nd .mcols{gap:0 40px}
 }
-@media (min-width:2000px){
-  html.nd .wrap{max-width:1760px}
-  html.nd body{font-size:1.0625rem}
-  html.nd .scenario{font-size:1.375rem}
+@media (min-width:1100px) and (max-width:1639px){
+  html.nd .layout:has(#card > .result){grid-template-columns:minmax(0,1fr)}
+  html.nd .layout:has(#card > .result) .panel{position:static; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:16px 32px; align-items:start}
+  html.nd .layout:has(#card > .result) .panel .divider{display:none}
+  html.nd .layout:has(#card > .result) .panel .note, html.nd .layout:has(#card > .result) .panel .saved{grid-column:1 / -1}
 }
 
 /* ---------- pattern guide: full width, with a sticky contents list on wider screens ---------- */
