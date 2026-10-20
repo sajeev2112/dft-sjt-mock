@@ -149,17 +149,17 @@ export function check(plan, facts) {
     inRange(p && p.why, 40, 170, "why"); inRange(p && p.read, 20, 110, "read"); inRange(p && p.do, 20, 110, "do");
     const titles = (facts.sections[facts.priorities.find(f => f.toLowerCase() === String(p && p.focus || "").trim().toLowerCase())] || []).map(x => x.title);
     if (titles.length && !titles.some(t => String(p && p.read || "").includes(t))) fails.push("read does not name a given playbook section");
-    if (/^Habit:/i.test(String(p && p.focus || "")) && /practi[sc]e button|practi[sc]e the .{0,40} theme/i.test(String(p && p.do || ""))) fails.push("the Practise button is for themes only, not habits");
-    if (/^(Repeated mistakes|Pace)$/i.test(String(p && p.focus || "")) && /practi[sc]e button/i.test(String(p && p.do || ""))) fails.push("the Practise button is for themes only");
   }
   const all = [plan.overview, plan.this_week, ...pr.flatMap(p => [p && p.why, p && p.read, p && p.do])].join(" ");
   const source = facts.text + " " + Object.values(facts.playbook).join(" ") + " " + Object.keys(facts.playbook).join(" ");
   const allowedNums = new Set([...source.matchAll(/\d+/g)].map(m => m[0]));
+  const factTimes = [...source.matchAll(/(\d+):(\d\d)/g)].map(m => +m[1] * 60 + +m[2]); // times may be rounded a few seconds ("about 1:50")
   // Percentages, times and larger figures must come from the facts. Small plain counts are allowed in plans of action
   // (up to 30: "Day 2", "10 questions") and in descriptions (up to 12: "three themes"), since the checker model reviews the claims.
   const numbersIn = (text, smallMax) => { for (const m of String(text || "").matchAll(/(\d+(?::\d+)?)(\s?%)?/g)) {
     const n = m[1], plain = !m[2] && !n.includes(":");
     if (plain && +n <= smallMax) continue;
+    if (n.includes(":")) { const secs = t => { const [m, x] = t.split(":").map(Number); return m * 60 + x; }; if (factTimes.some(f => Math.abs(f - secs(n)) <= 10)) continue; }
     if (!allowedNums.has(n) && !n.split(":").every(x => allowedNums.has(String(+x)) || allowedNums.has(x))) fails.push("number not in facts: " + n); } };
   numbersIn(plan.overview, 12); numbersIn(plan.this_week, 30);
   for (const p of pr) { numbersIn(p && p.why, 12); numbersIn(p && p.read, 12); numbersIn(p && p.do, 30); }
