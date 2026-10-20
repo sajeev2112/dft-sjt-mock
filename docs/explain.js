@@ -9,7 +9,16 @@
     const a = set.ans[qi]; if (!a) return "";
     return isRank(Q[qi]) ? (a.set ? a.ord.map(o => L[o]).join("") : "") : a.p.slice().sort((x, y) => x - y).map(o => L[o]).join("");
   };
-  const done = {}; // explanations already fetched this visit, so re-renders don't lose them
+  const done = {}; // explanations already fetched, so re-renders and later visits don't lose them
+  // Explanations the AI helped write are also kept on this device (newest 80), so coming back to a question shows the same explanation
+  // again without asking the server. Anyone else who gives the same answer is served the same stored explanation by the server.
+  const MEM = "dft-sjt-xm", MEM_MAX = 80;
+  const memLoad = () => { try { return JSON.parse(localStorage.getItem(MEM) || "{}") || {}; } catch (e) { return {}; } };
+  try { const m = memLoad(); for (const k of Object.keys(m)) if (m[k] && m[k].j && Array.isArray(m[k].j.items)) done[k] = m[k].j; } catch (e) {}
+  function remember(k, j){
+    if (!j || !Array.isArray(j.items) || !(j.insight || j.items.some(it => it.source === "ai"))) return;
+    try { const m = memLoad(); m[k] = {t: Date.now(), j}; const keys = Object.keys(m).sort((a, b) => m[b].t - m[a].t); keys.slice(MEM_MAX).forEach(x => delete m[x]); localStorage.setItem(MEM, JSON.stringify(m)); } catch (e) {}
+  }
   const rated = {}; // thumbs already given this visit (key -> 1 or -1)
   function add(){
     const res = card.querySelector(".result");
@@ -33,26 +42,29 @@
       const j = await r.json().catch(() => ({}));
       if (r.status === 429) throw new Error("Too many explanations from this network in the last hour. Please try again later.");
       if (!r.ok) throw new Error("Explanations aren’t available right now. Please try again later.");
-      done[k] = j; show(box, qi, j, ans, k);
+      done[k] = j; remember(k, j); show(box, qi, j, ans, k);
       const h = box.querySelector(".xhead"); if (h) { h.setAttribute("tabindex", "-1"); h.focus({preventScroll: true}); }
     } catch (e) {
       box.innerHTML = `<p class="muted">${esc(e.message || "Couldn’t load the explanation.")}</p>`;
     }
   }
+  // links to the playbook sections to read for this option (chosen by the site, not the AI), plus the AI's note on what to look for
+  const readHtml = it => it.read && it.read.length ? `<p class="xm-read"><b>Read next:</b> ${it.read.map(x => `<a href="#guide-${esc(x.id)}">${esc(x.title)}</a>`).join(" · ")}${it.read_note ? ` <span class="xm-rn">${esc(it.read_note)}</span>` : ""}</p>` : "";
   function show(box, qi, j, ans, k){
     const q = Q[qi], best3 = q.t === "best3", opt = c => q.o[L.indexOf(c)][0];
     if (j.perfect) { box.innerHTML = `<p class="muted">Nothing to explain: your answer matches the key.</p>`; return; }
     const where = it => best3 ? (it.move === "out" ? "You chose it, but it isn’t one of the best three." : "You didn’t choose it, but it’s one of the best three.")
       : `You put it <b>${it.you}</b>; it belongs <b>${it.key}</b>.`;
-    const anyAi = j.items.some(it => it.source === "ai");
+    const anyAi = !!j.insight || j.items.some(it => it.source === "ai");
     const allWritten = !anyAi;
     const note = j.budget ? `<p class="xm-notice">Today’s AI explanations have run out, so you’re seeing the written explanations. They’ll be back tomorrow.</p>`
       : allWritten && j.items.some(it => it.reason === "unavailable") ? `<p class="xm-notice">AI explanations aren’t available right now, so you’re seeing the written explanations.</p>` : "";
-    const src = anyAi ? (j.items.every(it => it.source === "ai") ? "Reasons written by AI · checked against the key" : "Reasons partly AI, partly written · anything the AI got wrong was replaced by the written version") : "Written explanation";
+    const src = anyAi ? (j.insight && j.items.every(it => it.source === "ai") ? "Written by AI · checked against the key" : "Reasons partly AI, partly written · anything the AI got wrong was replaced by the written version") : "Written explanation";
     box.innerHTML = `<div class="xm-head"><p class="xhead">Where your answer went wrong <span class="xm-tag">Beta</span></p><button type="button" class="xm-hide">Hide</button></div>` + note +
       (j.summary && j.summary.text ? `<p class="xm-sum">${esc(j.summary.text)}</p>` : "") +
       (j.principle ? `<p class="xm-principle"><b>The idea behind it:</b> ${esc(j.principle)}</p>` : "") +
-      j.items.map(it => `<div class="xm-row"><p class="xm-what"><span class="letter">${it.letter}</span> ${opt(it.letter)}</p><p class="xm-pos ${it.move}">${where(it)}</p><p>${it.source === "ai" ? "" : `<span class="xm-wr">Written justification: </span>`}${esc(it.why)}</p></div>`).join("") +
+      (j.insight ? `<p class="xm-insight">${esc(j.insight)}</p>` : "") +
+      j.items.map(it => `<div class="xm-row"><p class="xm-what"><span class="letter">${it.letter}</span> ${opt(it.letter)}</p><p class="xm-pos ${it.move}">${where(it)}</p><p>${it.source === "ai" ? "" : `<span class="xm-wr">Written justification: </span>`}${esc(it.why)}</p>${readHtml(it)}</div>`).join("") +
       (j.right && j.right.length ? `<p class="xm-right">✓ ${best3 ? "Right picks" : "In the right place"}: ${j.right.map(c => `<b>${c}</b>${best3 ? "" : " (" + ORD[q.k.indexOf(c)] + ")"}`).join(", ")}</p>` : "") +
       `<p class="xm-src${anyAi ? "" : " written"}">${src}</p>` +
       (anyAi ? `<p class="xm-caveat">AI explanations can contain mistakes. Check them against the written justifications above.</p>` +

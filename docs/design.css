@@ -597,6 +597,10 @@ html.nd .dragging[data-pos]::before{content:attr(data-pos)}
 .xm-notice{margin:0; padding:8px 12px; border-radius:10px; background:var(--near-soft); color:var(--ink); font-size:0.8438rem}
 .xm-right{margin:2px 0 0; font-size:0.8438rem; color:var(--good)}
 .xm-wr{font-weight:600; color:var(--ink-3)}
+.xm-insight{margin:10px 0 0; font-size:0.9688rem; line-height:1.55}
+.xm-read{margin:6px 0 0; font-size:0.875rem; line-height:1.5}
+.xm-read a{font-weight:600}
+.xm-rn{display:block; color:var(--ink-2); margin-top:2px}
 .xm-principle{margin:0; padding:10px 12px; border-radius:10px; background:var(--surface-2); font-size:0.875rem}
 
 /* the page can't be pushed sideways; on touch screens the number/grip area picks a row up at once, and the rest of the row picks it up after a short hold */
@@ -726,3 +730,15 @@ html.nd-focus .resetrow{display:none!important}
 }
 html.nd .nd-revmis{background:var(--bad-soft); color:var(--bad)}
 html.nd .nd-revmis small{background:var(--bad)}
+
+/* Study plan (Results page) */
+.studyplan .sp-sec{margin-top:14px}
+.studyplan .sp-list{margin:6px 0; padding-left:20px; display:grid; gap:6px; font-size:0.9375rem}
+.studyplan .sp-ai{margin-top:18px; padding-top:14px; border-top:1px solid var(--line)}
+.studyplan .sp-over{margin:0 0 8px; font:600 0.9688rem/1.45 var(--serif)}
+.studyplan .sp-prio{margin:0 0 10px; padding-left:20px; display:grid; gap:10px}
+.studyplan .sp-prio li p{margin:4px 0 0}
+.studyplan .sp-read a{font-weight:600}
+.studyplan .sp-rn{display:block; color:var(--ink-2); margin-top:2px}
+.studyplan .sp-do{color:var(--ink-2)}
+.studyplan .sp-priv{margin:8px 0 0; font-size:0.8125rem}

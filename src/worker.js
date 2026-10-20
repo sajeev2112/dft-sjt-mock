@@ -8,6 +8,7 @@
 //   POST /api/mock      a timed mock started or finished (random run number only; feeds the dashboard's completion rate)
 //   POST /api/sync      save, load or delete progress under a username + PIN (optional cross-device sync; no accounts)
 //   POST /api/explain   "Explain my mistake" (Beta): AI explanation of a wrong answer, checked against the key (see explain.js)
+//   POST /api/study-plan  "Study plan" (Beta): an AI-written revision plan from the trainee's own statistics (numbers and codes only; see studyplan.js)
 //   POST /api/explain-feedback  thumbs up/down on an explanation (question, answer letters, +1/-1; no free text)
 //   GET  /api/admin     private dashboard data; needs "Authorization: Bearer <ADMIN_KEY>" (a Worker secret)
 //   GET  /api/health    uptime check used by the GitHub Actions alert workflow (counts only, no messages)
@@ -20,11 +21,12 @@ const QTYPES = "rbrrbrrbrbrbrbrrrbrbrbrbrbrrrbbrrbrbrrbrbrbrbrbrbrrbrbrbrbrbrrbr
 // TYPES:end
 
 import { explainHandler, analyse, DAILY_NEURON_CAP } from "./explain.js";
+import { studyPlanHandler } from "./studyplan.js";
 import BANK from "./explain-bank.js";
 
 const CORS_ORIGINS = ["https://sajeev2112.github.io"];
 // Hourly limits per network and endpoint. Generous enough for a whole class on shared Wi-Fi.
-const LIMITS = {answers: 3000, feedback: 100, visit: 600, error: 20, admin: 60, sync: 600, create: 20, explain: 40, explainfb: 60, mock: 120};
+const LIMITS = {answers: 3000, feedback: 100, visit: 600, error: 20, admin: 60, sync: 600, create: 20, explain: 40, explainfb: 60, mock: 120, plan: 12};
 const MIN_STATS = 3;
 
 let schemaReady = false;
@@ -78,6 +80,7 @@ export default {
       if (url.pathname === "/api/sync" && request.method === "POST") return await sync(request, env, ctx, cors);
       if (url.pathname === "/api/admin" && request.method === "GET") return await admin(request, env, ctx, cors);
       if (url.pathname === "/api/explain" && request.method === "POST") return await explainHandler(request, env, ctx, cors, {allow, readJson, json});
+      if (url.pathname === "/api/study-plan" && request.method === "POST") return await studyPlanHandler(request, env, ctx, cors, {allow, readJson, json});
       if (url.pathname === "/api/explain-feedback" && request.method === "POST") return await explainFeedback(request, env, ctx, cors);
       return json({error: "not_found"}, 404, cors);
     } catch (err) {

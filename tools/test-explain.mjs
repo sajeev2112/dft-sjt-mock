@@ -9,13 +9,16 @@ const tick = () => new Promise(r => setTimeout(r, 2));
 class Stmt { constructor(s){this.sql=s;this.args=[];} bind(...a){this.args=a;return this;}
   async run(){ await tick(); db.prepare(this.sql).run(...this.args); return {}; } async first(){ await tick(); return db.prepare(this.sql).get(...this.args) ?? null; }
   exec(){ const s=db.prepare(this.sql); return /^\s*(SELECT|INSERT.*RETURNING)/i.test(this.sql)?{results:s.all(...this.args)}:(s.run(...this.args),{results:[]}); } }
-let aiCalls = 0;
+let aiCalls = 0, failMode = false;
 const AI = { run: async (id, input) => { aiCalls++; await tick();
   const u = input.messages ? input.messages[1].content : input.input;
+  if (failMode) return {response: "sorry, no JSON here", usage: {input_tokens: 100, output_tokens: 10}};
   if (/Which explanations are wrong/.test(u)) return {response: "NONE", usage: {prompt_tokens: 900, completion_tokens: 2}};
   const p = JSON.parse(u);
-  return {response: JSON.stringify({summary: "You put reporting Tom too high and a quiet word with him too low. Talk to the person first, and keep things proportionate.",
-    reasons: p.focus.map(c => ({letter: c, why: `${c} belongs where the key puts it because it handles Tom's request proportionately and keeps the matter local first.`}))}), usage: {input_tokens: 1500, output_tokens: 300}};
+  const long = "This matters because it handles the request proportionately, keeps the matter local first and gives the person a chance to put things right before anyone else is involved, which is exactly the reasoning the official justification gives for where the key places it.";
+  const titles = Object.keys(p.playbook_sections || {});
+  return {response: JSON.stringify({summary: "Your answer shows an instinct to escalate early and to protect yourself, which is understandable, but the key rewards speaking to the person first and keeping things proportionate. " + long,
+    reasons: p.focus.map(c => ({letter: c, why: `${c} belongs where the key puts it. ` + long, read: "Read " + (titles[0] || "the playbook") + " and look at how it describes the order in which to act."}))}), usage: {input_tokens: 1500, output_tokens: 300}};
 } };
 const waits = []; const ctx = {waitUntil: p => waits.push(p)};
 const env = { DB: { prepare: s => new Stmt(s), batch: async st => { await tick(); return st.map(x => x.exec()); } }, AI };
@@ -28,14 +31,19 @@ const q1 = BANK[0], rev = [...q1.k].reverse().join("");
 let [s, j] = await call({q: 1, answer: q1.k}); ok(s === 200 && j.perfect, "perfect answer needs no explanation");
 [s, j] = await call({q: 1, answer: "AAB"}); ok(s === 400, "bad answer rejected");
 [s, j] = await call({q: 1, answer: rev}); const first = aiCalls;
-ok(s === 200 && j.items.length === 2 && j.items.every(i => i.source === "ai") && j.summary.source === "written" && first === 2, "reasons explained by the AI (writer + checker); headline is written by code");
-ok(/^You scored \d+ out of 20\. Most marks went on [A-E]( and [A-E])?\.$/.test(j.summary.text), "ranking headline: score and where the marks went");
+ok(s === 200 && j.items.length === 3 && j.items.every(i => i.source === "ai") && j.summary.source === "written" && first === 2, "reasons explained by the AI (writer + checker); headline is written by code");
+ok(/^You scored \d+ out of 20\. Most marks went on [A-E](, [A-E])*( and [A-E])?\.$/.test(j.summary.text), "ranking headline: score and where the marks went");
 ok(j.principle === q1.tk, "principle comes from the written bank");
 ok(!("model_why" in j.items[0]) && !("fails" in j.items[0]), "internal check details aren't sent to the browser");
 const used = db.prepare("SELECT n FROM ai_usage").get().n;
 ok(used > 0 && used < 140, `real cost settled after the call (${used.toFixed(1)} neurons)`);
 [s, j] = await call({q: 1, answer: rev}, "2.2.2.2"); ok(j.cached && aiCalls === first, "same answer from someone else: served from the cache, no AI call");
 ok(/^You scored 8 out of 12\. You chose [A-H], which isn’t in the best three, and you missed [A-H], which is\.$/.test(h1), "best-three headline: " + h1);
+// an explanation the AI did not help write is not stored for reuse, so the next person gets a fresh attempt
+failMode = true; const bq = BANK[5], bans = [...bq.k].reverse().join("");
+[s, j] = await call({q: 6, answer: bans}, "8.1.1.1"); ok(j.items.every(i => i.source === "fallback"), "AI reply unusable: written fallback shown");
+ok(!db.prepare("SELECT 1 FROM explain_cache WHERE k LIKE '6|%'").get(), "an all-written fallback is not stored in the shared cache");
+failMode = false; [s, j] = await call({q: 6, answer: bans}, "8.1.1.2"); ok(j.items.some(i => i.source === "ai") && !!db.prepare("SELECT 1 FROM explain_cache WHERE k LIKE '6|%'").get(), "next attempt is explained by the AI and stored");
 // cap: near the limit, written explanations, labelled
 db.prepare("UPDATE ai_usage SET n = 9450").run();
 [s, j] = await call({q: 3, answer: [...BANK[2].k].reverse().join("")}); ok(j.budget && j.items.every(i => i.source === "fallback" && i.reason === "budget"), "past the daily cap: written explanations, marked as such");

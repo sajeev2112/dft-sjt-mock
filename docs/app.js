@@ -30,7 +30,7 @@ function shuffle(a){ a = a.slice(); for (let i = a.length - 1; i > 0; i--) { con
 // ---------- state ----------
 const STORE = "dft-sjt-mock-v5", V4 = "dft-sjt-mock-v4";
 function newSet(extra){ return Object.assign({ans:{}, chk:{}, marked:false, el:0, cur:0, mode:"practice", logged:false}, extra || {}); }
-function fresh(){ return {v:5, ts:0, cid:uid(), share:true, view:"practice", setId:"p1", sets:{p1:newSet(), p2:newSet(), p3:newSet(), p4:newSet(), p5:newSet(), p6:newSet(), p7:newSet(), custom:null}, att:{}, days:{}, hist:[], sent:{}, outbox:[], fb:{}, flags:{}}; }
+function fresh(){ return {v:5, ts:0, cid:uid(), share:true, view:"practice", setId:"p1", sets:{p1:newSet(), p2:newSet(), p3:newSet(), p4:newSet(), p5:newSet(), p6:newSet(), p7:newSet(), custom:null}, att:{}, days:{}, hist:[], sent:{}, outbox:[], fb:{}, flags:{}, plan:null}; }
 let S = fresh();
 // Rebuilds state from untrusted JSON (localStorage, IndexedDB or a pasted progress code),
 // keeping only well-formed values so nothing odd can reach the page or crash rendering.
@@ -83,7 +83,17 @@ function normalise(o){
   for (const k of Object.keys(o.fb || {})) { const i = +k; if (isQi(i)) s.fb[i] = 1; }
   for (const k of Object.keys(o.flags || {})) { const i = +k; if (isQi(i) && o.flags[k]) s.flags[i] = 1; }
   s.outbox = (Array.isArray(o.outbox) ? o.outbox : []).filter(x => x && Number.isInteger(x.q) && x.q >= 1 && x.q <= Q.length && typeof x.a === "string" && /^[0-7]{3,5}$/.test(x.a)).slice(-300);
+  s.plan = cleanPlan(o.plan);
   return s;
+}
+// The AI study plan is personal to you, so it is saved with your progress (and goes to your Sync account with it).
+function cleanPlan(p){
+  if (!p || typeof p !== "object" || !p.plan || typeof p.plan !== "object") return null;
+  const t = (v, n) => typeof v === "string" ? v.slice(0, n) : "";
+  const pl = p.plan, pr = Array.isArray(pl.priorities) ? pl.priorities.slice(0, 3) : [];
+  if (!t(pl.overview, 1500) || !pr.length) return null;
+  return {at: num(p.at, 1e14), sig: t(p.sig, 40), plan: {overview: t(pl.overview, 1500), this_week: t(pl.this_week, 1500), priorities: pr.map(x => ({focus: t(x && x.focus, 120), why: t(x && x.why, 1500), read: t(x && x.read, 1500), do: t(x && x.do, 1500),
+    sections: (Array.isArray(x && x.sections) ? x.sections : []).slice(0, 3).map(y => ({id: t(y && y.id, 12), title: t(y && y.title, 80)}))}))}};
 }
 // The question bank was rewritten in September 2026, so saved answers from v4 no longer match the options.
 // Keep the browser code, sharing choice and progress history; start the papers fresh.
@@ -722,10 +732,11 @@ function renderResults(){
     <div class="tile"><span class="tl">Average score</span><span class="tv">${pct(g, m)}%</span></div>
     <div class="tile"><span class="tl">Strongest area</span><span class="tv sm">${bestD ? DOMAINS[bestD] : "–"}</span></div>
     <div class="tile"><span class="tl">Completed sets</span><span class="tv">${S.hist.length}</span></div></div>`;
-  if (weakest.length) {
+  if (weakest.length && !(window.StudyPlan && StudyPlan.enough())) { // the study plan below shows these, with the same buttons, once there are enough answers
     h += `<div class="callout"><p class="xhead">Your weakest themes</p>` + weakest.map(t => `<div class="wrow"><span><b>${THEMES[t]}</b> · ${pct(byG[t].g, byG[t].m)}% over ${byG[t].n} question${byG[t].n === 1 ? "" : "s"}</span><span class="row"><a class="btn small" href="#guide-${t}">Read playbook</a><button type="button" class="btn small primary" data-act="build" data-kind="theme" data-arg="${t}">Practise</button></span></div>`).join("") + `</div>`;
   }
   { const nm = mistakesList().length; if (nm) h += `<div class="callout"><p class="xhead">My mistakes</p><div class="wrow"><span>${nm} question${nm === 1 ? "" : "s"} where your latest attempt lost marks.</span><button type="button" class="btn small primary" data-act="build" data-kind="mistakes">Quiz my ${Math.min(20, nm)}</button></div></div>`; }
+  if (window.StudyPlan) h += StudyPlan.html();
   h += activityHtml();
   h += `<h3 class="bsub">Progress over time</h3>` + progressChart();
   h += `<h3 class="bsub">By area</h3><div class="doms wide">` + Object.keys(DOMAINS).map(d => { const x = byD[d]; return `<div class="dom"><span>${DOMAINS[d]} <small class="muted">${x.n}/${x.total}</small></span><span>${x.n ? pct(x.g, x.m) + "%" : "–"}</span><div class="bar"><i style="width:${pct(x.g, x.m)}%"></i></div></div>`; }).join("") + `</div>`;

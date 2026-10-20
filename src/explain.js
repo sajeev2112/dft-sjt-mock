@@ -12,6 +12,7 @@
 // Cost control: a daily neuron cap (kept in D1, reserved before each call), a shared cache so a given answer is only
 // explained once, and a per-network hourly limit. Past the cap, people get the written explanations until the next day.
 import BANK from "./explain-bank.js";
+import { SECTIONS, TAG_READ, OPT_TAGS, QG, THEMES } from "./study-data.js";
 
 const L = "ABCDEFGH";
 const MODELS = {"gpt-oss-120b": "@cf/openai/gpt-oss-120b", "llama-3.3-70b": "@cf/meta/llama-3.3-70b-instruct-fp8-fast", "qwen3.8-27b": "@cf/qwen/qwen3.8-27b", "gpt-oss-20b": "@cf/openai/gpt-oss-20b"};
@@ -22,10 +23,24 @@ function neuronsFor(modelKey, inTok, outTok) { const [a, b] = NEURONS[modelKey] 
 const MODEL = "gpt-oss-120b", VERIFIER = "llama-3.3-70b";
 export const DAILY_NEURON_CAP = 9500; // the free plan allows 10,000 a day (resets at 00:00 UTC)
 const RESERVE = 140;                   // set aside before each explanation; the real cost is settled afterwards
-const CACHE_VERSION = "v3";
+const CACHE_VERSION = "v4";
 // Testing on 4 Oct 2026 used most of that day's free allowance on the same Cloudflare account, so live AI calls start
 // the next day (UTC); until then the button shows the written explanations.
 const AI_START_DAY = "2026-10-05";
+
+// Reserves part of today's free allowance atomically, so simultaneous requests can't push past the cap. Returns the day, or null
+// if the cap (or the not-yet-started date) means no AI call should be made. Shared with the study plan (studyplan.js).
+export async function reserveNeurons(env, amount) {
+  const day = new Date().toISOString().slice(0, 10);
+  if (day < AI_START_DAY) return null;
+  await env.DB.prepare("INSERT OR IGNORE INTO ai_usage (day, n) VALUES (?, 0)").bind(day).run();
+  const held = await env.DB.prepare("UPDATE ai_usage SET n = n + ?1 WHERE day = ?2 AND n + ?1 <= ?3 RETURNING n").bind(amount, day, DAILY_NEURON_CAP).first();
+  return held ? day : null;
+}
+// Replaces the reservation with what the call really cost.
+export async function settleNeurons(env, day, reserved, actual) {
+  await env.DB.prepare("UPDATE ai_usage SET n = n - ?1 + ?2 WHERE day = ?3").bind(reserved, actual, day).run();
+}
 
 // POST /api/explain {q, answer}: q is the site-wide question number, answer the displayed letters.
 export async function explainHandler(request, env, ctx, cors, {allow, readJson, json}) {
@@ -34,10 +49,11 @@ export async function explainHandler(request, env, ctx, cors, {allow, readJson, 
   if (!q) return json({error: "bad_question"}, 400, cors);
   const facts = analyse(q, String(body.answer || "").toUpperCase());
   if (!facts) return json({error: "bad_answer"}, 400, cors);
+  facts.qn = qn;
   const base = {ok: true, q: qn, answer: facts.answer, marks: facts.marks, max: facts.max, right: facts.right, principle: q.tk};
   if (!facts.items.length) return json({...base, perfect: true}, 200, cors);
   const written = reason => json({...base, budget: reason === "budget", summary: {text: headline(q, facts), source: "written"},
-    items: facts.items.filter(it => facts.focus.includes(it.letter)).map(it => ({...it, why: fallback(q, it), source: "fallback", reason}))}, 200, cors);
+    items: facts.items.filter(it => facts.focus.includes(it.letter)).map(it => ({...it, why: fallback(q, it), source: "fallback", reason, read: readFor(facts, it.letter)}))}, 200, cors);
 
   const key = `${qn}|${facts.answer}|${CACHE_VERSION}`;
   const hit = await env.DB.prepare("SELECT v FROM explain_cache WHERE k = ?").bind(key).first();
@@ -45,18 +61,15 @@ export async function explainHandler(request, env, ctx, cors, {allow, readJson, 
   if (!env.AI) return written("unavailable");
   if (!(await allow(request, env, ctx, 1, "explain"))) return json({error: "rate_limited"}, 429, cors);
 
-  // reserve part of today's allowance atomically, so simultaneous requests can't push past the cap
-  const day = new Date().toISOString().slice(0, 10);
-  if (day < AI_START_DAY) return written("budget");
-  await env.DB.prepare("INSERT OR IGNORE INTO ai_usage (day, n) VALUES (?, 0)").bind(day).run();
-  const held = await env.DB.prepare("UPDATE ai_usage SET n = n + ?1 WHERE day = ?2 AND n + ?1 <= ?3 RETURNING n").bind(RESERVE, day, DAILY_NEURON_CAP).first();
-  if (!held) return written("budget");
+  const day = await reserveNeurons(env, RESERVE);
+  if (!day) return written("budget");
   let out;
   try { out = await explain(env, q, facts, MODEL, VERIFIER); }
-  finally { await env.DB.prepare("UPDATE ai_usage SET n = n - ?1 + ?2 WHERE day = ?3").bind(RESERVE, out ? out.neurons : RESERVE, day).run(); }
+  finally { await settleNeurons(env, day, RESERVE, out ? out.neurons : RESERVE); }
   for (const it of out.items) if (it.source === "fallback") it.reason = "check";
-  const result = {...base, summary: {text: out.summary.text, source: out.summary.source}, items: out.items.map(({model_why, fails, ...it}) => it)};
-  if (!out.error) ctx.waitUntil(env.DB.prepare("INSERT OR REPLACE INTO explain_cache (k, v, t) VALUES (?, ?, ?)").bind(key, JSON.stringify(result), Date.now()).run().catch(() => {}));
+  const result = {...base, summary: {text: out.summary.text, source: out.summary.source}, insight: out.insight, items: out.items.map(({model_why, fails, ...it}) => it)};
+  // Stored for everyone with the same answer, but only if the AI actually contributed: an all-written fallback is retried next time.
+  if (!out.error && (out.insight || out.items.some(it => it.source === "ai"))) ctx.waitUntil(env.DB.prepare("INSERT OR REPLACE INTO explain_cache (k, v, t) VALUES (?, ?, ?)").bind(key, JSON.stringify(result), Date.now()).run().catch(() => {}));
   return json(result, 200, cors);
 }
 
@@ -90,35 +103,27 @@ export function analyse(q, answer) {
 // The debrief covers only the biggest mistakes: the two furthest-misplaced options in a ranking; in a best-three, a wrong pick,
 // a missed pick, then (if any) a second wrong pick.
 function focusOf(items, type) {
-  if (type !== "best3") {
-    const hi = items.filter(i => i.off < 0).sort((x, y) => x.off - y.off)[0], lo = items.filter(i => i.off > 0).sort((x, y) => y.off - x.off)[0];
-    return [hi, lo].filter(Boolean).sort((x, y) => Math.abs(y.off) - Math.abs(x.off)).map(i => i.letter);
-  }
+  if (type !== "best3") return items.slice().sort((x, y) => Math.abs(y.off) - Math.abs(x.off)).slice(0, 3).map(i => i.letter); // items are already biggest-error first
   const outs = items.filter(i => i.move === "out"), ins = items.filter(i => i.move === "in");
   const rest = outs.length >= ins.length ? outs.slice(1) : ins.slice(1);
   return [outs[0], ins[0], rest[1] || rest[0]].filter(Boolean).filter((x, i, a) => a.indexOf(x) === i).map(i => i.letter).slice(0, 3);
 }
 
 // ---------- 2. the model explains the whole answer ----------
-const SYSTEM_BASE = `You write the reasons in a short debrief for a UK Dental Foundation Training trainee who has just got a situational judgement question wrong.
-You get the scenario, every option with its CORRECT position and the trainee's position, the official justification for each option, and "focus": the options the trainee got most wrong. The correct positions are settled: never question them.
+const SYSTEM_BASE = `You are a patient tutor writing a worked debrief for a UK Dental Foundation Training trainee who has just got a situational judgement question wrong. They want to understand their thinking, not just see the key. You get the scenario, every option with its CORRECT position, the trainee's position and the official justification, the options they got most wrong ("focus"), and "playbook_sections": extracts from the site's playbook. The correct positions are settled: never question them.
 
-Write JSON with:
-"reasons": for EACH option in the focus list, one entry {"letter","why"}: 18 to 30 words giving the reason it belongs where the key puts it, taken from its justification. Start with the reason, not with the position (the trainee can already see it). State a specific fact from that option's justification: what it does or fails to do. Do not reverse or stretch what the justification says; stay close to its own wording. No filler such as "it completes the best three". COMPARE_LINE
+Reply with JSON only: {"summary":"...","reasons":[{"letter":"X","why":"...","read":"..."}]}
 
-For "Choose the THREE" questions there is no order: never say an option "ranks", "sits above" or "below" another. Say why it is, or is not, one of the best three, and compare it only with options on the other side.
-
-Rules:
-- Use ONLY facts from the scenario and the justifications. Do not add new facts, laws, guidance or standards.
-- If you cite a standard, copy it exactly as written in a justification, e.g. "(Std 4.2.1)", only where it supports the point. Citing none is fine.
-- Whenever you compare with another option, name it by its letter (for example "it ranks below D" or "unlike B"), and the comparison must agree with the correct positions.
-- No hedging ("arguably", "might"), no overclaiming ("guarantees", "always") unless a justification says so.
-- British English spelling, speaking to the trainee as "you".
-Reply with JSON only: {"reasons":[{"letter":"X","why":"..."}]}`;
+- "summary": 3 to 5 sentences, 45 to 110 words. Say plainly what pattern the answer shows (what the trainee seems to have put first, and what they under-valued), why that instinct is understandable, and the one idea that fixes it. You may interpret ("this suggests you were prioritising..."), but base it on the options and justifications, and never imply the key is debatable.
+- "reasons": for EACH option in the focus list, one entry. "why": 3 to 5 sentences, 45 to 110 words. Explain what the option really does in this scenario, the fact or consequence from its justification that decides its position, why a sensible trainee might have placed it differently and what that overlooks, and how it compares with its "compare_with" option (by letter). Teach the reasoning so the trainee can apply it to the next question. "read": one sentence (15 to 45 words) naming exactly which playbook section titles from "playbook_sections" to read for this option and what to look for there.
+- Use the facts of the scenario, the justifications and the playbook extracts. Do not add new facts, laws, guidance or standards. If you cite a standard, copy it exactly as in a justification (for example "(Std 4.2.1)"). Do not name outside sources.
+- Never say the correct positions are wrong or arguable.
+COMPARE_LINE
+- British English, speaking to the trainee as "you". No headings or bullet points inside the text.`;
 
 // The comparison instruction depends on the question type: ranking questions compare positions, best-three questions never do.
-const COMPARE_RANK = 'Finish by saying how it compares with its "compare_with" option, naming it by letter (for example "so it ranks below D"); the comparison must agree with the correct positions. The reason must support the direction of the comparison: a drawback explains why it ranks BELOW the other option, an advantage why it ranks ABOVE. Never give a drawback and then say it ranks above, or an advantage and then say it ranks below. Describe the compare_with option by what it actually does (see its text), not by another option\'s action.';
-const COMPARE_B3 = 'This is a choose-three question, so there are no positions. NEVER use the words "rank", "ranks", "above", "below", "higher", "lower" or "too high/low" about any option. Finish by contrasting it with its "compare_with" option by letter, for example "unlike D, which ..." or "whereas D ...", saying what the other option does instead.';
+const COMPARE_RANK = '- Comparisons with other options must agree with the correct positions, and the reasoning must support the direction: a drawback explains why an option ranks BELOW another, an advantage why it ranks ABOVE. Describe the other option by what it actually does.';
+const COMPARE_B3 = '- This is a choose-three question, so there are no positions: NEVER use the words "rank", "ranks", "above", "below", "higher", "lower" or "too high/low" about any option. Say why an option is, or is not, one of the best three, and contrast it with an option on the other side by letter ("unlike D, which ...").';
 const systemFor = q => SYSTEM_BASE.replace("COMPARE_LINE", q.t === "best3" ? COMPARE_B3 : COMPARE_RANK);
 const sumOver = f => f.type === "best3" ? f.over : (f.over || []).filter(c => f.focus.includes(c));
 const sumUnder = f => f.type === "best3" ? f.under : (f.under || []).filter(c => f.focus.includes(c));
@@ -126,6 +131,16 @@ const sumUnder = f => f.type === "best3" ? f.under : (f.under || []).filter(c =>
 function compareWith(q, facts, c) {
   const high = sumOver(facts), low = sumUnder(facts), mine = high.includes(c) ? low : high;
   return mine.find(x => facts.focus.includes(x)) || mine[0];
+}
+// The playbook sections to read for an option: its theme's playbook, plus the general section for the kind of action it describes.
+export function readFor(facts, letter) {
+  const qn = facts.qn, out = [];
+  if (!qn) return out;
+  const theme = QG[qn - 1], tag = OPT_TAGS[qn - 1] && OPT_TAGS[qn - 1][L.indexOf(letter)];
+  if (SECTIONS[theme]) out.push({id: theme, title: SECTIONS[theme].title});
+  const gid = tag && TAG_READ[tag];
+  if (gid && SECTIONS[gid] && !out.some(x => x.id === gid)) out.push({id: gid, title: SECTIONS[gid].title});
+  return out;
 }
 function promptFor(q, facts) {
   const typeLine = q.t === "best3" ? "Choose the THREE most appropriate actions." : q.t === "consider" ? "Rank the considerations from most to least important." : "Rank the actions from most to least appropriate.";
@@ -136,15 +151,16 @@ function promptFor(q, facts) {
     const correctPos = q.t === "best3" ? (q.k.includes(c) ? "one of the best three" : "not one of the best three") : ORD[q.k.indexOf(c)];
     const yourPos = q.t === "best3" ? (facts.answer.includes(c) ? "chosen" : "not chosen") : ORD[facts.answer.indexOf(c)];
     const out = {letter: c, text: o[0], correct_position: correctPos, your_position: yourPos, justification: o[1]};
-    if (facts.focus.includes(c)) out.compare_with = compareWith(q, facts, c);
+    if (facts.focus.includes(c)) { out.compare_with = compareWith(q, facts, c); out.read_sections = readFor(facts, c).map(x => x.title); }
     return out;
   }).slice(0, n);
   const brief = c => `${c}: ${q.o[L.indexOf(c)][0]}`;
+  const playbook = {}; for (const c of facts.focus) for (const x of readFor(facts, c)) playbook[SECTIONS[x.id].title] = SECTIONS[x.id].text;
   return JSON.stringify({question_type: typeLine, scenario: q.s, principle: q.tk, correct_order: correct, options, focus: facts.focus,
-    over_valued: sumOver(facts).map(brief), under_valued: sumUnder(facts).map(brief)}, null, 1);
+    over_valued: sumOver(facts).map(brief), under_valued: sumUnder(facts).map(brief), playbook_sections: playbook}, null, 1);
 }
 
-async function runModel(env, modelKey, system, user, maxTokens) {
+export async function runModel(env, modelKey, system, user, maxTokens) {
   const id = MODELS[modelKey];
   let r;
   if (/gpt-oss/.test(id)) r = await env.AI.run(id, {instructions: system, input: user, reasoning: {effort: "low"}});
@@ -165,7 +181,7 @@ function textOf(r) {
   if (r.choices && r.choices[0]) return r.choices[0].message?.content || r.choices[0].text || "";
   return "";
 }
-function parseJson(text) {
+export function parseJson(text) {
   const t = String(text).replace(/<think>[\s\S]*?<\/think>/g, "").replace(/^```(?:json)?|```$/gm, "").trim();
   const s = t.indexOf("{"), e = t.lastIndexOf("}");
   if (s < 0 || e < s) return null;
@@ -174,7 +190,7 @@ function parseJson(text) {
 
 // ---------- 3. guardrails ----------
 // named laws, bodies and guidance (case-sensitive, so the ordinary words "act" or "nice" don't count)
-const SOURCES = /\b(MCA|Mental Capacity Act|[A-Z][a-z]+ Act|NICE|Gillick|Fraser|Caldicott|CQC|GDPR|Data Protection|DH|Department of Health|Resuscitation Council|SDCEP|BDA|NHS England|[Ss]afeguarding toolkit|[Cc]andour guidance|[Rr]aising concerns guidance|[Ss]ocial media guidance|[Ss]cope of practice guidance)\b/g;
+export const SOURCES = /\b(MCA|Mental Capacity Act|[A-Z][a-z]+ Act|NICE|Gillick|Fraser|Caldicott|CQC|GDPR|Data Protection|DH|Department of Health|Resuscitation Council|SDCEP|BDA|NHS England|[Ss]afeguarding toolkit|[Cc]andour guidance|[Rr]aising concerns guidance|[Ss]ocial media guidance|[Ss]cope of practice guidance)\b/g;
 const HEDGES = /\b(arguably|equally (good|valid|appropriate)|both (are|options are) (equally|just as)|might be better|could be argued|the key (is|may be) wrong|I think|in my opinion)\b/i;
 function stdNumbers(text) { return [...String(text).matchAll(/\b(?:Std|Standards?)\s+([\d.]+(?:\s*(?:,|and|–|-|;)\s*[\d.]+)*)/g)].flatMap(m => m[1].split(/\s*(?:,|and|–|-|;)\s*/)).map(s => s.replace(/\.$/, "")).filter(Boolean); }
 // "X ... above/ahead of/over/beats Y" and "X ... below/behind/after Y" must agree with the key
@@ -212,8 +228,8 @@ function copiedFrom(q, why, run = 6) {
   for (const o of q.o) { const ow = wordsOf(o[0]); for (let i = 0; i + run <= ow.length; i++) { const seg = ow.slice(i, i + run).join(" "); for (let j = 0; j + run <= w.length; j++) if (w.slice(j, j + run).join(" ") === seg) return true; } }
   return false;
 }
-export function check(q, why, minWords = 12, maxWords = 60, subject = null, noCopy = false) {
-  const fails = [], src = q.s + " " + q.o.map(o => o.join(" ")).join(" ");
+export function check(q, why, minWords = 12, maxWords = 60, subject = null, noCopy = false, extra = "") {
+  const fails = [], src = q.s + " " + q.o.map(o => o.join(" ")).join(" ") + " " + extra;
   if (noCopy && copiedFrom(q, why)) fails.push("copies the option wording instead of paraphrasing");
   if (noCopy && /\bOption [A-H]\b|\([A-H]\)|(?<![A-Za-z&’'\/-])[B-H](?![A-Za-z&’'\/])/.test(why)) fails.push("mentions an option letter in the summary");
   why = String(why || "").trim();
@@ -265,43 +281,51 @@ function fallback(q, item) { return q.o[L.indexOf(item.letter)][1]; }
 export async function explain(env, q, facts, modelKey, verifierKey) {
   const meter = {n: 0};
   const user = promptFor(q, facts);
-  let out = null, raw = "", error = null;
+  const playbookText = facts.focus.flatMap(c => readFor(facts, c)).map(x => SECTIONS[x.id].text).join(" ");
+  let out = null, error = null;
   for (let attempt = 0; attempt < 2 && !out; attempt++) {
     try {
-      const r = await runModel(env, modelKey, systemFor(q), attempt ? user + "\n\nYour last reply was not valid JSON in the required shape. Reply with the JSON object only." : user, 900);
-      raw = r.text; meter.n += r.usage.neurons;
-      const p = parseJson(raw); if (p && Array.isArray(p.reasons)) out = p;
+      const r = await runModel(env, modelKey, systemFor(q), attempt ? user + "\n\nYour last reply was not valid JSON in the required shape. Reply with the JSON object only." : user, 1800);
+      meter.n += r.usage.neurons;
+      const p = parseJson(r.text); if (p && Array.isArray(p.reasons)) out = p;
     } catch (e) { error = String(e && e.message || e); }
   }
-  const items = facts.items.filter(it => facts.focus.includes(it.letter)).map(it => {
+  const tidy = t => String(t || "").trim().replace(/(\d) %/g, "$1%");
+  const mk = it => {
     const r = out && out.reasons.find(x => x && String(x.letter).toUpperCase() === it.letter);
-    const why = r && typeof r.why === "string" ? british(r.why.trim()) : "";
-    return {...it, model_why: why, fails: r ? check(q, why, 10, 45, it.letter) : ["missing"]};
-  });
-  // second opinion on everything that passed the rule checks
+    const why = r && typeof r.why === "string" ? british(tidy(r.why)) : "";
+    const titles = readFor(facts, it.letter).map(x => x.title), note = r && typeof r.read === "string" ? british(tidy(r.read)) : "";
+    return {...it, model_why: why, read_note: titles.some(t => note.includes(t)) ? note : "", read: readFor(facts, it.letter), fails: r ? check(q, why, 30, 130, it.letter, false, playbookText) : ["missing"]};
+  };
+  const items = facts.items.filter(it => facts.focus.includes(it.letter)).map(mk);
+  const sumText = out && typeof out.summary === "string" ? british(tidy(out.summary)) : "";
+  const insight = {model_why: sumText, fails: sumText ? check(q, sumText, 30, 130, null, false, playbookText) : ["missing"]};
   const verify = async list => {
     const entries = list.map((e, i) => ({i, text: e.model_why, letter: e.letter, e})).filter(x => !x.e.fails.length);
     if (entries.length) { const bad = await verifyAll(env, verifierKey, q, entries, facts, meter); bad.forEach(k => entries[k].e.fails.push("verifier rejected")); }
   };
-  await verify(items);
-  // one repair pass: tell the writer exactly what was wrong with each rejected reason and let it try once more
-  const failed = items.filter(it => it.fails.length && !it.fails.includes("missing"));
+  await verify([insight, ...items]);
+  // one repair pass: tell the writer what was wrong with each rejected part and let it try once more
+  const failed = [insight, ...items].filter(e => e.fails.length && !e.fails.includes("missing"));
   if (out && failed.length) {
     try {
-      const notes = failed.map(it => `${it.letter}: "${it.model_why}" was rejected because ${it.fails.map(f => f === "verifier rejected" ? "a checker found it inconsistent with the correct order or the justifications" : f).join("; ")}.`).join("\n");
-      const r = await runModel(env, modelKey, systemFor(q), user + `\n\nThese reasons were rejected:\n${notes}\nRewrite ONLY those reasons so they follow every rule. Reply with JSON only: {"reasons":[{"letter":"X","why":"..."}]}`, 600);
+      const why = f => f === "verifier rejected" ? "a checker found it inconsistent with the correct order or the justifications" : f;
+      const notes = failed.map(e => `${e.letter ? "reason for " + e.letter : "summary"}: "${e.model_why}" was rejected because ${e.fails.map(why).join("; ")}.`).join("\n");
+      const r = await runModel(env, modelKey, systemFor(q), user + `\n\nThese parts were rejected:\n${notes}\nRewrite ONLY those parts so they follow every rule. Reply with JSON only, in the same shape ("summary" and/or "reasons" with "letter", "why", "read").`, 1500);
       meter.n += r.usage.neurons;
       const p2 = parseJson(r.text);
-      if (p2 && Array.isArray(p2.reasons)) {
-        for (const it of failed) {
-          const x = p2.reasons.find(y => y && String(y.letter).toUpperCase() === it.letter), why = x && typeof x.why === "string" ? british(x.why.trim()) : "";
-          if (why) { it.model_why = why; it.fails = check(q, why, 10, 45, it.letter); }
+      if (p2) {
+        for (const e of failed) {
+          const t = e.letter ? (Array.isArray(p2.reasons) ? (p2.reasons.find(y => y && String(y.letter).toUpperCase() === e.letter) || {}).why : "") : p2.summary;
+          const text = typeof t === "string" ? british(tidy(t)) : "";
+          if (text) { e.model_why = text; e.fails = check(q, text, 30, 130, e.letter || null, false, playbookText); }
         }
         await verify(failed);
       }
     } catch (e) {}
   }
-  for (const it of items) { it.source = it.fails.length ? "fallback" : "ai"; it.why = it.fails.length ? fallback(q, it) : it.model_why; }
+  for (const it of items) { it.source = it.fails.length ? "fallback" : "ai"; it.why = it.fails.length ? fallback(q, it) : it.model_why; if (it.source !== "ai") it.read_note = ""; }
   const summary = {source: "written", text: headline(q, facts), fails: []};
-  return {summary, items, right: facts.right, principle: q.tk, neurons: Math.round(meter.n * 10) / 10, error: error ? "model_error" : (out ? null : "bad_reply")};
+  const ins = insight.fails.length ? null : insight.model_why;
+  return {summary, insight: ins, items, right: facts.right, principle: q.tk, neurons: Math.round(meter.n * 10) / 10, error: error ? "model_error" : (out ? null : "bad_reply")};
 }
