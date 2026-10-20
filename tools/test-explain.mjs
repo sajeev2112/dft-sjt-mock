@@ -3,6 +3,7 @@ import { DatabaseSync } from "node:sqlite";
 const RealDate = Date; globalThis.Date = class extends RealDate { constructor(...a) { super(...(a.length ? a : [RealDate.now() + 2 * 86400000])); } static now() { return RealDate.now() + 2 * 86400000; } };
 import worker from "../src/worker.js";
 import BANK from "../src/explain-bank.js";
+import { headline, analyse } from "../src/explain.js";
 const db = new DatabaseSync(":memory:");
 const tick = () => new Promise(r => setTimeout(r, 2));
 class Stmt { constructor(s){this.sql=s;this.args=[];} bind(...a){this.args=a;return this;}
@@ -20,16 +21,21 @@ const waits = []; const ctx = {waitUntil: p => waits.push(p)};
 const env = { DB: { prepare: s => new Stmt(s), batch: async st => { await tick(); return st.map(x => x.exec()); } }, AI };
 const call = async (body, ip = "1.1.1.1", e = env) => { const r = await worker.fetch(new Request("https://x.dev/api/explain", {method: "POST", body: JSON.stringify(body), headers: {"CF-Connecting-IP": ip}}), e, ctx); await Promise.all(waits.splice(0)); return [r.status, await r.json()]; };
 let pass = 0, fail = 0; const ok = (c, m) => { if (c) pass++; else { fail++; console.log("FAIL:", m); } };
+const b3 = BANK.find(q => q.t === "best3"), wrong = [..."ABCDEFGH"].filter(c => !b3.k.includes(c));
+const h1 = headline(b3, analyse(b3, wrong.slice(0, 1).concat([...b3.k].slice(0, 2)).join("")));
 const q1 = BANK[0], rev = [...q1.k].reverse().join("");
 
 let [s, j] = await call({q: 1, answer: q1.k}); ok(s === 200 && j.perfect, "perfect answer needs no explanation");
 [s, j] = await call({q: 1, answer: "AAB"}); ok(s === 400, "bad answer rejected");
 [s, j] = await call({q: 1, answer: rev}); const first = aiCalls;
-ok(s === 200 && j.items.length === 2 && j.items.every(i => i.source === "ai") && j.summary.source === "ai" && first === 2, "explained by the AI (writer + checker)");
+ok(s === 200 && j.items.length === 2 && j.items.every(i => i.source === "ai") && j.summary.source === "written" && first === 2, "reasons explained by the AI (writer + checker); headline is written by code");
+ok(/^You scored \d+ out of 20\. Most marks went on [A-E]( and [A-E])?\.$/.test(j.summary.text), "ranking headline: score and where the marks went");
+ok(j.principle === q1.tk, "principle comes from the written bank");
 ok(!("model_why" in j.items[0]) && !("fails" in j.items[0]), "internal check details aren't sent to the browser");
 const used = db.prepare("SELECT n FROM ai_usage").get().n;
 ok(used > 0 && used < 140, `real cost settled after the call (${used.toFixed(1)} neurons)`);
 [s, j] = await call({q: 1, answer: rev}, "2.2.2.2"); ok(j.cached && aiCalls === first, "same answer from someone else: served from the cache, no AI call");
+ok(/^You scored 8 out of 12\. You chose [A-H], which isn’t in the best three, and you missed [A-H], which is\.$/.test(h1), "best-three headline: " + h1);
 // cap: near the limit, written explanations, labelled
 db.prepare("UPDATE ai_usage SET n = 9450").run();
 [s, j] = await call({q: 3, answer: [...BANK[2].k].reverse().join("")}); ok(j.budget && j.items.every(i => i.source === "fallback" && i.reason === "budget"), "past the daily cap: written explanations, marked as such");

@@ -44,16 +44,16 @@
     if (j.perfect) { box.innerHTML = `<p class="muted">Nothing to explain: your answer matches the key.</p>`; return; }
     const where = it => best3 ? (it.move === "out" ? "You chose it, but it isn’t one of the best three." : "You didn’t choose it, but it’s one of the best three.")
       : `You put it <b>${it.you}</b>; it belongs <b>${it.key}</b>.`;
-    const aiSum = j.summary && j.summary.source === "ai", anyAi = aiSum || j.items.some(it => it.source === "ai");
+    const anyAi = j.items.some(it => it.source === "ai");
     const allWritten = !anyAi;
     const note = j.budget ? `<p class="xm-notice">Today’s AI explanations have run out, so you’re seeing the written explanations. They’ll be back tomorrow.</p>`
       : allWritten && j.items.some(it => it.reason === "unavailable") ? `<p class="xm-notice">AI explanations aren’t available right now, so you’re seeing the written explanations.</p>` : "";
-    const src = anyAi ? (aiSum && j.items.every(it => it.source === "ai") ? "AI explanation · checked against the key" : "Partly AI, partly written · anything the AI got wrong was replaced by the written version") : "Written explanation";
+    const src = anyAi ? (j.items.every(it => it.source === "ai") ? "Reasons written by AI · checked against the key" : "Reasons partly AI, partly written · anything the AI got wrong was replaced by the written version") : "Written explanation";
     box.innerHTML = `<div class="xm-head"><p class="xhead">Where your answer went wrong <span class="xm-tag">Beta</span></p><button type="button" class="xm-hide">Hide</button></div>` + note +
       (j.summary && j.summary.text ? `<p class="xm-sum">${esc(j.summary.text)}</p>` : "") +
-      j.items.map(it => `<div class="xm-row"><p class="xm-what"><span class="letter">${it.letter}</span> ${opt(it.letter)}</p><p class="xm-pos ${it.move}">${where(it)}</p><p>${esc(it.why)}</p></div>`).join("") +
+      (j.principle ? `<p class="xm-principle"><b>The idea behind it:</b> ${esc(j.principle)}</p>` : "") +
+      j.items.map(it => `<div class="xm-row"><p class="xm-what"><span class="letter">${it.letter}</span> ${opt(it.letter)}</p><p class="xm-pos ${it.move}">${where(it)}</p><p>${it.source === "ai" ? "" : `<span class="xm-wr">Written justification: </span>`}${esc(it.why)}</p></div>`).join("") +
       (j.right && j.right.length ? `<p class="xm-right">✓ ${best3 ? "Right picks" : "In the right place"}: ${j.right.map(c => `<b>${c}</b>${best3 ? "" : " (" + ORD[q.k.indexOf(c)] + ")"}`).join(", ")}</p>` : "") +
-      (j.principle && !aiSum ? `<p class="xm-principle"><b>Principle:</b> ${esc(j.principle)}</p>` : "") +
       `<p class="xm-src${anyAi ? "" : " written"}">${src}</p>` +
       (anyAi ? `<p class="xm-caveat">AI explanations can contain mistakes. Check them against the written justifications above.</p>` +
         `<div class="xm-fb"><button type="button" class="xm-up" data-r="1" aria-label="This explanation helped">👍</button><button type="button" class="xm-down" data-r="-1" aria-label="This explanation didn’t help">👎</button><p class="xm-thanks" role="status" aria-live="polite"></p></div>` : "");

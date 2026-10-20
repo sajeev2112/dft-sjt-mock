@@ -59,7 +59,7 @@ for (let i = 0; i < 120 && !first429; i++) {
   const [st] = await call("POST", "/api/answers", {client: "v6-" + i + "-abcdefgh", items: ranks}, {"CF-Connecting-IP": ip});
   if (st === 429) first429 = i + 1;
 }
-console.log(JSON.stringify(["ipv6 /64 rate limited at post", first429, "(expect ~" + Math.ceil(3000 / ranks.length) + ")"]));
+console.log(JSON.stringify(["ipv6 /64 rate limited at post", first429, "(expect ~" + Math.ceil(3000 / Math.min(100, ranks.length)) + ", as the Worker reads at most 100 answers per post)"]));
 const [otherNet] = await call("POST", "/api/answers", {client: "v6-other-abcdefgh", items: ranks}, {"CF-Connecting-IP": "2001:db8:9:9::1"});
 console.log(JSON.stringify(["different /64 still allowed", otherNet]));
 const [fbOk] = await call("POST", "/api/feedback", {client: "v6-0-abcdefgh", q: 1, comment: "x"}, {"CF-Connecting-IP": "2001:db8:1:2::5"});

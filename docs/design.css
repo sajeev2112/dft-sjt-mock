@@ -596,6 +596,7 @@ html.nd .dragging[data-pos]::before{content:attr(data-pos)}
 .xm-sum{margin:0; font:600 0.9688rem/1.45 var(--serif)}
 .xm-notice{margin:0; padding:8px 12px; border-radius:10px; background:var(--near-soft); color:var(--ink); font-size:0.8438rem}
 .xm-right{margin:2px 0 0; font-size:0.8438rem; color:var(--good)}
+.xm-wr{font-weight:600; color:var(--ink-3)}
 .xm-principle{margin:0; padding:10px 12px; border-radius:10px; background:var(--surface-2); font-size:0.875rem}
 
 /* the page can't be pushed sideways; on touch screens the number/grip area picks a row up at once, and the rest of the row picks it up after a short hold */

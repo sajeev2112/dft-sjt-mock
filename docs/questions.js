@@ -90,7 +90,7 @@ const RW_1_1 = [
     "Patients should know how to give feedback (Std 5.1.5), but raising it now is premature while you have not yet tried to resolve the problem yourself, so it is not one of the best three."
    ]
   ],
-  "tk": "Unhappy-patient items: acknowledge, examine, then agree a plan. Reassurance, free remakes and handovers all jump ahead of finding the cause."
+  "tk": "Unhappy-patient items: acknowledge, examine, then agree a plan. Reassurance, free remakes and relines all jump ahead of finding the cause."
  },
  {
   "t": "rank",
@@ -1029,7 +1029,7 @@ const RW_1_4 = [
     "Useful practical support towards the proper channel, her employer, but it follows from first understanding what she wants, so it ranks below listening and exploring her options (GDC raising concerns guidance)."
    ]
   ],
-  "tk": "When a colleague discloses harassment in confidence, listen and explore her options first; don’t take over or share it against her wishes unless others are at risk."
+  "tk": "When a colleague discloses harassment in confidence, listen and explore her options first and offer support; don’t take over, coach a confrontation or share it against her wishes."
  },
  {
   "t": "best3",
@@ -1350,7 +1350,7 @@ const RW_2_1 = [
     "Shapes how firmly you respond and whether to escalate, but not whether to act, as a single remark still needs challenging (Std 8.2.1); it outranks the policy route, which it helps you choose."
    ]
   ],
-  "tk": "Discrimination items: patient impact and the duty to challenge come first; patterns, policies and relationships shape how you respond, not whether you do."
+  "tk": "Discrimination items: the duty to challenge and the impact on patients come first; patterns, policies and relationships shape how you respond, not whether you do."
  },
  {
   "t": "best3",
@@ -1392,7 +1392,7 @@ const RW_2_1 = [
     "May be right eventually, but supporting his decision and assessing capacity come first, and referring now skips both while he stays in pain (MCA principle 2)."
    ]
   ],
-  "tk": "Capacity items: presume capacity, support the patient to decide and follow the best-interests process; involving carers, GPs, seniors or specialists helps but doesn’t replace those steps."
+  "tk": "Capacity items: presume capacity, help the patient decide using those who know how he communicates, and be clear no one else can consent on his behalf; referrals and best-interests steps come too early."
  },
  {
   "t": "rank",
@@ -1422,7 +1422,7 @@ const RW_2_1 = [
     "Following the scheme’s sickness policy keeps your ES and TPD informed, but it can wait until the patients affected today have been looked after; it outranks offering an extra session, which is optional."
    ]
   ],
-  "tk": "Your-health items: report sickness early and properly, then soften the impact on patients; returning too soon or giving up your own time are well-meant but secondary or unsafe."
+  "tk": "Your-health items: report sickness early, soften the impact on patients, then follow the formal sickness policy; returning too soon or giving up your own time are well-meant but secondary or unsafe."
  }
 ];
 
@@ -1569,7 +1569,7 @@ const RW_2_2 = [
     "Gets you support and a consistent practice approach to discriminatory behaviour, but it happens afterwards and does nothing for her pain, so it ranks below offering treatment yourself; it still beats handing her to the manager or a colleague."
    ]
   ],
-  "tk": "When a patient rejects you on discriminatory grounds, offer care calmly yourself and seek support afterwards; handing it to others, however kindly, accommodates the prejudice."
+  "tk": "When a patient rejects you on discriminatory grounds, offer care calmly yourself, then a later slot with someone else if she still refuses, and seek support afterwards; arranging others to see her now accommodates the prejudice."
  },
  {
   "t": "best3",
@@ -1932,7 +1932,7 @@ const RW_2_3 = [
     "Offering a refund before hearing the concern is premature; a fair remedy follows investigation of a justified complaint rather than coming first (Std 5.2.1, 5.3.9)."
    ]
   ],
-  "tk": "Online-criticism items: take it offline through the practice, treat it as a complaint and reflect; personal public replies and removal requests come second."
+  "tk": "Online-criticism items: tell the practice so it runs as a complaint, take defence advice before anyone replies, and reflect; public replies and removal requests come second."
  },
  {
   "t": "rank",
@@ -1962,7 +1962,7 @@ const RW_2_3 = [
     "Makes your own position clear, but in public, which can read as a group reprimand, and leaves the organiser unaware the assessment is compromised; it still acts sooner than waiting for a tutorial (Std 1.3.1)."
    ]
   ],
-  "tk": "Peer-dishonesty items: keep your own hands clean, speak privately first, then make sure the organiser knows; checking the material yourself is the trap."
+  "tk": "Peer-dishonesty items: keep your own hands clean, make sure the organiser knows, then speak privately to the peer; checking the material yourself is the trap."
  },
  {
   "t": "best3",
@@ -2721,7 +2721,7 @@ const RW_3_2 = [
     "Good personal practice (Std 4.2.3), but nothing suggests you post about patients, so it does nothing about the lesion photo or the day-list habit and adds little to the three best."
    ]
   ],
-  "tk": "Everyday data leaks on staff chats need a prompt private word, a system fix through the manager and your own good practice, rather than self-protection or waiting for a tutorial."
+  "tk": "Everyday data leaks on staff chats need a prompt private word, a system fix through the manager and telling your ES, rather than leaving the group or posting a general reminder."
  },
  {
   "t": "rank",
@@ -2915,7 +2915,7 @@ const RW_3_3 = [
     "His account may add detail, but once you have reassessed her it adds little to her safety and the wider pattern matters more; it still ranks above B because it need not delay her care (Std 6.5)."
    ]
   ],
-  "tk": "With inherited poor records, your own assessment makes the patient safe today; the colleague and then the ES follow, and waiting on others should not delay care."
+  "tk": "With inherited poor records, your own assessment makes the patient safe today; your ES and then the colleague follow, and waiting on others should not delay care."
  },
  {
   "t": "rank",
@@ -3094,7 +3094,7 @@ const RW_3_3 = [
     "Setting a clear safety limit if de-escalation fails, through practice policy and the police if needed, protects staff and patients and completes the best three (Std 8.2)."
    ]
   ],
-  "tk": "With an angry relative, de-escalate in person, protect others’ privacy and have a safety fallback; calls, forms and quick rebooking are secondary."
+  "tk": "With an angry relative, de-escalate in person, look after the other patients waiting and have a safety fallback; calls, forms, filming requests and quick rebooking are secondary."
  },
  {
   "t": "rank",
@@ -3202,7 +3202,7 @@ const RW_3_4 = [
     "Her childcare is a genuine team consideration, and you should not treat without a trained colleague chairside and someone available for emergencies (Std 6.2.2, 6.2.6). It shapes how he is seen, so it follows his needs."
    ]
   ],
-  "tk": "End-of-day pressures: clinical risk first, then the patient’s understanding, then colleagues, then yourself. Routine practice tasks can nearly always wait."
+  "tk": "End-of-day pressures: clinical risk first, then the patient’s understanding, then colleagues, then routine practice tasks; your own deadlines come last."
  },
  {
   "t": "best3",
@@ -3307,7 +3307,7 @@ const RW_3_4 = [
     "Worthwhile because the misunderstanding could recur, but on its own it reports after the event and gives her no answer now, so it sits below options that settle the request today."
    ]
   ],
-  "tk": "Scope of practice is within your competence to apply: decline clearly, meet the patient’s need yourself and inform your ES afterwards rather than handing the decision up or back."
+  "tk": "Scope of practice is yours to apply: decline clearly and meet the patient’s need yourself; asking your ES beats a later mention, and passing it back to the therapist is weakest."
  },
  {
   "t": "rank",
@@ -4661,7 +4661,7 @@ const RW_4_4 = [
     "Your patients wear the crowns, so whether the work is safe and of suitable quality is the first test of any laboratory (Std 1.7.1). Without seeing any finished work you can’t yet know, which makes this the deciding question and places it above the declaration."
    ]
   ],
-  "tk": "When a personal connection could influence where clinical work goes, put the quality of care for patients first and declare the interest openly before anything else.",
+  "tk": "When a personal connection could influence where clinical work goes, put the quality of care for patients first, then declare the interest openly, ahead of any saving or benefit to the connection.",
   "r": [
    "1.7.1",
    "1.3.1",
@@ -5133,7 +5133,7 @@ const RW_5_2 = [
     "Speaking to him sounds thorough, but the record and the pharmacist have already settled the facts, and reopening a documented anaphylaxis delays treatment and risks a penicillin being given. He is at least spoken to and treated today, so it ranks above D."
    ]
   ],
-  "tk": "When a stem settles the facts of your own error, correct it and tell the patient yourself straight away; candour and repair are not things to defer or delegate.",
+  "tk": "When the facts of your own error are clear, correct it and tell the patient yourself straight away; candour and repair are not things to defer or delegate.",
   "r": [
    "1.3",
    "1.5.4"
