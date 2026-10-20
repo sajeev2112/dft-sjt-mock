@@ -141,7 +141,7 @@ function render(){
       <details class="datatoggle"><summary>Show as a table</summary>${dataTable(vis, ["Visitors", r => r.v], ["Page views", r => r.row.views || 0], ["App users", r => r.row.app || 0])}</details></div>
     <div class="chartcard" id="c-ans"><h3 id="ca-t">Answers per day</h3><p class="cap">${fmtN(sumA)} first-attempt answers in the last ${range} days</p>${chart("ca", ans, "bar")}<div class="tip" hidden></div>
       <details class="datatoggle"><summary>Show as a table</summary>${dataTable(ans, ["Answers", r => r.v], ["People", r => r.row.people || 0])}</details></div></div>`;
-  h += growthCard(vis) + mockCard() + aiCard() + syncCard() + rankCard(qs) + timeCard(qs);
+  h += growthCard(vis) + mockCard() + aiCard() + syncCard() + timeCard(qs) + rankCard(qs);
   h += `<section class="card"><h2 class="bh">Keys to recheck</h2><p class="muted">Questions where answers disagree with the key, worst first. “Average score” is how people score against the key, using the live test’s marking. “Agree on the top” is the share who put the keyed best option first (for best-three questions, who chose all three keyed options). Only questions with ${MIN_N}+ answers are judged. Click a row to see the question.</p>`;
   if (!flagged.length) h += `<p class="empty">${judged ? "No keys flagged. The community broadly agrees with every judged key." : `Not enough answers yet. Keys are judged once a question has ${MIN_N} answers.`}</p>`;
   else {
@@ -219,10 +219,10 @@ function growthCard(vis){
     <div class="tiles6"><div class="tile"><span class="tl">Came back within 7 days</span><span class="tv">${rate(r.d7)}</span><span class="sub2">${rateSub(r.d7, 7)}</span></div>
       <div class="tile"><span class="tl">Came back within 30 days</span><span class="tv">${rate(r.d30)}</span><span class="sub2">${rateSub(r.d30, 30)}</span></div>
       <div class="tile"><span class="tl">New in the last ${range} days</span><span class="tv">${fmtN(sumNew)}</span><span class="sub2">${pct(sumNew, sumVis)}% of ${fmtN(sumVis)} visits</span></div></div>
-    <div class="chartcard" id="c-new"><h3 id="cn-t">New visitors per day</h3><p class="cap">People seen for the first time on each day</p>${chart("cn", nv, "bar")}<div class="tip" hidden></div>
+    <div class="gcols"><div class="chartcard" id="c-new"><h3 id="cn-t">New visitors per day</h3><p class="cap">People seen for the first time on each day</p>${chart("cn", nv, "bar")}<div class="tip" hidden></div>
       <details class="datatoggle"><summary>Show as a table</summary>${dataTable(nv, ["New", r => r.v], ["Returning", r => Math.max(0, (vmap[r.day] || 0) - r.v)])}</details></div>
-    <p class="plabel">Week by week</p><div class="tscroll"><table class="rtable"><thead><tr><th>Week starting</th><th>Visits</th><th>New people</th><th>Page views</th><th>App users</th></tr></thead><tbody>${wk.map(k => `<tr><td>${dayLabel(k)}</td><td>${fmtN(weeks[k].visits)}</td><td>${fmtN(weeks[k].fresh)}</td><td>${fmtN(weeks[k].views)}</td><td>${fmtN(weeks[k].app)}</td></tr>`).join("")}</tbody></table></div>
-    <p class="muted">“Visits” adds up each day’s visitors, so someone who came on three days counts three times.</p></section>`;
+    <div><p class="plabel" style="margin-top:0">Week by week</p><div class="tscroll"><table class="rtable"><thead><tr><th>Week starting</th><th>Visits</th><th>New people</th><th>Page views</th><th>App users</th></tr></thead><tbody>${wk.map(k => `<tr><td>${dayLabel(k)}</td><td>${fmtN(weeks[k].visits)}</td><td>${fmtN(weeks[k].fresh)}</td><td>${fmtN(weeks[k].views)}</td><td>${fmtN(weeks[k].app)}</td></tr>`).join("")}</tbody></table></div>
+    <p class="muted">“Visits” adds up each day’s visitors, so someone who came on three days counts three times.</p></div></div></section>`;
 }
 const fmtSec = v => { v = Math.round(v); return Math.floor(v / 60) + ":" + String(v % 60).padStart(2, "0"); };
 function mockCard(){
@@ -232,7 +232,7 @@ function mockCard(){
     return `<tr><td>${label}</td><td>${fmtN(sum(mode, r => r.n))}</td><td>${fmtN(by(mode, "finish").n)}</td><td>${fmtN(by(mode, "expired").n)}</td><td>${fmtN(by(mode, "abandoned").n)}</td><td>${fmtN(by(mode, "live").n)}</td><td>${ended ? pct(done, ended) + "%" : "–"}</td><td>${done ? fmtSec(avg / 1000) : "–"}</td></tr>`; };
   const all = rows.reduce((t, r) => t + r.n, 0);
   const done = rows.filter(r => r.st === "finish" || r.st === "expired").reduce((t, r) => t + r.n, 0), ended = done + rows.filter(r => r.st === "abandoned").reduce((t, r) => t + r.n, 0);
-  return `<section class="card"><h2 class="bh">Timed mock completion</h2>
+  return `<section class="card half"><h2 class="bh">Timed mock completion</h2>
     <div class="tiles6"><div class="tile"><span class="tl">Mocks started</span><span class="tv">${fmtN(all)}</span><span class="sub2">${fmtN(rows.filter(r => r.st === "live").reduce((t, r) => t + r.n, 0))} still going</span></div>
       <div class="tile"><span class="tl">Completion rate</span><span class="tv">${ended ? pct(done, ended) + "%" : "–"}</span><span class="sub2">${ended ? `${fmtN(done)} of ${fmtN(ended)} that ended were handed in or ran to the end` : "No finished or abandoned mocks yet"}</span></div></div>
     ${all ? `<div class="tscroll"><table class="rtable"><thead><tr><th>Type</th><th>Started</th><th>Handed in</th><th>Ran out of time</th><th>Not finished</th><th>Still going</th><th>Completion</th><th>Average time used</th></tr></thead><tbody>${modes.map(m => line(m[0], m[1])).join("")}</tbody></table></div>` : `<p class="empty">No timed mocks recorded yet.</p>`}
@@ -246,7 +246,7 @@ function timeCard(qs){
   for (const r of rows) (papers[r.x.q.p] = papers[r.x.q.p] || []).push(r);
   const slow = rows.filter(r => r.t.n >= MIN_N).sort((a, b) => b.t.avg - a.t.avg).slice(0, 10);
   const tbl = (head, body) => `<div class="tscroll"><table class="rtable"><thead><tr>${head.map(h => `<th>${h}</th>`).join("")}</tr></thead><tbody>${body}</tbody></table></div>`;
-  return `<section class="card"><h2 class="bh">Time per question</h2>
+  return `<section class="card half"><h2 class="bh">Time per question</h2>
     <div class="tiles6"><div class="tile"><span class="tl">Average, all questions</span><span class="tv">${rows.length ? fmtSec(mean(rows)) : "–"}</span><span class="sub2">${fmtN(cnt(rows))} timed answers</span></div>
       <div class="tile"><span class="tl">Ranking questions</span><span class="tv">${rank.length ? fmtSec(mean(rank)) : "–"}</span><span class="sub2">${fmtN(cnt(rank))} timed answers</span></div>
       <div class="tile"><span class="tl">Choose-three questions</span><span class="tv">${best.length ? fmtSec(mean(best)) : "–"}</span><span class="sub2">${fmtN(cnt(best))} timed answers</span></div></div>
@@ -260,7 +260,7 @@ function aiCard(){
   const up = ai.votes.reduce((s, v) => s + v.up, 0), down = ai.votes.reduce((s, v) => s + v.down, 0);
   const pctUsed = Math.min(100, pct(used, ai.cap)), aiS = series(ai.days, "n", range);
   const worst = ai.votes.filter(v => v.down > 0).sort((a, b) => b.down - a.down || a.up - b.up).slice(0, 8);
-  return `<section class="card"><h2 class="bh">“Explain my mistake” (AI)</h2>
+  return `<section class="card half"><h2 class="bh">“Explain my mistake” (AI)</h2>
     <div class="tiles6"><div class="tile"><span class="tl">Used today</span><span class="tv">${fmtN(used)}</span><span class="sub2">of ${fmtN(ai.cap)} free units · resets at 00:00 UTC</span><div class="meter" role="img" aria-label="${pctUsed}% of today’s allowance used"><span style="width:${pctUsed}%"></span></div></div>
       <div class="tile"><span class="tl">Found it helpful</span><span class="tv">${up + down ? pct(up, up + down) + "%" : "–"}</span><span class="sub2">${fmtN(up)} 👍 · ${fmtN(down)} 👎</span></div>
       <div class="tile"><span class="tl">Explanations saved</span><span class="tv">${fmtN(ai.cached)}</span><span class="sub2">reused for free, no AI cost</span></div></div>
@@ -270,7 +270,7 @@ function aiCard(){
 function syncCard(){
   const sy = data.sync; if (!sy) return "";
   const pts = series(sy.days, "n", range);
-  return `<section class="card"><h2 class="bh">Sync accounts</h2>
+  return `<section class="card half"><h2 class="bh">Sync accounts</h2>
     <div class="tiles6"><div class="tile"><span class="tl">Accounts</span><span class="tv">${fmtN(sy.total)}</span><span class="sub2">${pct(sy.total, (data.totals || {}).visitors)}% of visitors</span></div>
       <div class="tile"><span class="tl">Synced in the last 7 days</span><span class="tv">${fmtN(sy.active7)}</span><span class="sub2">${pct(sy.active7, sy.total)}% of accounts</span></div>
       <div class="tile"><span class="tl">Synced in the last 30 days</span><span class="tv">${fmtN(sy.active30)}</span><span class="sub2">${pct(sy.active30, sy.total)}% of accounts</span></div>
@@ -285,9 +285,9 @@ function rankCard(qs){
   for (const x of qs) { const p = papers[x.q.p] = papers[x.q.p] || {n: 0, sum: 0, recheck: 0}; p.n += x.n; p.sum += (x.avg || 0) * x.n; if (x.flag === "recheck") p.recheck++; }
   const tbl = (head, rows) => `<div class="tscroll"><table class="rtable"><thead><tr>${head.map(h => `<th>${h}</th>`).join("")}</tr></thead><tbody>${rows}</tbody></table></div>`;
   return `<section class="card"><h2 class="bh">Question rankings</h2>
-    <p class="plabel">Hardest questions</p><p class="muted">Lowest average score against the key. Only questions with ${MIN_N}+ answers.</p>${hardest.length ? tbl(["Question", "Scenario", "Answers", "Average score"], hardest.map(x => row(x, `<td>${fmtN(x.n)}</td><td>${Math.round(x.avg * 100)}%</td>`)).join("")) : `<p class="empty">Not enough answers yet.</p>`}
-    <p class="plabel">Most answered</p>${popular.length ? tbl(["Question", "Scenario", "Answers", "Average score"], popular.map(x => row(x, `<td>${fmtN(x.n)}</td><td>${x.n >= MIN_N ? Math.round(x.avg * 100) + "%" : "–"}</td>`)).join("")) : `<p class="empty">No answers yet.</p>`}
-    <p class="plabel">By paper</p>${tbl(["Paper", "Answers", "Average score", "Keys to recheck"], Object.keys(papers).map(k => { const p = papers[k]; return `<tr><td>Paper ${k}</td><td>${fmtN(p.n)}</td><td>${p.n ? Math.round(p.sum / p.n * 100) + "%" : "–"}</td><td>${p.recheck}</td></tr>`; }).join(""))}</section>`;
+    <div class="rcols"><div><p class="plabel" style="margin-top:0">Hardest questions</p><p class="muted">Lowest average score against the key. Only questions with ${MIN_N}+ answers.</p>${hardest.length ? tbl(["Question", "Scenario", "Answers", "Average score"], hardest.map(x => row(x, `<td>${fmtN(x.n)}</td><td>${Math.round(x.avg * 100)}%</td>`)).join("")) : `<p class="empty">Not enough answers yet.</p>`}
+    </div><div><p class="plabel" style="margin-top:0">Most answered</p>${popular.length ? tbl(["Question", "Scenario", "Answers", "Average score"], popular.map(x => row(x, `<td>${fmtN(x.n)}</td><td>${x.n >= MIN_N ? Math.round(x.avg * 100) + "%" : "–"}</td>`)).join("")) : `<p class="empty">No answers yet.</p>`}
+    </div><div><p class="plabel" style="margin-top:0">By paper</p>${tbl(["Paper", "Answers", "Average score", "Keys to recheck"], Object.keys(papers).map(k => { const p = papers[k]; return `<tr><td>Paper ${k}</td><td>${fmtN(p.n)}</td><td>${p.n ? Math.round(p.sum / p.n * 100) + "%" : "–"}</td><td>${p.recheck}</td></tr>`; }).join(""))}</div></div></section>`;
 }
 
 // ---------- search and downloads ----------

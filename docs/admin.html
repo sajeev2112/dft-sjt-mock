@@ -72,6 +72,18 @@
 .qtools input[type=search]{flex:1 1 220px; font:14px var(--sans); padding:8px 10px; border:1px solid var(--line); border-radius:8px; background:var(--surface); color:var(--ink)}
 .qtools input:focus{outline:2px solid var(--accent); outline-offset:1px}
 .card .plabel{margin:16px 0 6px}
+/* wide screens: use the room, as the main site does */
+@media (min-width:1360px){
+  .wrap{max-width:1320px; padding-inline:28px}
+  .dash{grid-template-columns:repeat(2, minmax(0, 1fr)); align-items:start}
+  .dash > *{grid-column:1 / -1}
+  .dash > .card.half{grid-column:auto; min-width:0}
+}
+.gcols, .rcols{display:grid; gap:14px 24px}
+@media (min-width:1360px){ .gcols{grid-template-columns:minmax(0, 1fr) minmax(0, 1fr)} }
+@media (min-width:1640px){ .rcols{grid-template-columns:repeat(3, minmax(0, 1fr))} }
+@media (min-width:1640px){ .wrap{max-width:1560px; padding-inline:36px} .tiles6{grid-template-columns:repeat(auto-fit, minmax(170px, 1fr))} }
+@media (min-width:2000px){ .wrap{max-width:1760px} }
 @media (max-width:760px){ .charts{grid-template-columns:1fr} }
 </style>
 </head>
