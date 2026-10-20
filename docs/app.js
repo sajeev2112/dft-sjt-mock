@@ -304,6 +304,13 @@ function render(){
   // a mock whose time ran out while paused or on another device is marked as soon as it is shown
   if (S.view === "practice" && !ui.building) { const st = curSet(); if (mockLive(st) && left(st) <= 0) { timeUp(); return; } }
   keepFocus(renderAll);
+  centerStrips();
+}
+// On phones the paper tabs and the question numbers are single scrolling rows; keep the current one in the middle of the row.
+function centerStrips(){
+  if (!window.matchMedia) return;
+  if (matchMedia("(max-width:640px)").matches) { const sb = document.querySelector(".setbar"), t = sb && sb.querySelector('.ptab[aria-selected="true"]'); if (sb && t) sb.scrollLeft = Math.max(0, t.offsetLeft - (sb.clientWidth - t.offsetWidth) / 2); }
+  if (matchMedia("(max-width:459px)").matches) { const g = document.getElementById("grid"), c = g && g.querySelector(".cell.cur"); if (g && c) g.scrollLeft = Math.max(0, c.offsetLeft - (g.clientWidth - c.offsetWidth) / 2); }
 }
 // Rebuilding the page's HTML would drop keyboard focus, so put it back on the same control (or the nearest sensible one).
 function focusKey(el){

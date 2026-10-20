@@ -429,9 +429,9 @@ html.nd .nd-progress{will-change:transform}
 }
 
 /* ---------- after answering: explanations on the left, your score and the key on the right ----------
-   From 1100px wide (a 13-inch laptop and up) the card uses two columns. Below 1640px there is no room for the score panel beside
+   From 960px wide (iPad landscape, a 13-inch laptop and up) the card uses two columns. Below 1640px there is no room for the score panel beside
    the card as well, so while a result is showing the panel drops underneath, laid out as a row, and the card gets the full width. */
-@media (min-width:1100px){
+@media (min-width:960px){
   html.nd #card:has(> .result){display:grid; grid-template-columns:minmax(0,1.1fr) minmax(0,1fr); column-gap:34px; grid-auto-flow:row dense; align-items:start}
   html.nd #card:has(> .result) > *{grid-column:1 / -1}
   html.nd #card:has(> .result) > .xcol{grid-column:1}
@@ -440,7 +440,7 @@ html.nd .nd-progress{will-change:transform}
   html.nd #card:has(> .result) .compare{grid-template-columns:1fr}
   html.nd #card:has(> .result) .rlinks{max-width:none}
 }
-@media (min-width:1100px) and (max-width:1639px){
+@media (min-width:960px) and (max-width:1639px){
   html.nd .layout:has(#card > .result){grid-template-columns:minmax(0,1fr)}
   html.nd .layout:has(#card > .result) .panel{position:static; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:16px 32px; align-items:start}
   html.nd .layout:has(#card > .result) .panel .divider{display:none}
@@ -781,3 +781,32 @@ html.nd .nd-revmis small{background:var(--bad)}
 .rdet[open]>summary::after{content:"–"}
 .rdet>summary:hover{color:var(--ink)}
 .rdet-b{padding:0 16px 16px}
+
+/* ---------- phones: paper tabs and question numbers as single scrolling rows, so the question itself starts higher up ---------- */
+@media (max-width:640px){
+  html.nd .setbar{position:relative; flex-wrap:nowrap; overflow-x:auto; scrollbar-width:none; margin-inline:-4px; padding:2px 4px 6px}
+  html.nd .setbar::-webkit-scrollbar{display:none}
+  html.nd .setbar .ptabs{flex-wrap:nowrap; flex:0 0 auto}
+  html.nd .setbar .ptab{flex:0 0 auto; white-space:nowrap}
+}
+@media (max-width:459px){
+  #grid{position:relative; display:flex; gap:6px; overflow-x:auto; scrollbar-width:none; padding:4px 4px 8px; margin-inline:-4px}
+  #grid::-webkit-scrollbar{display:none}
+  #grid .arch, #grid .flat{display:flex; flex:0 0 auto; gap:6px}
+  #grid .occl{display:none}
+  #grid .cell{flex:0 0 46px; min-width:46px}
+}
+
+/* phones: less above the question (intro text, big tiles and the legend were pushing it a full screen down) */
+@media (max-width:640px){
+  html.nd .sub{display:none}
+  html.nd .nd-stats{gap:8px}
+  html.nd .nd-stat{padding:10px 12px}
+  html.nd .nd-stat b{font-size:1.25rem}
+  html.nd .nd-mockcta{padding:12px 14px; gap:10px}
+  html.nd .nd-cta-txt span{display:none}
+}
+@media (max-width:459px){
+  html.nd .chart-top .legend{display:none}
+  html.nd .chart-top{min-height:0}
+}
