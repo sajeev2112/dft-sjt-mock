@@ -1,4 +1,4 @@
-# DFT SJT Mock Paper
+# DFT SJT Mock Question Bank
 
 An unofficial practice site for the UK Dental Foundation Training (DFT) Situational Judgement Test.
 

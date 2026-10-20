@@ -1,4 +1,4 @@
-// Cloudflare Worker for the DFT SJT Mock Paper.
+// Cloudflare Worker for the DFT SJT Mock Question Bank.
 // Serves the static site from ./docs and a small anonymous API backed by D1:
 //   POST /api/answers   first-attempt answers, keyed by a random client id
 //   GET  /api/stats?q=N how everyone answered question N

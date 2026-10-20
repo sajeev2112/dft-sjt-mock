@@ -1,4 +1,4 @@
-// Question bank for the DFT SJT Mock Paper.
+// Question bank for the DFT SJT Mock Question Bank.
 // Paper 1 = Q1–32 (standard), Paper 2 = Q33–64 (harder), Paper 3 = Q65–96 (harder), Paper 4 = Q97–128 (advanced), Paper 5 = Q129–160 (advanced), Paper 6 = Q161–192 (advanced), Paper 7 = Q193–224 (advanced).
 // Each item: t = type, d = domain, g = theme, a = archetype, k = key (in authoring order),
 // s = scenario, o = [option, justification] pairs, tk = takeaway.

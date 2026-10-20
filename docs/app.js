@@ -1,5 +1,5 @@
 "use strict";
-// DFT SJT Mock Paper: practice sets, results, the guide, settings and anonymous community stats.
+// DFT SJT Mock Question Bank: practice sets, results, the guide, settings and anonymous community stats.
 
 const PAPERS = {
   p1:{name:"Paper 1", from:0, to:32},
