@@ -294,7 +294,7 @@ function fbHtml(qi, d){
 }
 
 // ---------- UI state ----------
-let ui = {warn:false, confirmReset:false, confirmMark:false, building:false, fbOpen:null, code:"", codeMsg:"", confirmLoad:false, confirmWipe:false, summary:false, popped:null, warned:{}};
+let ui = {warn:false, confirmReset:false, confirmMark:false, building:false, fbOpen:null, code:"", codeMsg:"", confirmLoad:false, confirmWipe:false, summary:false, popped:null, warned:{}, rdet:{}};
 const FLAG = '<svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 1.5v13M3 2.5h8.5l-1.8 3 1.8 3H3" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round"/></svg>';
 let installPrompt = null;
 window.addEventListener("beforeinstallprompt", e => { e.preventDefault(); installPrompt = e; if (S.view === "settings") render(); });
@@ -735,9 +735,9 @@ function renderResults(){
   if (weakest.length && !(window.StudyPlan && StudyPlan.enough())) { // the study plan below shows these, with the same buttons, once there are enough answers
     h += `<div class="callout"><p class="xhead">Your weakest themes</p>` + weakest.map(t => `<div class="wrow"><span><b>${THEMES[t]}</b> · ${pct(byG[t].g, byG[t].m)}% over ${byG[t].n} question${byG[t].n === 1 ? "" : "s"}</span><span class="row"><a class="btn small" href="#guide-${t}">Read playbook</a><button type="button" class="btn small primary" data-act="build" data-kind="theme" data-arg="${t}">Practise</button></span></div>`).join("") + `</div>`;
   }
-  { const nm = mistakesList().length; if (nm) h += `<div class="callout"><p class="xhead">My mistakes</p><div class="wrow"><span>${nm} question${nm === 1 ? "" : "s"} where your latest attempt lost marks.</span><button type="button" class="btn small primary" data-act="build" data-kind="mistakes">Quiz my ${Math.min(20, nm)}</button></div></div>`; }
+  { const nm = mistakesList().length; if (nm && !(window.StudyPlan && StudyPlan.enough())) h += `<div class="callout"><p class="xhead">My mistakes</p><div class="wrow"><span>${nm} question${nm === 1 ? "" : "s"} where your latest attempt lost marks.</span><button type="button" class="btn small primary" data-act="build" data-kind="mistakes">Quiz my ${Math.min(20, nm)}</button></div></div>`; }
   if (window.StudyPlan) h += StudyPlan.html();
-  h += activityHtml();
+  h += "<!--rs-->" + activityHtml();
   h += `<h3 class="bsub">Progress over time</h3>` + progressChart();
   h += `<h3 class="bsub">By area</h3><div class="doms wide">` + Object.keys(DOMAINS).map(d => { const x = byD[d]; return `<div class="dom"><span>${DOMAINS[d]} <small class="muted">${x.n}/${x.total}</small></span><span>${x.n ? pct(x.g, x.m) + "%" : "–"}</span><div class="bar"><i style="width:${pct(x.g, x.m)}%"></i></div></div>`; }).join("") + `</div>`;
   { // time per question, from practice sessions where the timer was running
@@ -762,8 +762,20 @@ function renderResults(){
     S.hist.slice().reverse().forEach(x => { h += `<tr><td>${new Date(x.t).toLocaleDateString("en-GB", {day:"numeric", month:"short"})}</td><td>${esc(x.name)}</td><td>${x.mode === "exam" ? "Exam" : "Practice"}</td><td>${x.g} / ${x.m} · ${pct(x.g, x.m)}%</td></tr>`; });
     h += `</tbody></table></div>`;
   }
-  el.innerHTML = h + `</div>`;
+  el.innerHTML = tidyResults(h) + `</div>`;
 }
+// The Results page keeps the main story on top (your numbers, the study plan, progress, areas) and tucks the long reference tables into
+// collapsible sections, so it reads as a short page. Each section starts with an <h3 class="bsub"> heading; open/closed is remembered.
+function tidyResults(h){
+  const [head, tail] = h.split("<!--rs-->"); if (tail == null) return h;
+  const parts = tail.split('<h3 class="bsub">').filter(Boolean).map(p => { const i = p.indexOf("</h3>"); return {title: p.slice(0, i), body: p.slice(i + 5)}; });
+  const keep = ["Progress over time", "By area"], order = ["By theme", "By paper", "Time per question", "Activity", "Completed sets"];
+  const shown = keep.map(t => parts.find(x => x.title === t)).filter(Boolean), folded = order.map(t => parts.find(x => x.title === t)).filter(Boolean);
+  const k = t => t.toLowerCase().replace(/[^a-z]+/g, "");
+  return head + shown.map(x => `<h3 class="bsub">${x.title}</h3>${x.body}`).join("") +
+    folded.map(x => `<details class="rdet" data-k="${k(x.title)}"${ui.rdet[k(x.title)] ? " open" : ""}><summary>${x.title}</summary><div class="rdet-b">${x.body}</div></details>`).join("");
+}
+document.addEventListener("toggle", e => { const d = e.target; if (d && d.classList && d.classList.contains("rdet")) ui.rdet[d.dataset.k] = d.open; }, true);
 // ---------- activity ----------
 const dkey = d => d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
 function streaks(){

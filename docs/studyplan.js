@@ -69,34 +69,33 @@
       : h.kind === "picked" ? `In best-three questions you chose options about <b>${lab}</b> ${h.n} times when they weren’t among the best three.`
       : `In best-three questions you left out options about <b>${lab}</b> ${h.n} times when they were among the best three.`}</li>`; }
 
+  const row = (text, buttons) => `<div class="sp-row"><div class="sp-row-t">${text}</div><div class="sp-row-b">${buttons}</div></div>`;
   function html(){
     const answered = Q.map((_, i) => i).filter(i => lastAtt(i)).length;
     if (!answered) return "";
     if (answered < MIN_ANSWERED) return `<div class="callout studyplan" id="studyplan"><p class="xhead">Study plan <span class="xm-tag">Beta</span></p><p class="muted">Answer ${MIN_ANSWERED - answered} more question${MIN_ANSWERED - answered === 1 ? "" : "s"} to unlock a study plan built from your mistakes (${answered} of ${MIN_ANSWERED} so far).</p></div>`;
     const p = profile(), ranked = p.themes.filter(t => t.n >= 2 && t.lost > 0).sort((x, y) => y.lost - x.lost).slice(0, 3);
-    let h = `<div class="callout studyplan" id="studyplan"><p class="xhead">Study plan <span class="xm-tag">Beta</span></p><p class="muted">Worked out on this device from your own answers. Nothing is sent anywhere unless you press the AI button.</p>`;
-    h += sec("Where your marks are going", ranked.length ? ranked.map(t => `<div class="wrow"><span><b>${THEMES[t.g]}</b> · ${t.lost} mark${t.lost === 1 ? "" : "s"} lost over ${t.n} questions (${t.pct}%)</span><span class="row"><a class="btn small" href="#guide-${t.g}">Read playbook</a><button type="button" class="btn small primary" data-act="build" data-kind="theme" data-arg="${t.g}">Practise</button></span></div>`).join("") : `<p class="muted">No theme stands out yet.</p>`);
+    const sig = hash(JSON.stringify(p)), sv = S.plan, fresh = !!sv && sv.sig === sig;
+    // header: what this is, with the AI button beside it
+    let h = `<div class="callout studyplan" id="studyplan"><div class="sp-head"><div><p class="xhead">Study plan <span class="xm-tag">Beta</span></p><p class="muted">Worked out on this device from your own answers.</p></div>` +
+      `<button type="button" class="btn primary sp-go" data-sp="ai"${st.busy ? " disabled" : ""}>${st.busy ? "Writing…" : sv ? (fresh ? "Write a new AI plan" : "Update the AI plan") : "Write my plan with AI"}</button></div>`;
+    if (st.note) h += `<p class="xm-notice" role="status">${esc(st.note)}</p>`;
+    if (sv) h += aiResult(sv, fresh);
+    h += sec("Where your marks are going", ranked.length ? ranked.map(t => row(`<b>${THEMES[t.g]}</b><span class="muted">${t.lost} mark${t.lost === 1 ? "" : "s"} lost over ${t.n} questions (${t.pct}%)</span>`,
+      `<a class="btn small" href="#guide-${t.g}">Read playbook</a><button type="button" class="btn small primary" data-act="build" data-kind="theme" data-arg="${t.g}">Practise</button>`)).join("") : `<p class="muted">No theme stands out yet.</p>`);
     const hab = [...p.habits.rank.map(x => ({...x, kind: x.avg > 0 ? "over" : "under"})), ...p.habits.picked.map(x => ({...x, kind: "picked"})), ...p.habits.missed.map(x => ({...x, kind: "missed"}))];
     if (hab.length) h += sec("Your habits", `<ul class="sp-list">${hab.map(habitLine).join("")}</ul><p class="muted">These come from the kind of action each option describes, compared with how the key ranks it.</p>`);
-    if (p.repeats.length) h += sec("Mistakes you keep making", `<div class="wrow"><span>${p.repeats.length} question${p.repeats.length === 1 ? "" : "s"} lost marks on both of your last two attempts.</span><button type="button" class="btn small primary" data-act="build" data-kind="mistakes">Quiz my mistakes</button></div>`);
-    if (p.pace) h += sec("Pace", `<p>${mm(p.pace.avg)} per question on average over ${p.pace.n} timed questions; the live test allows about ${mm(Math.round(PACE))}.${p.pace.slow ? ` ${p.pace.slow} took over 3 minutes.` : ""}</p>`);
-    if (p.trend) h += sec("Trend", `<p>${p.trend.recent}% over the last week against ${p.trend.earlier}% before that.</p>`);
-    h += aiBlock(p) + `</div>`;
+    const nm = mistakesList().length;
+    if (nm) h += sec("Redo your mistakes", row(`<b>${nm} question${nm === 1 ? "" : "s"}</b><span class="muted">where your latest attempt lost marks${p.repeats.length ? `; ${p.repeats.length} lost marks on both of your last two attempts` : ""}</span>`, `<button type="button" class="btn small primary" data-act="build" data-kind="mistakes">Quiz my ${Math.min(20, nm)}</button>`));
+    if (p.pace || p.trend) h += sec("Pace and trend", (p.pace ? `<p>${mm(p.pace.avg)} per question on average over ${p.pace.n} timed questions; the live test allows about ${mm(Math.round(PACE))}.${p.pace.slow ? ` ${p.pace.slow} took over 3 minutes.` : ""}</p>` : "") + (p.trend ? `<p>${p.trend.recent}% over the last week against ${p.trend.earlier}% before that.</p>` : ""));
+    h += `<p class="muted sp-priv">The AI button sends your theme scores, habit statistics and the topic numbers of your repeated mistakes to the site’s server to write the plan. No answers or names are sent and the server doesn’t keep it; the finished plan is saved with your progress.</p></div>`;
     return h;
   }
 
-  function aiBlock(p){
-    const sig = hash(JSON.stringify(p)), sv = S.plan, fresh = !!sv && sv.sig === sig;
-    let h = `<div class="sp-ai"><h3 class="bsub">AI study plan <span class="xm-tag">Beta</span></h3>`;
-    if (sv) {
-      const pl = sv.plan;
-      h += `<p class="sp-over">${esc(pl.overview)}</p><ol class="sp-prio">${pl.priorities.map(x => `<li><b>${esc(x.focus)}</b><p>${esc(cap(x.why))}</p>${x.read ? `<p class="sp-read"><b>Read:</b> ${(x.sections || []).map(y => `<a href="#guide-${esc(y.id)}">${esc(y.title)}</a>`).join(" · ")}<span class="sp-rn">${esc(x.read)}</span></p>` : ""}<p class="sp-do"><b>Do:</b> ${esc(x.do)}</p></li>`).join("")}</ol><p><b>This week:</b> ${esc(pl.this_week)}</p>` +
-        `<p class="xm-src">Written by AI from your statistics · checked against them${fresh ? "" : " · your results have changed since, so this may be out of date"}${sv.at ? " · " + new Date(sv.at).toLocaleDateString("en-GB", {day: "numeric", month: "short"}) : ""} · saved with your progress</p><p class="xm-caveat">AI plans can contain mistakes. Treat it as a suggestion.</p>`;
-    } else h += `<p class="muted">An AI write-up of the above: the pattern in your mistakes, what to focus on and what to do this week.</p>`;
-    if (st.note) h += `<p class="xm-notice" role="status">${esc(st.note)}</p>`;
-    h += `<button type="button" class="btn small primary" data-sp="ai"${st.busy ? " disabled" : ""}>${st.busy ? "Writing…" : sv ? (fresh ? "Write a new plan" : "Update the plan") : "Write my study plan with AI"}</button>` +
-      `<p class="muted sp-priv">Pressing this sends your theme scores, habit statistics and the topic numbers of your repeated mistakes to the site’s server to write the plan. No answers or names are sent and nothing is stored.</p></div>`;
-    return h;
+  function aiResult(sv, fresh){
+    const pl = sv.plan;
+    return `<div class="sp-ai"><h3 class="bsub">Your AI study plan</h3><p class="sp-over">${esc(pl.overview)}</p><ol class="sp-prio">${pl.priorities.map(x => `<li><b>${esc(x.focus)}</b><p>${esc(cap(x.why))}</p>${x.read ? `<p class="sp-read"><b>Read:</b> ${(x.sections || []).map(y => `<a href="#guide-${esc(y.id)}">${esc(y.title)}</a>`).join(" · ")}<span class="sp-rn">${esc(x.read)}</span></p>` : ""}<p class="sp-do"><b>Do:</b> ${esc(x.do)}</p></li>`).join("")}</ol>` +
+      `<p><b>This week:</b> ${esc(pl.this_week)}</p><p class="xm-src">Written by AI from your statistics · checked against them${fresh ? "" : " · your results have changed since, so this may be out of date"}${sv.at ? " · " + new Date(sv.at).toLocaleDateString("en-GB", {day: "numeric", month: "short"}) : ""} · saved with your progress</p><p class="xm-caveat">AI plans can contain mistakes. Treat it as a suggestion.</p></div>`;
   }
 
   function redraw(){ const box = document.getElementById("studyplan"); if (box) box.outerHTML = html(); }

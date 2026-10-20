@@ -732,13 +732,41 @@ html.nd .nd-revmis{background:var(--bad-soft); color:var(--bad)}
 html.nd .nd-revmis small{background:var(--bad)}
 
 /* Study plan (Results page) */
-.studyplan .sp-sec{margin-top:14px}
-.studyplan .sp-list{margin:6px 0; padding-left:20px; display:grid; gap:6px; font-size:0.9375rem}
-.studyplan .sp-ai{margin-top:18px; padding-top:14px; border-top:1px solid var(--line)}
-.studyplan .sp-over{margin:0 0 8px; font:600 0.9688rem/1.45 var(--serif)}
-.studyplan .sp-prio{margin:0 0 10px; padding-left:20px; display:grid; gap:10px}
+.studyplan{gap:0}
+.studyplan .sp-head{display:flex; flex-wrap:wrap; gap:12px 16px; align-items:flex-start; justify-content:space-between}
+.studyplan .sp-head .muted{margin:2px 0 0}
+.studyplan .sp-go{flex-shrink:0}
+.studyplan .sp-sec{margin-top:20px; display:grid; gap:8px}
+.studyplan .sp-sec .bsub{margin:0}
+.studyplan .sp-row{display:flex; align-items:center; justify-content:space-between; gap:10px 16px; padding:10px 12px; background:var(--surface); border:1px solid var(--line); border-radius:10px}
+.studyplan .sp-row-t{display:grid; gap:2px; min-width:0; font-size:0.9375rem}
+.studyplan .sp-row-b{display:flex; gap:8px; flex-shrink:0}
+.studyplan .sp-list{margin:0; padding-left:20px; display:grid; gap:6px; font-size:0.9375rem}
+.studyplan .sp-ai{margin-top:16px; padding:14px; background:var(--surface); border:1px solid var(--line); border-radius:10px}
+.studyplan .sp-ai .bsub{margin:0 0 8px}
+.studyplan .sp-over{margin:0 0 10px; font:600 0.9688rem/1.45 var(--serif)}
+.studyplan .sp-prio{margin:0 0 10px; padding-left:20px; display:grid; gap:12px}
 .studyplan .sp-prio li p{margin:4px 0 0}
 .studyplan .sp-read a{font-weight:600}
 .studyplan .sp-rn{display:block; color:var(--ink-2); margin-top:2px}
 .studyplan .sp-do{color:var(--ink-2)}
-.studyplan .sp-priv{margin:8px 0 0; font-size:0.8125rem}
+.studyplan .sp-priv{margin:18px 0 0; font-size:0.8125rem}
+@media (max-width:560px){
+  .studyplan .sp-go{width:100%}
+  .studyplan .sp-row{flex-direction:column; align-items:stretch}
+  .studyplan .sp-row-b .btn{flex:1; text-align:center; justify-content:center}
+}
+
+/* Calmer callouts on Results (the amber is kept for flags and near-miss marks) */
+.callout{background:var(--surface); border:1px solid var(--line); border-left:3px solid var(--accent); box-shadow:none}
+.callout .xhead{color:var(--ink-3)}
+.studyplan .sp-ai{background:var(--surface-2)}
+.studyplan .sp-row{background:var(--surface-2)}
+/* Collapsible reference sections on Results */
+.rdet{margin-top:10px; border:1px solid var(--line); border-radius:12px; background:var(--surface)}
+.rdet>summary{display:flex; align-items:center; justify-content:space-between; gap:12px; padding:13px 16px; cursor:pointer; list-style:none; font:600 0.75rem var(--mono); letter-spacing:.07em; text-transform:uppercase; color:var(--ink-2)}
+.rdet>summary::-webkit-details-marker{display:none}
+.rdet>summary::after{content:"+"; font:500 1.125rem var(--mono); color:var(--ink-3)}
+.rdet[open]>summary::after{content:"–"}
+.rdet>summary:hover{color:var(--ink)}
+.rdet-b{padding:0 16px 16px}
