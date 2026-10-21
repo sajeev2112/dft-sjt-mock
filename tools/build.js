@@ -71,6 +71,103 @@ Object.keys(THEMES).forEach(t => { const p = gctx.PLAYBOOKS[t]; if (!p) errors.p
 const TAG_READ = {a: "ladder", b: "ladder", c: "ladder", d: "traits", e: "priorities", f: "priorities", g: "traits", h: "ladder", i: "priorities", j: "traps", k: "ladder", l: "traits", m: "traps", n: "traps"};
 Object.values(TAG_READ).forEach(id => { if (!SECTIONS[id]) errors.push("guide section missing: " + id); });
 if (errors.length) { console.error(errors.join("\n")); process.exit(1); }
+
+// ---- Static, crawlable pages (no JavaScript needed): topic list, pattern guide, playbooks, plus sitemap.xml and llms.txt.
+// Only the public teaching material is published this way. No question text, options or keys.
+{
+  const BASE = "https://sajeev2112.github.io/dft-sjt-mock/", today = new Date().toISOString().slice(0, 10);
+  const esc = t => String(t).replace(/&(?!amp;|lt;|gt;|quot;|#\d+;)/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  const countBy = f => { const c = {}; Q.forEach(q => { c[f(q)] = (c[f(q)] || 0) + 1; }); return c; };
+  const byTheme = countBy(q => q.g), byDomain = countBy(q => q.d), byType = countBy(q => q.t);
+  const PAGES = [
+    {file: "topics.html", nav: "Topics", title: "Topics covered", desc: `The 12 themes and 4 skill areas covered by the ${Q.length} practice questions for the Dental Foundation Training situational judgement test (SJT).`},
+    {file: "pattern-guide.html", nav: "Pattern guide", title: "Pattern guide: how DFT SJT answers are keyed", desc: "How the Dental Foundation Training SJT works and the patterns behind its answers: the priority order, the escalation ladder, what top and bottom options look like, traps and technique."},
+    {file: "playbooks.html", nav: "Playbooks", title: "Theme playbooks", desc: "For each of the 12 DFT SJT themes: what usually ranks high, what usually ranks low, and the nuance that changes the order."}
+  ];
+  const css = `:root{--bg:#f6f8f7;--card:#fff;--ink:#14201e;--ink2:#41534f;--line:#d6dfdc;--accent:#0e6a62}@media(prefers-color-scheme:dark){:root{--bg:#0e1413;--card:#151d1c;--ink:#e8efed;--ink2:#a7b8b4;--line:#27332f;--accent:#6fcfc0}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.6 Georgia,"Times New Roman",serif}main,header,footer{max-width:820px;margin:0 auto;padding:0 20px}header{padding-top:28px}
+nav{display:flex;flex-wrap:wrap;gap:6px 18px;font:15px/1.4 system-ui,sans-serif;margin:10px 0 0}nav a{color:var(--accent);text-decoration:none}nav a[aria-current]{font-weight:700;text-decoration:underline}
+h1{font-size:2rem;line-height:1.2;margin:.6em 0 .3em}h2{font-size:1.35rem;margin:1.8em 0 .4em}h3,h4{margin:1.2em 0 .3em}.eyebrow{font:600 12px/1 system-ui,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:var(--ink2)}
+.lead{font-size:1.1rem;color:var(--ink2)}a{color:var(--accent)}table{border-collapse:collapse;width:100%;font:15px/1.5 system-ui,sans-serif;margin:1em 0}th,td{border-bottom:1px solid var(--line);padding:8px 10px;text-align:left;vertical-align:top}th{color:var(--ink2);font-weight:600}
+.cta{display:inline-block;margin:1.4em 0;padding:11px 18px;background:var(--accent);color:#fff;border-radius:10px;font:600 16px/1 system-ui,sans-serif;text-decoration:none}@media(prefers-color-scheme:dark){.cta{color:#0e1413}}
+.ladder{list-style:none;padding:0}.ladder li{display:flex;gap:12px;margin:.5em 0}.ladder li>span{flex:0 0 auto;width:26px;height:26px;border-radius:50%;background:var(--accent);color:#fff;display:grid;place-items:center;font:600 13px system-ui,sans-serif}
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:0 28px}@media(max-width:620px){.cols{grid-template-columns:1fr}}.gcols{display:grid;grid-template-columns:1fr 1fr;gap:0 28px}@media(max-width:620px){.gcols{grid-template-columns:1fr}}
+footer{padding:28px 20px 48px;color:var(--ink2);font:14px/1.5 system-ui,sans-serif}.sec{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:6px 22px 18px;margin:18px 0}`;
+  const shell = (pg, body) => {
+    const url = BASE + pg.file, ld = {"@context": "https://schema.org", "@type": "WebPage", name: pg.title + " | DFT SJT Mock Question Bank", description: pg.desc, url, isPartOf: {"@type": "WebSite", name: "DFT SJT Mock Question Bank", url: BASE}, inLanguage: "en-GB"};
+    return `<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>${esc(pg.title)} | DFT SJT Mock Question Bank</title>
+<meta name="description" content="${esc(pg.desc)}">
+<link rel="canonical" href="${url}">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="DFT SJT Mock Question Bank">
+<meta property="og:title" content="${esc(pg.title)}">
+<meta property="og:description" content="${esc(pg.desc)}">
+<meta property="og:url" content="${url}">
+<meta property="og:image" content="${BASE}og-image.png">
+<meta name="twitter:card" content="summary_large_image">
+<script type="application/ld+json">${JSON.stringify(ld)}</script>
+<style>${css}</style>
+</head>
+<body>
+<header>
+<p class="eyebrow">Unofficial practice · Dental Foundation Training SJT</p>
+<nav aria-label="Pages"><a href="./">Practice questions</a>${PAGES.map(p => `<a href="${p.file}"${p.file === pg.file ? ' aria-current="page"' : ""}>${p.nav}</a>`).join("")}</nav>
+</header>
+<main>
+<h1>${esc(pg.title)}</h1>
+${body}
+<p><a class="cta" href="./">Practise the questions in the app</a></p>
+</main>
+<footer>Unofficial practice material, not affiliated with NHS England, COPDEND, HEIW or NIMDTA. The practice questions are original, and the keys are reasoned judgements, not official answers. <a href="https://github.com/sajeev2112/dft-sjt-mock">Source on GitHub</a>.</footer>
+</body>
+</html>
+`;
+  };
+  // 1) topics
+  const domainText = {}; { const f = gctx.GUIDE.find(g => g.id === "format"); if (f) for (const m of f.html.matchAll(/<li><b>([^<]+?):?<\/b>:?\s*([^<]+)<\/li>/g)) domainText[m[1].replace(/:$/, "").toLowerCase()] = m[2].replace(/^:\s*/, "").trim(); }
+  const dTxt = d => { const n = DOMAINS[d].toLowerCase(); const k = Object.keys(domainText).find(x => x.includes(n.split(" ")[0]) || n.includes(x.split(" ")[0])); const v = k ? domainText[k] : ""; return v.charAt(0).toUpperCase() + v.slice(1); };
+  const topics = `<p class="lead">The practice questions cover ${Object.keys(THEMES).length} themes, each marked against four skill areas. Every theme has a playbook describing what usually ranks high and low.</p>
+<h2>Four skill areas</h2>
+<table><thead><tr><th>Area</th><th>What it tests</th><th>Questions</th></tr></thead><tbody>${Object.keys(DOMAINS).map(d => `<tr><td>${esc(DOMAINS[d])}</td><td>${esc(dTxt(d))}</td><td>${byDomain[d] || 0}</td></tr>`).join("")}</tbody></table>
+<h2>Twelve themes</h2>
+<table><thead><tr><th>Theme</th><th>Questions</th><th>Playbook</th></tr></thead><tbody>${Object.keys(THEMES).map(t => `<tr><td>${esc(THEMES[t])}</td><td>${byTheme[t] || 0}</td><td><a href="playbooks.html#theme-${t}">Read the playbook</a></td></tr>`).join("")}</tbody></table>
+<h2>Question formats</h2>
+<table><thead><tr><th>Format</th><th>What you do</th><th>Questions</th></tr></thead><tbody>
+<tr><td>Ranking: actions</td><td>Rank five actions from most to least appropriate.</td><td>${byType.rank || 0}</td></tr>
+<tr><td>Ranking: considerations</td><td>Rank five considerations from most to least important.</td><td>${byType.consider || 0}</td></tr>
+<tr><td>Best three of eight</td><td>Choose the three most appropriate of eight actions.</td><td>${byType.best3 || 0}</td></tr></tbody></table>
+<p>See the <a href="pattern-guide.html">pattern guide</a> for how answers are keyed and the <a href="playbooks.html">playbooks</a> for each theme.</p>`;
+  fs.writeFileSync(path.join(root, "docs/topics.html"), shell(PAGES[0], topics));
+  // 2) pattern guide: the same sections the app shows
+  const guide = gctx.GUIDE.map(g => `<section class="sec" id="${g.id}"><h2>${esc(g.title)}</h2>${g.html}</section>`).join("\n");
+  fs.writeFileSync(path.join(root, "docs/pattern-guide.html"), shell(PAGES[1], `<p class="lead">How the test works, and the patterns that decide where an option sits in the key. The same material is in the app under Guide.</p>\n${guide}`));
+  // 3) playbooks
+  const play = Object.keys(THEMES).map(t => { const p = gctx.PLAYBOOKS[t]; return `<section class="sec" id="theme-${t}"><h2>${esc(THEMES[t])}</h2><p>${byTheme[t] || 0} practice questions.</p><div class="cols"><div><h3>Usually ranks high</h3><ul>${p.high.map(x => `<li>${esc(x)}</li>`).join("")}</ul></div><div><h3>Usually ranks low</h3><ul>${p.low.map(x => `<li>${esc(x)}</li>`).join("")}</ul></div></div><p><b>Nuance:</b> ${esc(p.note)}</p></section>`; }).join("\n");
+  fs.writeFileSync(path.join(root, "docs/playbooks.html"), shell(PAGES[2], `<p class="lead">For each theme: what the keys usually reward, what they usually mark down, and the nuance that changes the order. They describe patterns, not a script: each question's own facts decide.</p>\n${play}`));
+  // sitemap and llms.txt
+  const urls = ["", ...PAGES.map(p => p.file)];
+  fs.writeFileSync(path.join(root, "docs/sitemap.xml"), `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls.map(u => `<url><loc>${BASE}${u}</loc><lastmod>${today}</lastmod></url>`).join("\n")}\n</urlset>\n`);
+  fs.writeFileSync(path.join(root, "docs/llms.txt"), `# DFT SJT Mock Question Bank
+
+> Free, unofficial practice for the Dental Foundation Training (DFT) situational judgement test: ${Q.length} original questions with drag-to-rank answers, a timed 56-question mock, near-miss scoring and a pattern guide. The app itself runs in the browser and needs JavaScript; the teaching material is also published as plain pages.
+
+## Read these
+- [Topics covered](${BASE}topics.html): the 12 themes, 4 skill areas and 3 question formats.
+- [Pattern guide](${BASE}pattern-guide.html): how the test works and how answers are keyed (priority order, escalation ladder, traps, technique).
+- [Theme playbooks](${BASE}playbooks.html): what usually ranks high and low in each theme.
+
+## Notes
+- Unofficial and not affiliated with NHS England, COPDEND, HEIW or NIMDTA. The keys are reasoned judgements, not official answers.
+- The practice app: ${BASE}
+- Source code: https://github.com/sajeev2112/dft-sjt-mock
+`);
+}
 fs.writeFileSync(path.join(root, "src/study-data.js"), "// Generated by tools/build.js. Do not edit.\nexport const THEMES = " + JSON.stringify(THEMES) + ";\nexport const DOMAINS = " + JSON.stringify(DOMAINS) + ";\nexport const TAGS = " + JSON.stringify(TAG_LABELS) + ";\nexport const QA = " + JSON.stringify(Q.map(q => q.a)) + ";\nexport const QG = " + JSON.stringify(Q.map(q => q.g).join("")) + ";\nexport const SECTIONS = " + JSON.stringify(SECTIONS) + ";\nexport const TAG_READ = " + JSON.stringify(TAG_READ) + ";\nexport const OPT_TAGS = " + JSON.stringify(tagData.tags) + ";\n");
 
 const types = Q.map(q => q.t === "best3" ? "b" : "r").join("");
