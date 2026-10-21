@@ -30,7 +30,7 @@ function shuffle(a){ a = a.slice(); for (let i = a.length - 1; i > 0; i--) { con
 // ---------- state ----------
 const STORE = "dft-sjt-mock-v5", V4 = "dft-sjt-mock-v4";
 function newSet(extra){ return Object.assign({ans:{}, chk:{}, marked:false, el:0, cur:0, mode:"practice", logged:false}, extra || {}); }
-function fresh(){ return {v:5, ts:0, cid:uid(), share:true, view:"practice", setId:"p1", sets:{p1:newSet(), p2:newSet(), p3:newSet(), p4:newSet(), p5:newSet(), p6:newSet(), p7:newSet(), custom:null}, att:{}, days:{}, hist:[], sent:{}, outbox:[], fb:{}, flags:{}, plan:null}; }
+function fresh(){ return {v:5, ts:0, cid:uid(), share:true, view:"practice", setId:"p1", sets:{p1:newSet(), p2:newSet(), p3:newSet(), p4:newSet(), p5:newSet(), p6:newSet(), p7:newSet(), custom:null}, att:{}, days:{}, hist:[], sent:{}, outbox:[], fb:{}, flags:{}, plan:null, mocks:[]}; }
 let S = fresh();
 // Rebuilds state from untrusted JSON (localStorage, IndexedDB or a pasted progress code),
 // keeping only well-formed values so nothing odd can reach the page or crash rendering.
@@ -57,6 +57,13 @@ function cleanSet(x, list){
   if (x.qs && typeof x.qs === "object") { set.qs = {}; for (const k of Object.keys(x.qs)) { const i = +k; if (isQi(i) && list.includes(i)) set.qs[i] = Math.floor(num(x.qs[k], 1e5)); } }
   return set;
 }
+function cleanCustom(c){
+  if (!c || !Array.isArray(c.list)) return null;
+  const list = [...new Set(c.list.map(Number))].filter(isQi); if (!list.length) return null;
+  return Object.assign(cleanSet(c, list), {list, name: typeof c.name === "string" ? c.name.slice(0, 60) : "Quiz",
+    kind: typeof c.kind === "string" ? c.kind.slice(0, 10) : "quick", created: num(c.created, 1e14),
+    limit: Math.floor(num(c.limit, 20000)), started: !!c.started, left: !!c.left});
+}
 function normalise(o){
   const s = fresh();
   if (!o || typeof o !== "object") return s;
@@ -66,19 +73,12 @@ function normalise(o){
   s.view = ["practice", "results", "guide", "settings"].includes(o.view) ? o.view : "practice";
   const sets = o.sets || {};
   for (const id of Object.keys(PAPERS)) s.sets[id] = cleanSet(sets[id], range(PAPERS[id].from, PAPERS[id].to));
-  const c = sets.custom;
-  if (c && Array.isArray(c.list)) {
-    const list = [...new Set(c.list.map(Number))].filter(isQi);
-    if (list.length) {
-      s.sets.custom = Object.assign(cleanSet(c, list), {list, name: typeof c.name === "string" ? c.name.slice(0, 60) : "Quiz",
-        kind: typeof c.kind === "string" ? c.kind.slice(0, 10) : "quick", created: num(c.created, 1e14),
-        limit: Math.floor(num(c.limit, 20000)), started: !!c.started, left: !!c.left});
-    }
-  }
+  const cc = cleanCustom(sets.custom); if (cc) s.sets.custom = cc;
+  s.mocks = (Array.isArray(o.mocks) ? o.mocks : []).map(cleanCustom).filter(m => m && m.marked).slice(-3);
   s.setId = s.sets[o.setId] && (o.setId === "custom" || PAPER_IDS.includes(o.setId)) ? o.setId : "p1";
   for (const k of Object.keys(o.att || {})) { const i = +k; if (isQi(i) && Array.isArray(o.att[k])) s.att[i] = o.att[k].slice(-5).map(a => { const r = {g: num(a && a.g, 20), m: num(a && a.m, 20) || 20, t: num(a && a.t, 1e14)}; const sec = Math.floor(num(a && a.s, 3600)); if (sec > 0) r.s = sec; return r; }); }
   for (const d of Object.keys(o.days || {})) { const x = o.days[d]; if (/^\d{4}-\d{2}-\d{2}$/.test(d) && x) s.days[d] = {g: num(x.g), m: num(x.m), n: num(x.n)}; }
-  s.hist = (Array.isArray(o.hist) ? o.hist : []).slice(-200).filter(h => h && typeof h === "object").map(h => ({t: num(h.t, 1e14), name: String(h.name || "Set").slice(0, 80), g: num(h.g), m: num(h.m) || 1, n: num(h.n), total: num(h.total), mode: h.mode === "exam" ? "exam" : "practice"}));
+  s.hist = (Array.isArray(o.hist) ? o.hist : []).slice(-200).filter(h => h && typeof h === "object").map(h => ({t: num(h.t, 1e14), name: String(h.name || "Set").slice(0, 80), g: num(h.g), m: num(h.m) || 1, n: num(h.n), total: num(h.total), mode: h.mode === "exam" ? "exam" : "practice", c: num(h.c, 1e14)}));
   for (const k of Object.keys(o.sent || {})) { const i = +k; if (isQi(i)) s.sent[i] = 1; }
   for (const k of Object.keys(o.fb || {})) { const i = +k; if (isQi(i)) s.fb[i] = 1; }
   for (const k of Object.keys(o.flags || {})) { const i = +k; if (isQi(i) && o.flags[k]) s.flags[i] = 1; }
@@ -238,7 +238,7 @@ function logSetIfDone(id){
   if (!list.every(qi => revealed(set, qi))) return;
   let g = 0, m = 0, n = 0;
   list.forEach(qi => { if (started(set, qi)) { const s = qScore(set, qi); g += s.got; n++; } m += isRank(Q[qi]) ? 20 : 12; });
-  S.hist.push({t:Date.now(), name:setName(id), g, m, n, total:list.length, mode:set.mode});
+  S.hist.push({t:Date.now(), name:setName(id), g, m, n, total:list.length, mode:set.mode, c: isMock(set) ? set.created : 0});
   set.logged = true;
 }
 
@@ -641,6 +641,12 @@ function builderHtml(){
   h += `<div class="actions"><button type="button" class="btn" data-act="cancel-build">Cancel</button></div>`;
   return h;
 }
+// A finished mock is kept (the last three) when something else takes the quiz slot, so its answers and review aren't lost.
+function archiveMock(){
+  const c = S.sets.custom; if (!c || !isMock(c) || !c.marked) return;
+  S.mocks = (S.mocks || []).filter(m => m.created !== c.created); S.mocks.push(c); S.mocks = S.mocks.slice(-3);
+}
+const mockKept = c => !!c && ((S.sets.custom && S.sets.custom.created === c && S.sets.custom.marked) || (S.mocks || []).some(m => m.created === c));
 function buildQuiz(kind, arg){
   const c0 = S.sets.custom;
   if (c0 && !c0.marked && !c0.logged) {
@@ -660,6 +666,7 @@ function buildQuiz(kind, arg){
   else if (kind === "area") { list = shuffle(pickFresh(all.filter(i => Q[i].d === arg), 12)); name = DOMAINS[arg]; }
   else if (kind === "theme") { list = shuffle(all.filter(i => Q[i].g === arg)); name = THEMES[arg]; }
   if (!list.length) return;
+  archiveMock();
   S.sets.custom = newSet(Object.assign({name, kind, list, mode, created:Date.now()}, kind === "mock" ? {limit: MOCK_SECS, started: false} : {}));
   S.setId = "custom"; S.view = "practice"; ui.building = false; ui.warn = false; ui.summary = false; ui.warned = {}; timerOn = false; autoPausedSet = null;
   save(); location.hash = "practice"; render(); scrollToCard();
@@ -766,7 +773,7 @@ function renderResults(){
   h += `<h3 class="bsub">By paper</h3><div class="doms wide">` + PAPER_IDS.map(id => { const P = PAPERS[id]; let pg = 0, pm = 0, n = 0; range(P.from, P.to).forEach(i => { const a = lastAtt(i); if (a) { pg += a.g; pm += a.m; n++; } }); return `<div class="dom"><span>${P.name} <small class="muted">${n}/32</small></span><span>${n ? pct(pg, pm) + "%" : "–"}</span><div class="bar"><i style="width:${pct(pg, pm)}%"></i></div></div>`; }).join("") + `</div>`;
   if (S.hist.length) {
     h += `<h3 class="bsub">Completed sets</h3><div class="tscroll"><table class="rtable rt-hist"><thead><tr><th>Date</th><th>Set</th><th>Mode</th><th>Score</th></tr></thead><tbody>`;
-    S.hist.slice().reverse().forEach(x => { h += `<tr><td>${new Date(x.t).toLocaleDateString("en-GB", {day:"numeric", month:"short"})}</td><td>${esc(x.name)}</td><td>${x.mode === "exam" ? "Exam" : "Practice"}</td><td>${x.g} / ${x.m} · ${pct(x.g, x.m)}%</td></tr>`; });
+    S.hist.slice().reverse().forEach(x => { h += `<tr><td>${new Date(x.t).toLocaleDateString("en-GB", {day:"numeric", month:"short"})}</td><td>${esc(x.name)}${x.c && mockKept(x.c) ? ` <button type="button" class="btn small" data-act="mock-open" data-c="${x.c}">Review</button>` : ""}</td><td>${x.mode === "exam" ? "Exam" : "Practice"}</td><td>${x.g} / ${x.m} · ${pct(x.g, x.m)}%</td></tr>`; });
     h += `</tbody></table></div>`;
   }
   el.innerHTML = tidyResults(h) + `</div>`;
@@ -1015,6 +1022,17 @@ document.addEventListener("click", async e => {
     case "mock-start": if (window.Exam && Exam.open()) break; // exam overlay (exam.js): its Ready To Begin dialog starts the clock
       set.started = true; set.el = 0; delete set.qt; timerOn = true; ui.warned = {}; save(); mockEvent("start", set, "plain"); render(); focusCard(); announce(`Mock started. You have ${Math.round(set.limit / 60)} minutes.`); break;
     case "summary": ui.summary = true; render(); scrollToCard(); break;
+    case "mock-open": {
+      const created = +b.dataset.c, cur = S.sets.custom;
+      let m = cur && cur.created === created && cur.marked ? cur : (S.mocks || []).find(x => x.created === created);
+      if (!m) break;
+      if (m !== cur) {
+        if (cur && !cur.marked && !cur.logged) { const done = cur.list.filter(i => started(cur, i)).length; if ((done || (isMock(cur) && cur.started)) && !confirm(`Open this mock? Your unfinished “${cur.name}” (${done} of ${cur.list.length} answered) will be replaced.`)) break; }
+        archiveMock(); S.mocks = S.mocks.filter(x => x !== m); S.sets.custom = m;
+      }
+      S.setId = "custom"; S.view = "practice"; ui.building = false; ui.summary = true; ui.warn = false; ui.confirmMark = ui.confirmReset = false; timerOn = false; autoPausedSet = null;
+      save(); location.hash = "practice"; render(); scrollToCard(); break;
+    }
     case "review": ui.summary = false; go(0); focusCard(); break;
     case "open-q": { const q = +b.dataset.qi, id = PAPER_IDS.find(i => q >= PAPERS[i].from && q < PAPERS[i].to); if (!id) break; S.setId = id; S.view = "practice"; ui.building = false; ui.summary = false; ui.warn = false; ui.confirmMark = ui.confirmReset = false; timerOn = false; autoPausedSet = null; S.sets[id].cur = q - PAPERS[id].from; persistAsIs(); render(); focusCard(); break; }
     case "review-q": ui.summary = false; go(+b.dataset.k); focusCard(); break;
