@@ -8282,7 +8282,1287 @@ const RW_7_4 = [
  }
 ];
 
-const Q = [...RW_1_1, ...RW_1_2, ...RW_1_3, ...RW_1_4, ...RW_2_1, ...RW_2_2, ...RW_2_3, ...RW_2_4, ...RW_3_1, ...RW_3_2, ...RW_3_3, ...RW_3_4, ...RW_4_1, ...RW_4_2, ...RW_4_3, ...RW_4_4, ...RW_5_1, ...RW_5_2, ...RW_5_3, ...RW_5_4, ...RW_6_1, ...RW_6_2, ...RW_6_3, ...RW_6_4, ...RW_7_1, ...RW_7_2, ...RW_7_3, ...RW_7_4];
+// ---- Paper 8 · Expert ----
+const RW_8_1 = [
+ {
+  "t": "rank",
+  "d": "P",
+  "g": "W",
+  "a": "Therapist asks for pulp prescription",
+  "k": "ACBDE",
+  "s": "Month 4, a mixed practice, Saturday. You are the only dentist in, running the emergency session, with patients booked at 11:15 and 11:45; the owner and your ES, Dr Paul Grant, is on holiday abroad. In the next surgery the dental therapist, Bethan Hughes, runs a direct-access list. 10:40: she shows you a bitewing of LR6 for her new patient, Ms Zara Iqbal, 34, and asks whether the distal caries looks close to the pulp. 10:52: she is back. She has a bleeding point, Ms Iqbal is numb under rubber dam and anxious, and Bethan asks you to ‘write me a quick prescription to extirpate and dress it; I did loads in my last job abroad’. Pulp extirpation is well within your competence, and you have about 20 minutes before your next patient.",
+  "o": [
+   [
+    "Tell Bethan you can’t prescribe adult pulp treatment as it is outside a therapist’s scope, then examine Ms Iqbal yourself and, with her consent, carry out the pulp management now.",
+    "This edges out C because Ms Iqbal is numb and isolated now and you have 20 minutes: adult pulp treatment is outside a therapist’s title, no prescription can extend it, and you are competent to take the referral (GDC scope of practice guidance; Std 6.4.1)."
+   ],
+   [
+    "Decline to write the prescription, and advise Bethan to place a sedative dressing, explain the exposure to Ms Iqbal and refer her to a dentist on Monday, recording the referral.",
+    "Declining carries it and temporising is safe, but the second half costs it: the guidance’s route for when no dentist is free leaves an exposed pulp until Monday although you are free today, so it falls below C (GDC scope of practice guidance)."
+   ],
+   [
+    "Decline to write the prescription, and ask Bethan to place a sedative dressing so that you can extirpate LR6 yourself at 12:15, once your last booked patient has gone.",
+    "Declining carries it and she is treated today, but the timing costs it: an anxious patient waits over an hour and needs anaesthetic again when the 20 minutes free now would do, so it sits below A but above B (Std 1.2.4, 6.4.1)."
+   ],
+   [
+    "Decline to write the prescription, and remind Bethan that under direct access the decision on whether and where to refer Ms Iqbal is hers to make and record.",
+    "Declining is right, and as the treating clinician under direct access she is responsible for referring, but this hands back an exposed pulp with no plan when you could help, so it sits below B; unlike E, it delegates nothing out of scope (Std 6.4.2; GDC direct access guidance)."
+   ],
+   [
+    "Examine Ms Iqbal yourself to confirm the exposure, then write Bethan a prescription to extirpate and dress LR6, and stay in her surgery while she does it.",
+    "Examining her and staying nearby sound like oversight, but the prescription delegates a task outside the therapist’s title, which no prescription or supervision can bring within her scope, and you stay accountable, so it ranks lowest (Std 6.3.1; GDC scope of practice guidance)."
+   ]
+  ],
+  "tk": "A prescription can’t extend a professional title’s scope; when a dentist who can help is free now, accept the referral rather than temporise, defer or leave it to the therapist.",
+  "r": [
+   "6.3.1",
+   "6.4.1",
+   "6.4.2"
+  ]
+ },
+ {
+  "t": "best3",
+  "d": "I",
+  "g": "F",
+  "a": "Coroner’s request and grieving son",
+  "k": "ACF",
+  "s": "Month 9, a mixed practice, Tuesday. 9:00: an email from Ms Lorna Hayes, a coroner’s officer. Mr Ray Kendal, 71, died suddenly at home eight days ago, ten days after you placed a filling in his LR5 under local anaesthetic. She asks for a copy of his dental records and a short factual statement of your contact with him within 14 days, sent to the coroner’s secure email, and says this is routine after any recent health contact. 10:15: his son, Mark, phones. As next of kin he wants a copy of ‘Dad’s notes’ for the inquest, and asks whether ‘the filling or the injection had anything to do with it’; he doesn’t say whether he is the executor. Your note records the anaesthetic and the filling, but not the medical-history check you believe you did; the history was last updated 13 months ago. The practice manager, Ms Gill Owens, is the data protection lead and is in today; your ES is on a course all week.",
+  "o": [
+   [
+    "Tell Ms Owens about the coroner’s request, then send the records it asks for through the coroner’s secure email, keeping a note of exactly what was sent and when.",
+    "Covers the immediate duty: you must co-operate with a coroner, and sending only what was requested by the secure route, with a record, discloses the minimum needed in the right way (Std 9.4.2, 4.3.4, 4.5.2)."
+   ],
+   [
+    "Add a dated entry to the visit note recording that the medical history was checked with no changes, as you believe it was, then send the record to the coroner’s secure email.",
+    "Sending the record is right, but the entry states as fact a check you only believe you did, added after his death, so the record is no longer accurate; the honest place for the gap is your statement (C) (Std 1.3.1, 4.1.4)."
+   ],
+   [
+    "Contact your indemnity provider today for advice on the statement, then write it factually within the deadline, including that your note doesn’t record a medical-history check.",
+    "Covers your own position honestly: an inquest is a legal process in which indemnity advice is right, and writing on time, gap included, gives full and truthful information, which edges out E (Std 9.4.2, 1.3.1)."
+   ],
+   [
+    "Ask Mark whether he is his father’s executor and, if he says he is, post him a copy of the notes today, letting Ms Owens know what you have sent.",
+    "Checking his role sounds careful, but posting the notes on an unverified phone claim bypasses Ms Owens’s process, when confidentiality survives death and next of kin alone gives no right to records, unlike F (Std 4.2.8)."
+   ],
+   [
+    "Write your statement today and send it to the coroner, stating that you believe you checked his medical history as usual but that your note doesn’t record it.",
+    "Honest and prompt, so it comes close, but it sends a statement about your own care to an inquest without your indemnifier’s advice when there are 14 days to get it, unlike C, which does both, so it isn't one of the three (Std 9.4.2, 1.3.1)."
+   ],
+   [
+    "Phone Mr Kendal back to offer your condolences, and explain that you can’t discuss or release his father’s records by phone and that Ms Owens will explain how to request them.",
+    "Covers the person: condolence is owed, but confidentiality survives death and next of kin alone gives no right to records, so his request goes through the practice’s process, which Ms Owens can explain (Std 4.2.8)."
+   ],
+   [
+    "Ask your indemnity provider to review the records and your statement before anything is released, and tell Ms Hayes that you may need longer than the 14 days.",
+    "Advice from your indemnifier is right, which keeps it close, but planning to overrun before you have even asked delays co-operation with the coroner, unlike C, which takes advice and meets the deadline (Std 9.4.2)."
+   ],
+   [
+    "Ask Ms Owens to send the coroner Mr Kendal’s whole practice file, including his correspondence and payment history, so that nothing relevant is missed.",
+    "Full co-operation sounds right, but a statutory request is met with the minimum necessary, and sending letters and payment history when the coroner asked for dental records and a statement discloses more than A does (Std 4.3.4, 9.4.2)."
+   ]
+  ],
+  "tk": "A coroner’s request needs prompt, truthful co-operation limited to what was asked; confidentiality survives death, and a gap in your record is declared honestly with advice, never filled in afterwards.",
+  "r": [
+   "9.4.2",
+   "4.2.8",
+   "4.3.4"
+  ]
+ },
+ {
+  "t": "best3",
+  "d": "P",
+  "g": "W",
+  "a": "Domiciliary round without a nurse",
+  "k": "ADG",
+  "s": "Month 7, the community dental service’s domiciliary round. 1:05pm: your dental nurse, Jade Cole, gets a call from her son’s school; he is ill and she leaves by taxi. Two visits remain. At 1:30pm, Mrs Ivy Shaw, 88, at Larch House care home, needs her new lower denture eased where it is rubbing. At 2:30pm, Mr Ben Ojo, 80, who lives alone in his flat, is booked for extraction of a mobile, painful lower incisor under local anaesthetic. Larch House says its senior care worker, Grace Ndlovu, can sit in, as she ‘often sits in with the chiropodist’; whether she has any training to support dental care isn’t known. Your clinical lead, Dr Hilary Burke, is at the clinic base by phone. 1:15pm: Mr Ojo’s daughter rings to say he was up all night in pain and ‘can’t wait another week’, and Dr Burke tells you a nurse, Sam, can reach his flat by 3:30pm.",
+  "o": [
+   [
+    "At Larch House, ask Grace what training she has had and agree that she stays throughout and knows how to summon help, then ease Mrs Shaw’s denture.",
+    "Easing a denture is low-risk, and in a care home a trained carer can support you, so checking Grace’s training and that she can summon help is the risk assessment the standard asks for, unlike F (Std 6.2.5, 6.2.3)."
+   ],
+   [
+    "Ease Mrs Shaw’s denture with Grace present, then extract Mr Ojo’s incisor alone at 2:30pm, as he is in pain and the tooth is already mobile.",
+    "Easing with Grace is sound, but extracting alone in a flat with nobody to help in an emergency is invasive treatment without support when a nurse is an hour away (Std 6.2.6, 6.2.1)."
+   ],
+   [
+    "Rebook Mr Ojo’s extraction for next week’s round when Jade is back, and phone his daughter with advice on pain relief until then.",
+    "This was the right call before 1:15pm, but once a nurse can reach him today it leaves a man in pain for a week without need, so it falls below D (Std 1.2.4, 6.2.2)."
+   ],
+   [
+    "Phone Mr Ojo’s daughter back to say the extraction will go ahead at 3:30pm with a nurse present, and give advice on pain relief for the meantime.",
+    "After 1:15pm the extraction needn’t wait a week: a nurse can be there by 3:30pm, so he is treated today with support, and pain advice covers the short wait (Std 6.2.2, 1.2.4)."
+   ],
+   [
+    "Return to base and rebook Mrs Shaw for another day, then come back out with Sam at 3:30pm to carry out Mr Ojo’s extraction.",
+    "Treating Mr Ojo with Sam is right, but dropping Mrs Shaw’s visit leaves her denture rubbing when a trained carer may be able to support a low-risk easing, unlike A (Std 6.2.5)."
+   ],
+   [
+    "At Larch House, ask Grace to sit in and pass you instruments while you ease Mrs Shaw’s denture, as the home says she regularly supports visiting clinicians.",
+    "Going ahead with Grace is right in principle, but taking the home’s word skips the check of her training and of who would summon help, unlike A, which makes that check, so this isn't one of the three (Std 6.2.5, 6.2.3)."
+   ],
+   [
+    "Tell Dr Burke how each visit is going ahead, and record in both patients’ notes who supported each visit and the reasons for the arrangement.",
+    "Covers the system: the clinical lead knows how her team is working, and recording who supported each visit and why puts the risk assessment you made in each patient’s record, unlike H (Std 6.5.1, 6.2.3)."
+   ],
+   [
+    "Phone Dr Burke to tell her how each visit is going ahead, and ask her to note at base that Jade went home and who covered the rest of the round.",
+    "Informing the lead is right, which keeps it close, but a note at base leaves both patients’ records silent on who supported their care and why, so the risk assessment isn’t recorded where it belongs, unlike G (Std 6.5.1)."
+   ]
+  ],
+  "tk": "When support falls away, assess the risk visit by visit: low-risk care can go ahead with a carer whose training you have checked, but invasive treatment waits for a trained team member who can come today.",
+  "r": [
+   "6.2.3",
+   "6.2.5",
+   "6.2.6"
+  ]
+ },
+ {
+  "t": "rank",
+  "d": "I",
+  "g": "I",
+  "a": "Gagging clause in associate contract",
+  "k": "BDCAE",
+  "s": "Month 11, a mixed practice, Thursday. At lunchtime the owner, Dr Julian Pryce, who is also your ES, offers you an associate post from September and gives you the contract to ‘read over the weekend’. Clause 14 says the associate shall not, during or after the engagement, ‘make any statement to any third party, including any regulator, commissioner or the media, concerning the Practice, its staff or its patients, without the Principal’s prior written consent’. When you ask about it, Dr Pryce says it is ‘standard from my solicitor, really only about the press’. At 6pm he phones: another candidate is waiting, and he needs your signature by 9am tomorrow. You want the post. Your professional association’s contract advisers can’t call back until Monday; your TPD, Ms Anna Reid, is reachable by email.",
+  "o": [
+   [
+    "Sign tonight to secure the post, then ask Dr Pryce to add a side letter, signed by you both, stating that clause 14 doesn’t cover concerns raised with any regulator.",
+    "The side letter would fix the wording, which lifts it above E, but signing first means you have already agreed a clause restricting concerns to regulators, and he may never sign it, so it sits below C (Std 8.1.2)."
+   ],
+   [
+    "Tell Dr Pryce you can’t sign clause 14 as worded because it would stop you raising patient-safety concerns with a regulator, and ask him to limit it to confidential business information.",
+    "This edges out D because it deals with the clause before the deadline, with the one person who can change it: you must never agree a contract that restricts raising patient-safety concerns, whatever its stated aim (Std 8.1.2)."
+   ],
+   [
+    "Email Ms Reid about clause 14, since your employer is also your trainer, and ask her to take it up with Dr Pryce on your behalf before you decide.",
+    "Involving your TPD is fair when your employer is also your trainer, and unlike A nothing is signed, but asking her to negotiate hands over a point you can put to Dr Pryce yourself, so it sits below D (Std 8.1.2)."
+   ],
+   [
+    "Tell Dr Pryce you’d like your professional association’s contract advisers to check clause 14 before you sign, and ask him to hold the post open until Monday.",
+    "Taking advice before signing is sound and nothing is agreed, but it defers to Monday a point you can make yourself tonight and leaves him unaware what is wrong with the clause, so it sits below B but above C (Std 8.1.2)."
+   ],
+   [
+    "Sign the contract, as whistleblowing law protects disclosures to a regulator whatever a contract says, and ask Dr Pryce to review clause 14 when the contract is renewed.",
+    "It sounds informed, and the review keeps the issue alive, but signing is exactly agreeing to a gagging clause, which the standard forbids whether or not a court would enforce it, so it ranks lowest (Std 8.1.2, 8.1.1)."
+   ]
+  ],
+  "tk": "Never agree a contract that restricts raising patient-safety concerns; say so to the person offering it and ask for the wording to change before you sign.",
+  "r": [
+   "8.1.2",
+   "8.1.1"
+  ]
+ },
+ {
+  "t": "rank",
+  "d": "T",
+  "g": "T",
+  "a": "Direction for an unseen patient",
+  "k": "ABCDE",
+  "s": "Month 6, an NHS practice, 3:20pm. The hygienist, Mel Carter, runs a direct-access list in the next surgery. Between your patients she stops you in the corridor: she has irrigated and debrided a pericoronitis around LL8 for Ms Tia Brooks, 23, whom you have never seen. Ms Brooks says she ‘felt hot’ last night and wants antibiotics because a friend was given them for the same thing. Mel hasn’t taken her temperature; she says the swelling is limited to the gum flap and Ms Brooks is eating normally. Mel asks you to sign a patient-specific direction so that she can supply metronidazole from stock, adding, ‘It’s only three days’ worth.’ You are ten minutes behind and your next patient is waiting, but a three-minute look next door is possible. Your ES is on study leave this week.",
+  "o": [
+   [
+    "Tell Mel you need to assess Ms Brooks before directing any antibiotic, then check her temperature and the swelling yourself before your next patient and decide with her.",
+    "This edges out B on timing: a three-minute look now settles whether ‘felt hot’ means systemic involvement, and a dentist who directs a prescription-only medicine is responsible for it, so must assess first (GDC direct access guidance; Std 6.3.1)."
+   ],
+   [
+    "Say that you will assess Ms Brooks before directing anything, and ask Mel to keep her in the waiting room so that you can examine her after your next patient.",
+    "The first half carries it, as you assess before directing, but the timing costs it: a treated patient waits through your next appointment when a three-minute look is possible now, so it sits below A but above C (Std 6.3.1)."
+   ],
+   [
+    "Explain to Mel that antibiotics aren’t indicated for pericoronitis without systemic signs, and ask her to give Ms Brooks analgesic advice and tell her to return if she feels worse.",
+    "The first half states the right principle, as local measures come first and antibiotics are for systemic involvement or persistent swelling (Std 7.1.1); the second half settles the uncertain fever without checking it, so it falls below B but stays above D."
+   ],
+   [
+    "Ask reception to book Ms Brooks into your first free appointment tomorrow so that you can examine her, and ask Mel to give her analgesic advice in the meantime.",
+    "Planning your own examination is sound and directs nothing unassessed, but a possibly systemic infection waits overnight with no check today, so it sits below C, which at least applies the guidance now (Std 1.4.2)."
+   ],
+   [
+    "Ask Mel to take Ms Brooks’s temperature and tell you the reading, then sign the direction between patients if it is raised and decline it if it is normal.",
+    "Getting her temperature sounds like evidence, but you would direct a prescription-only medicine on one relayed reading for a patient you haven’t seen, and stay responsible for it, so it ranks lowest (GDC direct access guidance; Std 6.3.1, 7.1.1)."
+   ]
+  ],
+  "tk": "Directing a prescription-only medicine makes you responsible for that patient, so when a short assessment is possible now you assess before you direct, and for pericoronitis local measures come first.",
+  "r": [
+   "6.3.1",
+   "7.1.1",
+   "1.4.2"
+  ]
+ },
+ {
+  "t": "consider",
+  "d": "E",
+  "g": "K",
+  "a": "Second stage, fluctuating capacity",
+  "k": "BADEC",
+  "s": "Month 5, a community dental service visit to a hospital ward, Wednesday 11am. Last Tuesday in clinic, Mr Arthur Penn, 79, alert and with his daughter, agreed to extraction of two non-restorable lower molars over two visits; you removed LL6 that day and recorded the discussion. On Friday he was admitted with a urinary infection and delirium, and the ward asked the service to take out LR7 at today’s visit. He is drowsy, thinks he is at home and can’t recall the plan. The staff nurse, Ms Ada Obi, says, ‘He agreed last week; the signed form’s in his notes.’ His daughter, Carol, who holds no lasting power of attorney, says by phone that he ‘would want it done; he hates coming back’. LR7 isn’t painful and there is no swelling. Then Ms Obi adds that his confusion is improving on antibiotics and he is expected home on Friday. Your supervising community dentist can be phoned.",
+  "o": [
+   [
+    "Whether LR7 can safely wait until Mr Penn is home and well again, given that it isn’t painful and there is no swelling around it at present.",
+    "With no pain or swelling a short delay carries little risk, which is what lets the decision wait for him, so it edges out D; were he in pain, it could become a best-interests decision today (MCA Code ch 5; Std 1.4.2)."
+   ],
+   [
+    "Whether Mr Penn can make this decision about LR7 today, and how likely he is to regain capacity within days as his delirium settles.",
+    "Comes first, just above A: capacity is decision- and time-specific, and if he may regain it within days the decision should wait for him to make, which his expected recovery suggests (MCA Code ch 4–5; Std 3.2.4)."
+   ],
+   [
+    "The ward’s wish to finish his dental care during this admission, since bringing him back to clinic after discharge may be harder for him.",
+    "Access after discharge is a fair point and the ward’s request is genuine, but neither can make consent valid or outweigh his chance to decide for himself within days, so this matters least, below E (Std 3.3.1; MCA Code ch 5)."
+   ],
+   [
+    "Whether the consent he gave in clinic last week, and the form he signed then, can still stand for the second extraction today.",
+    "Last week’s form is evidence of last week’s decision, not consent to today’s extraction (Std 3.3.2, 3.1.2). It tells you that you can’t simply go ahead, but not what to do instead, so it sits below A and above E."
+   ],
+   [
+    "What Mr Penn has said in the past about his dental care, and Carol’s view that he would want it done rather than come back.",
+    "His past wishes and Carol’s view count in any best-interests decision and in planning the next visit, but with no lasting power of attorney she can’t consent for him, so this sits below D (MCA Code ch 5, 7)."
+   ]
+  ],
+  "tk": "Capacity is decision- and time-specific: when a patient may soon regain it and the treatment can safely wait, you wait, because last week’s signed form can’t stand in for consent at this stage.",
+  "r": [
+   "3.2.4",
+   "3.3.2",
+   "3.1.2"
+  ]
+ },
+ {
+  "t": "consider",
+  "d": "T",
+  "g": "R",
+  "a": "Pharmacist supplying antibiotics",
+  "k": "CAEBD",
+  "s": "Month 8, an NHS practice next door to a community pharmacy. The pharmacist, Mr Sunil Batra, is friendly and often sends people with toothache your way. Monday: Mrs Lily Hart, 58, tells you that last month Mr Batra ‘sorted her out’ with amoxicillin for toothache without a prescription, and that she came out in an itchy rash on the second day. Thursday: Mr Kyle Dean, 30, at his examination, says Mr Batra gave him ‘a few days of antibiotics’ for a sore tooth in the spring, adding, ‘He does it for regulars.’ You haven’t seen any packaging or labels, and both patients ask you not to get him into trouble. Your ES is on leave for two weeks; the practice manager, Mrs Ann Cole, is in today. You are deciding what to do.",
+  "o": [
+   [
+    "That two matching accounts from separate patients may be enough to raise a concern, even without packaging, labels or other proof of your own.",
+    "You don’t need proof: two consistent accounts are enough, and if in doubt you raise it (Std 8.2.1, 8.2.2). It sits just below C because it is what stops the concern stalling, not why the concern matters."
+   ],
+   [
+    "Whether Mr Batra should first have the chance to explain, weighed against how serious it is to supply a prescription-only medicine without a prescription.",
+    "A chance to explain is fair and fits dealing with concerns locally first, but the supply is serious, so this shapes how fast you escalate rather than whether you do; it ranks below E (Std 8.2.1, 8.2.3)."
+   ],
+   [
+    "The risk to patients from antibiotics supplied without examination or a clinical reason, including Mrs Hart’s possible penicillin allergy, which her history should show.",
+    "Patients are getting antibiotics without examination or indication, and Mrs Hart may now be allergic, so this is why the concern matters and ranks first, just above A; updating her history today is your own task (Std 8.1.1, 4.1.1)."
+   ],
+   [
+    "Whether patients with toothache whom Mr Batra sends to you could lose that route to care if the working relationship with the pharmacy breaks down.",
+    "Patients’ access to care is a real interest, but they can still reach you directly, and it can’t outweigh the risk from unprescribed antibiotics or the duty to raise a concern, so it matters least, below B (Std 8.1.1)."
+   ],
+   [
+    "Who should hear a concern about a pharmacist rather than a dentist, and which regulator would deal with it if raising it locally isn’t enough.",
+    "A pharmacist answers to his own regulator, the General Pharmaceutical Council, not the GDC, so you raise it locally first and then with that regulator if needed (Std 8.2.3, 8.2.6); it sits below A, as the route matters once you know you must act."
+   ]
+  ],
+  "tk": "You don’t need proof to raise a concern, and a concern about another health professional goes to their own regulator, such as the General Pharmaceutical Council for a pharmacist.",
+  "r": [
+   "8.2.6",
+   "8.2.2",
+   "8.2.1"
+  ]
+ },
+ {
+  "t": "rank",
+  "d": "E",
+  "g": "M",
+  "a": "Stalled complaint, Ombudsman threat",
+  "k": "ABCDE",
+  "s": "Month 10, a mixed practice, 4:40pm. Six weeks ago Mrs Hannah Lowe, 52, an NHS patient, wrote to complain about three things: two weeks of pain after your root canal treatment on LL6, a receptionist’s manner on the phone, and being charged more than the written treatment plan she was given. She was sent an acknowledgement within three days with a copy of the procedure. The complaints manager, Ms Rita Fox, then went on long-term sick leave, and nothing more has been sent. Today, at her review with you, LL6 is comfortable. As she gets up to leave she says she has heard nothing at all, and then that she will ‘go straight to the Ombudsman tomorrow’. The owner, Dr Neil Marsh, runs the complaints procedure and is in the building until 6pm. Your ES, an associate, is on leave.",
+  "o": [
+   [
+    "Apologise that she has heard nothing, then take it to Dr Marsh before 6pm so that the complaint is reassigned today and she is told when to expect a full written reply.",
+    "This edges out B by fixing what she is complaining of: the complaint is reassigned today and she learns when to expect a full written reply, with updates at least every 10 days if it slips (Std 5.3.5, 5.3.6)."
+   ],
+   [
+    "Listen to her concern about the pain and answer it now, as it is about your own treatment, and tell Dr Marsh before 6pm that the rest of her complaint has stalled.",
+    "Owning your part carries it above C (Std 5.2.1), and Dr Marsh hears today, but she leaves with no date and no apology for the silence, and a spoken answer doesn’t replace the written reply on every point (Std 5.3.7, 5.3.10)."
+   ],
+   [
+    "Apologise for the delay and promise her that you will chase it up with Dr Marsh this week, so that she gets a reply as soon as possible.",
+    "Apologising and involving the owner is right, but the second half costs it: ‘this week’ with no date is a loose promise now she is ready to go to the Ombudsman, placing it below B but above D (Std 5.3.5)."
+   ],
+   [
+    "Explain that the complaints manager is off sick and that the Ombudsman normally expects the practice to reply first, and give her Dr Marsh’s name to contact.",
+    "Accurate about the route, as the Ombudsman follows the practice’s own reply (Std 5.3.11), and naming Dr Marsh gives her a contact, but it explains the delay rather than fixing it and leaves her to chase, so it sits below C (Std 5.3.5)."
+   ],
+   [
+    "Write and post her a full reply yourself tonight, after checking the charges with reception, and give Dr Marsh a copy for the complaints file, kept apart from her notes.",
+    "Filing it apart from her notes is right (Std 5.1.7), but the first half sinks it: you would bypass the procedure and its owner and answer for a colleague’s manner on your own account, so it ranks lowest (Std 5.1.1)."
+   ]
+  ],
+  "tk": "When a complaint is delayed, the patient must be told when to expect a full written reply and kept updated at least every 10 days, through the practice’s procedure and the person who runs it.",
+  "r": [
+   "5.3.5",
+   "5.3.6",
+   "5.1.1"
+  ]
+ }
+];
+const RW_8_2 = [
+ {
+  "t": "rank",
+  "d": "T",
+  "g": "W",
+  "a": "Aligners without a prescriber",
+  "k": "BEADC",
+  "s": "Month 3, a mixed practice that offers clear aligners, Tuesday 2:15pm. Dr Ellen Yates, the dentist with orthodontic training who prescribed every aligner case here, left the practice last Friday. The orthodontic therapist, Nadia Osei, knocks on your door. Mr Leon Ford, 29, is in her chair for his stage-2 visit, and the software plan shows 0.3 mm of interproximal reduction (IPR) between his lower incisors and four new attachments before he moves to aligner 7. She asks you to sign the next-stage prescription so that she can carry on, adding that Dr Yates’s original prescription ‘might already cover the IPR’, though she would have to find the file. You have no orthodontic training. The owner and your ES, Dr Raj Mehta, is in the building today but has no orthodontic training either. Mr Ford has taken the afternoon off work for this visit.",
+  "o": [
+   [
+    "Tell Mr Ford that his treatment needs a short pause while a new prescriber is arranged, and suggest that he contacts Dr Yates at her new practice to continue his care with her there.",
+    "Telling Mr Ford honestly carries the first half, but sending him to Dr Yates’s new practice hands the practice’s duty to arrange his care to the patient and leaves the other cases unowned, so it falls below E; it prescribes nothing, unlike D (Std 6.3.3)."
+   ],
+   [
+    "Decline to sign, telling Nadia that IPR is outside her scope and aligner prescribing outside your training, then ask Dr Mehta today to arrange a suitably qualified dentist for all the aligner cases.",
+    "Both halves carry it, and it edges out E: IPR is enamel removal, outside an orthodontic therapist’s title, you can’t prescribe what you aren’t trained in, and with Dr Yates gone every case needs a new prescriber (Std 7.2.1, 6.3.3; GDC scope of practice guidance)."
+   ],
+   [
+    "Examine Mr Ford and check that the software plan matches his teeth and the fit of his current aligner, then sign the stage-2 prescription, recording in his notes exactly what you checked.",
+    "Examining and recording sound diligent, but signing the stage-2 prescription is prescribing outside your training and directs a therapist to remove enamel, which no prescription can bring within her title, so it ranks lowest (Std 7.2.1, 6.3.1)."
+   ],
+   [
+    "Sign a prescription for the four attachments, since placing them removes no enamel, and leave the IPR and the move to aligner 7 for a dentist with orthodontic training to prescribe.",
+    "Leaving the IPR carries the second half, but the first costs it: attachments are part of an orthodontic course, so signing for them is orthodontic prescribing by someone untrained in it, which puts it below A (Std 7.2.1, 6.3.1; GDC scope of practice guidance)."
+   ],
+   [
+    "Decline to sign, and ask Nadia to find Dr Yates’s file and, if the original prescription covers the attachments, fit those today and leave the IPR until a new prescriber is in place.",
+    "Declining carries it and checking the file meets the uncertainty, but the second half costs it: a therapist isn’t responsible for progress, and with the prescriber gone nobody oversees the case, so it sits below B (GDC scope of practice guidance)."
+   ]
+  ],
+  "tk": "An orthodontic therapist works to a qualified prescriber who oversees progress and never removes enamel; when that prescriber leaves, the practice must find another rather than an untrained dentist signing.",
+  "r": [
+   "7.2.1",
+   "6.3.3",
+   "6.3.1"
+  ]
+ },
+ {
+  "t": "best3",
+  "d": "I",
+  "g": "R",
+  "a": "Unregistered coordinator whitening teeth",
+  "k": "CEG",
+  "s": "Month 2, a mixed practice, Thursday lunchtime. In the staff room, the new ‘smile coordinator’, Jodie Price, a former beauty therapist who isn’t GDC-registered, tells you about her ‘whitening top-ups’ on Saturdays: she takes the impressions, fits the trays and applies the gel herself, and three patients are booked for this Saturday. The practice manager, Mrs Carol Finch, joins in to say that the gel is ‘under 6%, so it’s cosmetic, not dentistry’. As you start to reply, Jodie adds that she ‘did three last Saturday’ and that they were ‘really pleased’. The owner, Dr Ian Webb, is in tomorrow, Friday; your ES works at the sister practice. You haven’t provided whitening at this practice yourself.",
+  "o": [
+   [
+    "Report Jodie’s whitening to the GDC this evening, as illegal practice by a non-registrant is a matter for the regulator, and tell Dr Webb on Friday that the report has been made.",
+    "Illegal practice does belong with the GDC, but the order costs it: a report tonight doesn’t stop Saturday’s bookings, and the owner who employs Jodie and must act learns last, so it falls below G and isn’t one of the three (Std 8.2.3, 8.2.5)."
+   ],
+   [
+    "Tell Dr Webb on Friday morning about the Saturday plan and last week’s three patients, and leave it to him, as the owner who employs Jodie, to decide whether it is reported to the GDC.",
+    "Close, as the owner is the right first rung, but leaving the report to his discretion costs it: illegal practice must reach the regulator, and without your own fallback it may not, so it falls below G (Std 8.2.3, 8.2.5)."
+   ],
+   [
+    "Tell Jodie and Mrs Finch today that whitening is dentistry whatever the gel strength, so a non-registrant can’t provide it, and ask that Jodie doesn’t carry out Saturday’s whitening appointments.",
+    "Stops the immediate harm: tooth whitening is dentistry whatever the product, so Saturday’s bookings must not go ahead with Jodie, and telling the manager too matters because registrants may answer for unregistered staff (Std 6.1.6; GDC v Jamous)."
+   ],
+   [
+    "Offer Dr Webb on Friday to examine Saturday’s three patients yourself and provide their first whitening cycle, so that the bookings can go ahead lawfully with a dentist providing the treatment.",
+    "Lawful in form, as a dentist may examine and whiten, but it solves the wrong problem: it keeps bookings made through an unlawful route and commits you to private cosmetic work, leaving Jodie and last week’s patients unaddressed (Std 6.1.6, 1.7.7)."
+   ],
+   [
+    "Propose that last Saturday’s three patients are offered an examination by a dentist, and that Dr Webb, as owner, decides how and by whom they are told what happened.",
+    "Covers the people already affected: they had dentistry from a non-registrant with no examination, so a dentist should check them, and the owner, responsible for the practice’s openness, decides how they are told, unlike H (Std 6.1.6; GDC candour guidance)."
+   ],
+   [
+    "Suggest that the hygienist provides the first cycle for each new whitening patient on a dentist’s prescription, with Jodie continuing the top-up appointments on later Saturdays.",
+    "A hygienist may give a first cycle on prescription, which carries the first half, but Jodie’s top-ups would still be dentistry by a non-registrant, and a first cycle also needs a dentist’s examination and a dentist on the premises (GDC direct access guidance)."
+   ],
+   [
+    "Tell Dr Webb on Friday morning about the Saturday plan and last week’s three patients, and agree that the practice reports it to the GDC, saying you will report it yourself if it doesn’t.",
+    "Covers the system: the owner, who employs Jodie and is in tomorrow, is the right first rung, and illegal practice must still reach the GDC, with you reporting it if the practice won’t; it outranks B by keeping that fallback (Std 8.2.3, 8.2.5)."
+   ],
+   [
+    "Phone last Saturday’s three patients yourself this evening to explain that their whitening was provided unlawfully, apologise, and offer each of them a check with a dentist.",
+    "Candour carries it, but phoning tonight comes before the owner, who answers for the practice, knows or has decided how to contact them, and labels their care before any dentist has seen them, so it falls below E (GDC candour guidance)."
+   ]
+  ],
+  "tk": "Tooth whitening is dentistry whatever the product: stop the unlawful bookings, bring the owner in before the regulator while making sure the GDC is told, and see that patients already treated are checked and told.",
+  "r": [
+   "6.1.6",
+   "8.2.3",
+   "8.2.5"
+  ]
+ },
+ {
+  "t": "rank",
+  "d": "I",
+  "g": "I",
+  "a": "Friend’s unreported police caution",
+  "k": "DAECB",
+  "s": "Month 3, November: a scheme study day. Over lunch, your friend Owen Clarke, a fellow FD on the scheme, tells you that in September he accepted a police caution for possessing cannabis at a music festival. ‘My solicitor said a caution isn’t a conviction,’ he says, ‘so I’ll mention it when I renew my registration in December.’ You say you aren’t sure that’s right, and he laughs it off. Then, as the afternoon session is called, he lowers his voice and asks you to keep it between the two of you: his ES is ‘old-school’ and he doesn’t want it to colour the year. Your TPD, Dr Helen Ward, is running the study day and is in the room. Nothing suggests that Owen uses cannabis now or that any patient is at risk.",
+  "o": [
+   [
+    "Tell Owen that a caution must be reported to the GDC straight away, not at renewal, and suggest that he phones his indemnity provider today for advice on how and when to report it.",
+    "Correcting him carries the first half, but advice on how and when costs it: the rule on cautions is already clear, so advice puts a step before one he can take now, below D; he still acts himself, unlike E (Std 9.3.1)."
+   ],
+   [
+    "Suggest that Owen asks his solicitor to confirm in writing that a caution needn’t be reported before renewal, and remind him to declare it fully and honestly when he renews in December.",
+    "Checking with the solicitor sounds diligent, but the GDC’s rules, not the criminal law, set this duty: a caution must be reported straight away, so this leaves a reportable matter unreported until December and his registration at risk (Std 9.3.1)."
+   ],
+   [
+    "Tell Owen that you can’t keep it between the two of you, then report his caution to the GDC yourself this evening, so that the regulator hears of it straight away, as the rule requires.",
+    "It gets the caution to the GDC straight away, unlike B, and is open with Owen, but reporting tonight takes from him the chance to report it himself and skips the local step, so it sits below E (Std 8.2.5; GDC raising concerns guidance)."
+   ],
+   [
+    "Tell Owen that a caution must be reported to the GDC straight away, not at renewal, and encourage him to report it himself now and to tell his ES.",
+    "Both halves carry it and it edges out A: the rule on cautions is clear, so correcting him and encouraging him to report it himself now, and to tell his ES, lets him act without you keeping a secret you can’t keep (Std 9.3.1, 8.1.1)."
+   ],
+   [
+    "Tell Owen that you can’t keep it between the two of you, and ask Dr Ward after the session to help him report it, telling Owen beforehand that you are going to her.",
+    "Refusing secrecy and telling Owen first carry it, but going to the TPD before he has had a chance to report it himself takes the matter over his head, so it sits below A; it stays within the scheme, above C (GDC raising concerns guidance)."
+   ]
+  ],
+  "tk": "A registrant must tell the GDC straight away about a caution, not at renewal; tell a peer the rule and help them self-report before taking it any further yourself.",
+  "r": [
+   "9.3.1",
+   "8.1.1",
+   "8.2.5"
+  ]
+ },
+ {
+  "t": "rank",
+  "d": "P",
+  "g": "P",
+  "a": "Empty oxygen before children’s list",
+  "k": "CEABD",
+  "s": "Month 10, a community dental service clinic in a health centre, Monday. The senior dentist is on leave, so you are the only dentist for a children’s list of extractions and fillings under local anaesthetic; Ava, 7, is booked at 9:00. 8:40: your regular nurse phones in sick, leaving Femi Adeyemi, an agency nurse on his first shift here, and the receptionist, Pat Hollis. 8:48: Femi mentions, hesitantly, that the oxygen gauge in the emergency kit ‘looked in the red’, adding that at his last placement he was told off for ‘interfering’. You check: the cylinder is nearly empty, and Pat can’t find a spare. The GP practice across the corridor keeps a spare oxygen cylinder in its treatment room. 8:52: the CDS clinical lead, Dr Martin Fox, says he will bring a full cylinder by 9:30. 8:58: he rings back. The van is out, and he can’t get one to you until 11:00.",
+  "o": [
+   [
+    "Thank Femi and brief him and Pat on the emergency kit and each person’s role, then postpone the list until Dr Fox’s cylinder arrives, rebooking the children who can’t wait until 11:00.",
+    "Thanking and briefing carry it, and waiting was the best plan at 8:52, when the delay was half an hour; after the 8:58 call it costs children two hours or their slot, so it falls below E, which waits far less (Std 6.6.6, 8.3.3)."
+   ],
+   [
+    "Phone Dr Fox back to ask him to decide whether the session should run before a full cylinder arrives, then follow his decision and tell the waiting parents what has been agreed.",
+    "Telling the parents carries the second half, but the first costs it: you lead the session and have the facts, so handing the decision to Dr Fox defers one that is yours and delays the start, so it falls below A (Std 6.6.7)."
+   ],
+   [
+    "Thank Femi and ask Pat to borrow the GP practice’s spare cylinder, then brief Femi and Pat on the kit and emergency roles once it is in place, before you start the list.",
+    "Both halves carry it and it edges out E: a spare minutes away restores the kit, briefing a new team on roles before the first child closes the gap, and thanking Femi helps a temporary nurse speak up (Std 1.5.3, 6.6.6, 8.3.3)."
+   ],
+   [
+    "Brief Femi and Pat on emergency roles, then start the list on time with the cylinder’s remaining oxygen and 999 as back-up, asking Dr Fox to log the fault for the incident record.",
+    "Briefing and logging the fault sound careful, but starting a children’s list with a near-empty cylinder, when a full one is minutes away, leaves no adequate emergency oxygen, so it ranks lowest (Std 1.5.3, 6.2.1; Resuscitation Council UK)."
+   ],
+   [
+    "Thank Femi and brief him and Pat on the kit and emergency roles, then ask Dr Fox to send a cylinder by taxi from the nearest CDS clinic, starting the list once it arrives.",
+    "Thanking, briefing and waiting for a full cylinder carry it, but sending to another clinic costs the children the best part of an hour when a spare is across the corridor, so it sits just below C and above A (Std 6.6.6, 1.5.3)."
+   ]
+  ],
+  "tk": "As the session lead, make the emergency kit complete and the team’s roles clear before treating, using the quickest safe fix rather than cancelling, waiting longer than needed or carrying on regardless.",
+  "r": [
+   "1.5.3",
+   "6.6.6",
+   "8.3.3"
+  ]
+ },
+ {
+  "t": "consider",
+  "d": "E",
+  "g": "K",
+  "a": "Foster carer, second-stage consent",
+  "k": "BDEAC",
+  "s": "Month 3, a community dental service paediatric clinic, Wednesday 10am. Kayla Morris, 8, is in local-authority care under a care order. Last month you extracted the first of two non-restorable lower primary molars, with written consent from her social worker, Ms Joy Adams, recorded in the notes. Today her foster carer, Mrs Dee Hart, who has looked after Kayla for two weeks, brings her for the second extraction and says, ‘The social worker said it’s fine.’ She has no paperwork about delegated authority. Ms Adams’s phone goes to voicemail, and the local authority’s duty social work line says someone will call back ‘within the hour’. The tooth is mildly uncomfortable, with no swelling or sign of infection. Kayla holds Mrs Hart’s hand and says she is scared. Your supervising community dentist is in the clinic.",
+  "o": [
+   [
+    "What Mrs Hart can offer as Kayla’s carer: support and information today, and possibly authority to consent that the local authority has delegated but not yet confirmed.",
+    "Mrs Hart matters: she can comfort Kayla, give information and may yet prove to hold delegated authority, but a foster carer doesn’t hold parental responsibility automatically, so her word isn’t consent; below E (DH reference guide to consent)."
+   ],
+   [
+    "Whether anyone here can give valid consent for this second extraction, given that last month’s consent came from Ms Adams and Mrs Hart’s authority is unconfirmed.",
+    "Comes first, just above D: with no emergency, nothing can go ahead without valid consent for this stage, and under a care order the local authority, not the foster carer, holds parental responsibility (Std 3.3.2, 3.1.1)."
+   ],
+   [
+    "The practical cost of delay: a slot lost from the clinic’s list, and a second trip for Mrs Hart, who has been caring for Kayla for only two weeks.",
+    "Real but least decisive: a lost slot and a second trip are matters of convenience, and neither can make consent valid or outweigh Kayla’s welfare, so it sits below A (Std 3.3.2; DH reference guide to consent)."
+   ],
+   [
+    "Whether Kayla’s mildly uncomfortable tooth, with no swelling or sign of infection, can safely wait a short time, with pain relief, while authority to consent is confirmed.",
+    "Sits just below B: her welfare would decide things if the tooth couldn’t wait, but with no swelling or infection a short wait with pain relief is safe, so the consent question governs today (Std 1.2.4; DH reference guide to consent)."
+   ],
+   [
+    "Kayla’s own feelings about the extraction, including how scared she is today, and how far she can be involved in agreeing to what happens next.",
+    "Her assent should shape when and how the extraction happens whoever consents, so it outranks A; but a frightened eight-year-old’s view can’t replace consent from someone with parental responsibility, so it sits below D (DH reference guide to consent)."
+   ]
+  ],
+  "tk": "Foster carers don’t automatically hold parental responsibility: when a child’s treatment can safely wait, valid consent for this stage comes first, so confirm who may give it rather than rely on last month’s form or a reported say-so.",
+  "r": [
+   "3.3.2",
+   "3.1.1",
+   "1.2.4"
+  ]
+ },
+ {
+  "t": "rank",
+  "d": "P",
+  "g": "C",
+  "a": "Conflicting memories of advice call",
+  "k": "CAEBD",
+  "s": "Month 5, an NHS practice, Monday 8:45am. Last Tuesday, before extracting LR6 for Mrs Gail Price, 74, who takes apixaban, you phoned the OMFS registrar, Mr Dev Rao, for advice. You remember him saying that she needn’t miss a dose and that local measures would do, and you followed that. You didn’t record the call. On Wednesday night the socket bled; she went to A&amp;E, where it was sutured, and went home well. This morning Mr Rao emails: ‘My advice was to omit the morning dose and suture; please make sure this is documented.’ Nobody else heard the call. 9:05: reception forwards an email from Mrs Price’s daughter asking what advice was followed and whether ‘someone made a mistake’. Your ES, Dr Laura Kent, is in the practice today.",
+  "o": [
+   [
+    "Phone Mr Rao this morning to compare your recollections of the call, then add a dated note to Mrs Price’s record of the advice and of any point on which you still differ.",
+    "Speaking to Mr Rao directly carries it, but the note waits on the call: as nobody else heard it, your recollection is the only account of what you acted on, and writing it after comparing memories lets the call reshape it, so it sits below C (Std 4.1, 6.5.1)."
+   ],
+   [
+    "Reply to the daughter today, copying in Mrs Price, to apologise for the bleeding and explain that you followed the registrar’s advice on her apixaban before the extraction.",
+    "The candour instinct carries it, but replying to the daughter shares her mother’s care without Mrs Price’s agreement and states a disputed account as settled, so it sits below E; it leaves the record intact, above D (Std 4.2.1)."
+   ],
+   [
+    "Add a dated note to Mrs Price’s record today of the call as you recall it, that it wasn’t noted at the time and that Mr Rao recalls different advice, then phone him to discuss it.",
+    "Comes first and edges out A because nobody else heard the call: your recollection is the only account of what you acted on, so it goes on record today, dated and marked as late, beside Mr Rao’s differing recall, before talking it over can reshape it (Std 4.1.5, 6.5.1)."
+   ],
+   [
+    "Add the call, as you remember it, to last Tuesday’s extraction entry so that the record of that visit is complete, and email Mr Rao a copy so that he can add his own view.",
+    "Inviting Mr Rao’s view sounds open, but writing the call into last Tuesday’s entry makes a late, disputed account look contemporaneous, when any amendment must be clearly marked and dated, so it ranks lowest (Std 4.1.5, 4.1.4)."
+   ],
+   [
+    "Tell Dr Kent what has happened and ask for her help with the daughter’s email, and add a note to Mrs Price’s record once you and Mr Rao have agreed what was said.",
+    "Asking Dr Kent carries it, as she is here and a complaint may follow, but the record stays silent until an agreement that may never come while the family asks questions, so it falls below A, above B (Std 4.1, 6.5.1)."
+   ]
+  ],
+  "tk": "When two honest memories of a conversation conflict, record now, in a dated and clearly marked note, what you recall and that it is disputed; never write it into the original entry or wait for an agreed version.",
+  "r": [
+   "4.1.5",
+   "6.5.1",
+   "4.1.2"
+  ]
+ },
+ {
+  "t": "consider",
+  "d": "T",
+  "g": "S",
+  "a": "Unrecorded advice from safeguarding lead",
+  "k": "CAEDB",
+  "s": "Month 8, a community dental service clinic, 2:10pm. Rhys Turner, 6, arrives with his father for a review. Two months ago you told the clinic’s safeguarding lead, Ms Ruth Ellis, about Rhys’s extensive untreated caries and his two Was Not Brought episodes. In the corridor she said to ‘leave it for now; the family’s had a hard time’. Neither of you recorded that conversation. Today Rhys has a fresh bruise on his left cheek. His father says he ‘came off the swings’ at the weekend; Rhys looks at the floor and says nothing. The explanation may well be true. Ms Ellis is in the building this afternoon, and the appointment is due to finish at 2:40pm.",
+  "o": [
+   [
+    "Taking today’s findings to Ms Ellis this afternoon, so that she decides on any referral and records her reasons, including for the earlier decision to wait.",
+    "Sits just below C: sharing with the safeguarding lead before Rhys leaves is the step that acts on the concern today, and her recorded reasons, including for the earlier wait, make the decision justifiable (safeguarding toolkit; Std 8.5.2)."
+   ],
+   [
+    "How to put today’s findings to Ms Ellis, who is senior, knows the family and made the earlier call, so that she weighs them afresh rather than defending that decision.",
+    "Worth thinking about, since a lead who feels criticised may dig in, but how you handle a senior colleague serves the child’s safety rather than weighing against it, so it is the least decisive, below D (Std 6.1.2, 8.1.1)."
+   ],
+   [
+    "Rhys’s safety: whether today’s bruise, on top of his untreated caries and missed appointments, needs to be shared with someone before he leaves the clinic.",
+    "Comes first, just above A: Rhys’s safety is the purpose of everything else, and today’s bruise adds to earlier indicators, so the concern must be acted on before he leaves rather than weighed against the old decision (safeguarding toolkit; Std 8.5.1)."
+   ],
+   [
+    "Your own duty to raise the concern with local safeguarding contacts yourself if Ms Ellis again decides not to refer and you remain worried about Rhys.",
+    "Your duty doesn’t end with the lead: if a concern stalls and you stay worried you must raise it yourself, but this comes into play only if sharing with her fails, so it sits below E and above B (Std 8.5.1, 8.2.1)."
+   ],
+   [
+    "Making a detailed record today of the bruise and of who said what about it, with a dated note of your earlier corridor conversation with Ms Ellis.",
+    "Sits below A, which must happen before Rhys leaves at 2:40: the record can follow, but without it the concern doesn’t exist for anyone else, and the corridor talk needs a dated, clearly marked note (Std 6.5.1, 4.1.5)."
+   ]
+  ],
+  "tk": "When safeguarding indicators add up, act on today’s concern by sharing it with the lead before the child leaves, then record it and any earlier unrecorded discussion, whatever was decided before.",
+  "r": [
+   "8.5.1",
+   "6.5.1",
+   "4.1.5"
+  ]
+ },
+ {
+  "t": "best3",
+  "d": "E",
+  "g": "T",
+  "a": "Therapist introduced as dentist",
+  "k": "BEH",
+  "s": "Month 1, a mixed practice, your second week. 8:30am huddle: the practice manager, Mrs Sue Barton, asks everyone to introduce the new dental therapist, Kerry Lam, as ‘Dr Lam, one of our dentists’, because ‘patients trust dentists’. Kerry, who is a GDC-registered dental therapist with no doctorate, looks uncomfortable but says nothing. The clinical director, who is also your ES, is at a meeting off site all day; Mrs Barton is in the building. You share several patients with Kerry today, and reception will be greeting them. 9:10: your patient Mrs Ellie Ward, who is booked to see Kerry straight after you for a filling, asks you, ‘Is Dr Lam a proper dentist? The receptionist said she was.’",
+  "o": [
+   [
+    "Follow the introduction Mrs Barton asked for with today’s shared patients, as you are new to the team, and raise your concerns about it with her privately at the end of the week.",
+    "Raising it privately later is respectful, but following the instruction until then means telling today’s patients something untrue about who is treating them, which being new can’t justify, so it isn’t one of the three (Std 1.3.1, 6.1.5)."
+   ],
+   [
+    "Tell Mrs Ward that Kerry is a GDC-registered dental therapist, not a dentist, and explain that placing fillings is part of what therapists are trained and registered to do.",
+    "One of the three: Mrs Ward has asked directly, so she needs an honest answer about who will treat her and reassurance that the filling is within a therapist’s scope; it outranks F, which casts Kerry as second-best (Std 6.1.5, 2.2.3)."
+   ],
+   [
+    "Introduce Kerry accurately to each of your own patients today, and raise Mrs Barton’s instruction with your ES, as clinical director, at your tutorial tomorrow.",
+    "Close but out: accurate introductions to your own patients are right, but waiting for the ES until tomorrow leaves a day of patients misled by others when Mrs Barton, who gave the instruction, is here (Std 8.2.1, 6.1.5)."
+   ],
+   [
+    "Suggest to Kerry that, as it is her title, she raises the instruction with Mrs Barton herself, and offer to support her if Mrs Barton disagrees with her.",
+    "Kerry may well want to raise it, but leaving it to her moves the problem to the person with least power in the room, when you heard the instruction too and have your own duty to patients, so it is out (Std 8.1.1, 6.1.4)."
+   ],
+   [
+    "Speak to Mrs Barton privately this morning to explain why the titles given to patients must be accurate, and suggest the team’s names, roles and registration numbers are shown in reception.",
+    "One of the three: the instruction comes from Mrs Barton and she is in the building, so challenging it with her privately today stops more patients being misled, and a display of roles fixes the system (Std 1.3.1, 6.6.10)."
+   ],
+   [
+    "Tell Mrs Ward that Kerry is a dental therapist, not a dentist, and offer to place the filling yourself today if she would rather be treated by a dentist.",
+    "Close but out: the honest answer carries the first half, but the offer implies that a therapist’s filling is second-best when it is within her scope, and takes over a colleague’s patient, unlike B (Std 6.1.4; GDC scope of practice guidance)."
+   ],
+   [
+    "Email the GDC to ask whether a dental therapist may be introduced to patients as a dentist, and follow its advice for your shared patients once it replies.",
+    "This asks the regulator a question the standards already answer, and waiting for a reply leaves today’s shared patients misled in the meantime, unlike E, which acts this morning (Std 2.3.1, 6.1.5)."
+   ],
+   [
+    "Ask Kerry privately how she feels about the instruction, and agree with her how the two of you will introduce each other to the patients you share today.",
+    "One of the three: Kerry is the colleague whose title is being misused and she looked uncomfortable; checking in and agreeing accurate introductions supports her and protects your shared patients today (Std 6.1.4, 2.3.1)."
+   ]
+  ],
+  "tk": "Patients must be told honestly who is treating them and in what role: answer the patient, challenge an instruction to mislead with the person who gave it, and support the colleague whose title is misused.",
+  "r": [
+   "6.1.5",
+   "2.3.1",
+   "1.3.1"
+  ]
+ }
+];
+const RW_8_3 = [
+ {
+  "t": "consider",
+  "d": "I",
+  "g": "N",
+  "a": "Website guarantee, unexplained exclusion",
+  "k": "BDECA",
+  "s": "Month 9, a mixed practice, 12:10pm emergency slot. Mrs Joy Adebayo, 47, has chipped the porcelain off the private crown on UL6 that the owner, Dr Tom Harris, fitted 14 months ago, and the sharp edge is catching her tongue. Dr Harris, who is also your ES, is on holiday this week. She shows you the practice website on her phone: ‘5-year guarantee on all crowns’. On the shared drive you find the practice’s written guarantee terms, which exclude patients who grind their teeth. Her notes record bruxism, but not whether the terms were given or explained to her; she says nobody mentioned any conditions. She asks you directly whether the practice will replace the crown free. You are contracted for NHS care only. The practice manager, Mrs Lorna Vance, runs the complaints procedure.",
+  "o": [
+   [
+    "Whether the website’s promise of a five-year guarantee on all crowns is accurate, when the practice’s own written terms exclude patients who grind their teeth.",
+    "A misleading website matters and may mislead other patients choosing crowns, but correcting it is the practice’s task and can follow her visit; it bears least on her care and rights today, so it sits below C (Std 1.3.3)."
+   ],
+   [
+    "The state of UL6 today, including the sharp edge on her tongue, and what you can do now to keep her comfortable while the question of cost is settled.",
+    "Comes first, just above D: the edge is hurting her now, she came as an emergency, and smoothing or temporising it is within your scope whatever is later decided about the cost (Std 1.2.4, 1.7.1)."
+   ],
+   [
+    "That you are contracted for NHS care only, so a decision about a private crown and its guarantee belongs to Dr Harris rather than to you.",
+    "Your NHS-only contract shapes what you can say today, as you can neither promise nor refuse a private remedy, but it concerns your role rather than her care or rights, so it sits below E and above A (Std 1.7.2, 2.3.1)."
+   ],
+   [
+    "Giving her an accurate account now: that a guarantee exists, that its terms exclude grinding, that her notes don’t show it was explained, and that the practice decides.",
+    "Comes second, below B, because she has asked you directly and should leave knowing where she stands: the guarantee, its exclusion, the gap in her notes and who decides, with no promise and no refusal (Std 2.4.3, 1.3.1)."
+   ],
+   [
+    "Whether she is offered a fair outcome through the practice’s complaints procedure if she is unhappy, and that Dr Harris hears on his return what she has told you.",
+    "Her right to a fair remedy if the terms were never explained concerns her directly, which puts it above C, but it follows from an honest account rather than replacing it, so it sits below D (Std 5.3.9, 5.2.1)."
+   ]
+  ],
+  "tk": "When a guarantee’s exclusions may never have been explained, deal with the tooth, then give the patient an accurate account of where she stands without promising or refusing, and let the practice decide the remedy.",
+  "r": [
+   "2.4.3",
+   "5.3.9",
+   "1.3.3"
+  ]
+ },
+ {
+  "t": "rank",
+  "d": "E",
+  "g": "K",
+  "a": "Delegated consent for unfamiliar surgery",
+  "k": "CEABD",
+  "s": "Month 7, a hospital oral and maxillofacial day-surgery unit, during a DFT taster week. 12:30pm: the registrar, Mr Sam Okafor, is called to theatre and asks you to ‘do the consents’ for the four patients on his 2pm list of surgical third-molar removals, using the department’s leaflet. He will be operating until about 1:45 but can be reached through the theatre staff. You have never performed, assisted with or watched this operation, and your ES isn’t at the hospital. The nurse in charge, Sister Kemi Bello, is on the unit. 12:45: the first patient, Ms Rosa Lind, 26, has read the leaflet. Her radiograph shows the root close to the nerve canal, and she asks you how likely permanent numbness is ‘for my tooth, not in general’.",
+  "o": [
+   [
+    "Take the other three patients through the leaflet and have their forms signed, and send word through the theatre staff that Ms Lind needs Mr Okafor to explain her own nerve risk before she signs.",
+    "Sending Ms Lind’s question to Mr Okafor carries it, but taking the other three consents costs it: they may ask what you can’t answer, so their consent rests on an explanation you can’t give; still above B (Std 3.1.3, 6.4.1)."
+   ],
+   [
+    "Use the hour before the list to read up on third-molar surgery and its risks, then take the consents yourself, passing any question about an individual tooth, such as Ms Lind’s, to Mr Okafor.",
+    "Passing on individual questions keeps it above D, but an hour’s reading can’t equip you to explain an operation you have never seen, so you still take all four consents beyond your competence, below A (Std 7.2.1, 6.4.1)."
+   ],
+   [
+    "Ask the theatre staff to tell Mr Okafor that you can’t take consent for an operation whose risks you can’t explain, and offer to take the four patients’ histories and check their escorts meanwhile.",
+    "Comes first and edges out E because Mr Okafor hears now, while he can still plan his list: consent rests on the discussion, which needs someone able to explain the operation, and the histories help within your competence (Std 6.4.2, 3.1.2)."
+   ],
+   [
+    "Go through the leaflet’s risks with each of the four patients and have their forms signed, recording Ms Lind’s question on her form so that Mr Okafor answers it before he starts.",
+    "Recording her question sounds careful, but she signs before she has the one answer she said she needs and hears it at the theatre door with no time to reconsider, and all four consents rest on you, so it ranks lowest (Std 3.1.2, 3.2.1)."
+   ],
+   [
+    "Tell the four patients that Mr Okafor will take their consent himself, take their histories meanwhile, and ask Sister Bello to let him know when he comes out of theatre at 1:45.",
+    "Declining the consents and taking histories carry it, but Mr Okafor learns at 1:45, minutes before his list, of a plan he never agreed to, though he could be told now, so it sits below C yet above A (Std 6.4.2, 3.1.1)."
+   ]
+  ],
+  "tk": "Decline a delegated task you can’t do properly and tell the colleague who asked while he can still plan, then help in ways within your competence: consent is only as valid as the explanation behind it.",
+  "r": [
+   "6.4.2",
+   "3.1.2",
+   "6.4.1"
+  ]
+ },
+ {
+  "t": "rank",
+  "d": "P",
+  "g": "H",
+  "a": "Signed off, asked to work",
+  "k": "DBAEC",
+  "s": "Month 4, Wednesday, at home. You are signed off for two weeks with work-related stress, and your fit note says you are not fit for work. The owner and your ES, Dr Marcus Bell, phones: 30 of your notes are incomplete and four referrals unsent, and he asks you to ‘log in from your laptop over the next couple of days so the claims can go in’. Your laptop is your own and isn’t encrypted, and the practice has no remote-access system. You say you will call him back. Ten minutes later you remember that one of the four is an urgent suspected-cancer referral for Mr Alan Shaw, 62, with a non-healing tongue ulcer; you examined him and drafted it three days before going off, and your findings are in his notes. An associate, Dr Priya Nair, is at the practice all week with a full list.",
+  "o": [
+   [
+    "Go into the practice for an hour this evening to send Mr Shaw’s referral securely from a practice computer, and tell Dr Bell that the rest will have to wait until your return.",
+    "Mr Shaw’s referral goes today and securely, which lifts it above E, but going in while certified unfit rests on your own judgement of your health when Dr Nair could send it, so it sits below B (Std 9.2.2, 7.2.3)."
+   ],
+   [
+    "Phone Dr Bell back to say that you can’t work while signed off, and ask him to have Dr Nair complete and send your four drafted referrals, Mr Shaw’s among them, from the findings in your notes.",
+    "Handing over keeps you off work and names Mr Shaw, so it comes close, but four referrals to finish with no priority set can leave his urgent one waiting behind Dr Nair’s full list, so it sits below D, above A (Std 6.3.4, 7.2.3)."
+   ],
+   [
+    "Agree to complete the notes and referrals from home over the next few days, on condition that Dr Bell lends you an encrypted practice laptop with secure access to the records.",
+    "The encrypted laptop answers the data risk and sounds cooperative, but it commits you to days of work while certified unfit and never singles out Mr Shaw’s urgent referral, so it ranks lowest, below E (Std 7.2.3, 9.2.2)."
+   ],
+   [
+    "Phone Dr Bell back to say that you can’t work while signed off, and that Mr Shaw’s referral is urgent and unsent, so that Dr Nair can send it today from the findings in his notes.",
+    "Comes first and edges out B: you stay off work, and singling out the one referral that can’t wait lets Dr Nair, despite her full list, send it today from your recorded findings, so Mr Shaw isn’t delayed (Std 7.2.3, 6.3.4)."
+   ],
+   [
+    "Log in once from your own laptop to send Mr Shaw’s urgent referral yourself, and tell Dr Bell that the notes and the other referrals will have to wait until your return.",
+    "The referral goes today, which keeps it above C, but putting confidential records on an unencrypted personal laptop is the decisive cost, and you work while signed off when Dr Nair is there (Std 4.5.2, 4.5.1)."
+   ]
+  ],
+  "tk": "When you are signed off, hand over what is urgent so that a colleague can act today; don’t work while unfit, and never move records onto an insecure device.",
+  "r": [
+   "7.2.3",
+   "4.5.2",
+   "9.2.2"
+  ]
+ },
+ {
+  "t": "best3",
+  "d": "I",
+  "g": "C",
+  "a": "GDC letter and payment offer",
+  "k": "BDF",
+  "s": "Month 10, an NHS practice. Tuesday: a letter from the GDC tells you that a patient, Mr Darren Fell, has raised a concern about an extraction you carried out in month 5. He says a root was left behind and you didn’t tell him. The letter asks for your response within 28 days. You remember the case, and your notes record a retained root apex and your discussion of it with him. Thursday: Mr Fell emails your practice address. He writes that he will ‘drop it’ if you refund his fee and pay for an implant. Your ES, Dr Anna Shore, owns the practice and is in today. You haven’t yet told anyone about the GDC letter.",
+  "o": [
+   [
+    "Forward Mr Fell’s email to Dr Shore so that the practice handles any further contact from him, and tell her about the GDC letter once your indemnity provider has advised you.",
+    "Routing his contact through the practice carries it and comes close, but holding back the GDC letter from your employer, who is in today, leaves her handling his email without the full picture, unlike D (Std 1.3.1, 5.1.3)."
+   ],
+   [
+    "Contact your indemnity provider today, and send them the GDC letter and Mr Fell’s email so that their advice shapes any reply you make to either.",
+    "Covers your own position: when the GDC writes about your fitness to practise you should take your indemnifier’s advice, and sending both documents now lets it shape every reply, unlike C (Std 9.4.1, 1.8.2)."
+   ],
+   [
+    "Draft your response to the GDC this week while the case is fresh in your mind, and then send the draft to your indemnity provider for advice before you submit it.",
+    "Writing while the case is fresh is diligent and advice still comes before you submit, so it comes close, but a draft written first leaves the advice to check your account rather than shape it, unlike F (Std 9.4.1)."
+   ],
+   [
+    "Tell Dr Shore that the GDC has written to you about Mr Fell and that he has emailed the practice, so that any further contact from him is handled consistently.",
+    "Covers the system: your employer, who is in today, needs to know both so that his email and any further contact follow one consistent route, and telling her openly now edges out A (Std 5.1.3, 1.3.1)."
+   ],
+   [
+    "Ask Dr Shore to handle Mr Fell’s email under the practice’s complaints procedure, and to agree a refund of his fee with him if that resolves matters.",
+    "Local resolution is a legitimate route, which keeps it plausible, but a refund agreed if that resolves matters ties payment to his dropping a regulatory concern, and your notes suggest no remedy is due (Std 5.3.9, 1.3.1)."
+   ],
+   [
+    "Prepare a full, factual response to the GDC with your indemnity provider’s help, and send it within the 28 days, enclosing your records exactly as they stand.",
+    "Covers co-operation with the regulator: a full, truthful answer on time, with records unaltered, is what the GDC needs and your notes support you; preparing it with advice from the start puts it above C (Std 9.4.1, 9.4, 4.1.5)."
+   ],
+   [
+    "Write to the GDC caseworker to tell them that Mr Fell has offered to withdraw his concern if you pay, so that they have the full picture from the start.",
+    "Telling the GDC sounds transparent, but writing before taking advice adds an unplanned account to a live case, and the GDC investigates fitness to practise rather than settling disputes, so telling it adds little over F (Std 9.4.1, 9.4)."
+   ],
+   [
+    "Refund Mr Fell’s fee as a goodwill gesture, and make clear in your covering letter that no condition of any kind is attached to the payment.",
+    "No condition is attached, yet a payment now still looks like an inducement to drop his concern, may breach your indemnity terms on settling claims, and isn’t justified by notes showing he was told (Std 1.8.2, 5.3.9)."
+   ]
+  ],
+  "tk": "When the GDC writes about your practice, take indemnity advice, co-operate fully and on time with unaltered records, tell your employer, and keep any payment well apart from an offer to withdraw a concern.",
+  "r": [
+   "9.4.1",
+   "9.4",
+   "1.8.2"
+  ]
+ },
+ {
+  "t": "rank",
+  "d": "T",
+  "g": "R",
+  "a": "Hygienist’s belief-led varnish advice",
+  "k": "BADEC",
+  "s": "Month 2, a community dental service fluoride-varnish programme in a primary school’s medical room. 10:30am: through a half-open door you hear the programme’s hygienist, Sandra Lowe, tell a mother who has brought in her twins that varnish is ‘a toxin they don’t tell you about’; you catch only part of the conversation. 10:50am: you see ‘parent declined’ recorded for both twins, whose signed consent forms are in the file. 11:05am: as Sandra packs up for the next class, you mention it in passing; she says it is her ‘personal belief’, that she ‘only gives balanced information’ and that the mother made her own choice. Sandra sees more parents this afternoon, and the twins’ class has two more sessions this term. The programme lead, Mr Gary Pike, is at the CDS base and can be reached by phone; your ES has no role in the programme.",
+  "o": [
+   [
+    "Tell Sandra you’re concerned by what you heard and will raise it with Mr Pike, then phone him this morning to ask him to review the advice the programme gives parents.",
+    "Telling Sandra first is open and Mr Pike is the right next rung, so it comes close, but it announces an escalation instead of hearing her side of an exchange you only part-heard, so it sits below B (Std 8.2.3, 6.1.2)."
+   ],
+   [
+    "Find a private moment with Sandra before this afternoon’s sessions to talk through what you heard, and explain that advice to parents must reflect current evidence, not personal belief.",
+    "Comes first and edges out A because it hears Sandra’s account before anyone acts on a conversation you caught only in part, and tackles the belief before she sees more parents today; advice must rest on current evidence (Std 7.1.1, 1.6.4)."
+   ],
+   [
+    "Ask the programme to keep the twins on the list for their next session, as their signed consent forms are on file, and record your reasons in their notes.",
+    "Recording your reasons sounds careful, but keeping the twins on the list on the strength of signed forms overrides a recorded decline: a signature is evidence of consent, not consent, and a parent may withdraw it (Std 3.1.5, 3.1.2)."
+   ],
+   [
+    "Phone the twins’ mother today to check that she had the information she needed and what she wants for them, then talk through what you heard with Sandra.",
+    "Talking to Sandra carries it and the call is well meant, but phoning the mother first acts on a part-heard exchange before Sandra’s account and may undermine a colleague on uncertain facts, so it sits below A (Std 6.1.2, 9.1.2)."
+   ],
+   [
+    "Email Mr Pike today a note of what you heard, without naming Sandra, and ask that consistent, evidence-based advice to parents goes on the next team meeting’s agenda.",
+    "Better than C because it puts no child’s consent at risk, but an anonymous point for a future meeting is passive: the specific advice goes unaddressed while Sandra sees more parents this afternoon, below D (Std 8.2.1, 7.1.1)."
+   ]
+  ],
+  "tk": "When you overhear a colleague give advice shaped by personal belief, talk to them first and hear their account; nothing urgent justifies skipping the person, and a signed form never overrides a recorded decline.",
+  "r": [
+   "7.1.1",
+   "1.6.4",
+   "3.1.5"
+  ]
+ },
+ {
+  "t": "best3",
+  "d": "P",
+  "g": "N",
+  "a": "Cancelling claims-made cover early",
+  "k": "BEG",
+  "s": "Month 12, an NHS practice, three weeks before you start a hospital DCT post. Your professional indemnity is a claims-made insurance policy that you bought yourself, and you plan to cancel it at the end of the month because ‘the hospital will cover me’. Last month your handpiece overheated and left a small burn at the corner of Mrs Ruth Ames’s mouth; you apologised and recorded it, and as she said she was ‘fine’, you didn’t tell your insurer. Today the practice manager forwards an email from Mrs Ames asking ‘what compensation people normally get for burns’; she doesn’t say whether she intends to claim. Your ES, Dr Paul Owusu, is in the practice this afternoon.",
+  "o": [
+   [
+    "Reply to Mrs Ames to apologise again and explain how she can make a claim through the practice’s procedure, then let your insurer know about the burn and her email.",
+    "Candour carries the first half and it comes close, but replying about compensation before your insurer knows may breach your policy’s terms on claims, and the apology is already made, unlike B, which notifies first (Std 1.8.2)."
+   ],
+   [
+    "Notify your insurer today of the burn and Mrs Ames’s email, and follow its advice on how and when to reply to her about compensation.",
+    "Covers the live risk: a claims-made policy may require incidents that could lead to a claim to be notified, and her email makes one possible, so notifying now and letting the insurer shape the reply keeps to your terms (Std 1.8.2)."
+   ],
+   [
+    "Ask your insurer whether you still need run-off cover once NHS indemnity covers you at the hospital, and follow whatever it advises before the policy ends.",
+    "Your insurer would advise well, so it comes close, but the premise is mistaken: NHS indemnity covers only NHS-employed work, possibly not NHS primary-care dentistry, and claims-made policies need run-off, so it adds less than E (Std 1.8.1; GDC indemnity guidance)."
+   ],
+   [
+    "Ask Dr Owusu whether the practice’s own policy covers your work there as a trainee, and check its terms yourself before deciding whether you need run-off cover.",
+    "Checking an employer’s policy is your job, which keeps it close, but your own claims-made policy needs run-off whatever the practice holds, and this leaves that decision waiting, so it adds less than E (Std 1.8.1; GDC indemnity guidance)."
+   ],
+   [
+    "Arrange run-off cover with your insurer to start when the claims-made policy ends, so that claims arising from your practice work stay covered.",
+    "Covers the claims still to come: claims-made policies need run-off cover, so it must be in place when yours ends, or a later claim from Mrs Ames could find you uncovered; arranging it edges out C (Std 1.8.1; GDC indemnity guidance)."
+   ],
+   [
+    "Offer Mrs Ames a goodwill payment towards any costs the burn has caused her, and record the offer and her response in her notes.",
+    "Recording the offer is sound, but a payment made before telling your insurer may breach your policy’s terms on handling claims and could cut across her route to compensation, unlike B (Std 1.8.2, 1.8)."
+   ],
+   [
+    "Arrange cover for your hospital post that gives fitness-to-practise support, which NHS indemnity doesn’t, and that covers any work outside your NHS employment.",
+    "Covers the gap in your plan: NHS indemnity covers only NHS-employed work and never gives fitness-to-practise support, which matters if Mrs Ames goes to the GDC; both halves carry it (Std 1.8.1; GDC indemnity guidance)."
+   ],
+   [
+    "Keep your record of the burn safe in case it is needed, and cancel the policy at the end of the month, buying run-off cover if a claim arrives.",
+    "Keeping the record is sound, but the plan costs it: run-off has to be arranged when claims-made cover ends, not bought after a claim arrives, so a claim next year could find no policy in force, unlike E (Std 1.8.1)."
+   ]
+  ],
+  "tk": "Indemnity must still be in place when a claim arrives: notify incidents that could lead to one, arrange run-off when claims-made cover ends, and don’t assume NHS indemnity fills every gap.",
+  "r": [
+   "1.8.2",
+   "1.8.1",
+   "1.8"
+  ]
+ },
+ {
+  "t": "rank",
+  "d": "T",
+  "g": "F",
+  "a": "Shredding unsorted old records",
+  "k": "AECDB",
+  "s": "Month 3, a mixed practice going paperless, Thursday. A message from the practice manager, Mrs Jan Holt, a registered dental nurse: ‘Could you and Mia come in on Saturday morning to shred the 12 boxes of old paper records and X-rays in the back room? Anyone not seen for five years. We need the space for the new surgery.’ You look in the room: the boxes are unsorted, and in one you can see children’s records and a folder labelled ‘complaint’. You haven’t seen the practice’s records-retention policy and don’t know what it requires for each type of record. The practice has a contract with a confidential-waste company that collects monthly. Your ES is on a course until next week; Mrs Holt is in the practice today.",
+  "o": [
+   [
+    "Tell Mrs Holt you’re happy to help once the boxes are checked against the practice’s retention policy, and ask that anything due for disposal goes to the confidential-waste contractor.",
+    "Comes first and edges out E because it keeps the disposal decision with the practice and its policy and sends anything due for destruction by the secure route; destruction can’t be undone, so the check comes before shredding (Std 4.1.3, 4.5.1)."
+   ],
+   [
+    "Come in on Saturday as asked and shred the boxes with Mia, setting aside the children’s records and the complaint folder for Mrs Holt to decide on.",
+    "Setting aside the children’s and complaint files sounds careful, but shredding the rest without checking the retention policy may destroy adult records the practice must keep, and destruction is irreversible (Std 4.1.3, 4.5)."
+   ],
+   [
+    "Decline Saturday because sorting old records isn’t clinical work, and suggest that Mrs Holt checks the retention policy with the owner before anything is destroyed.",
+    "The second half carries it, as the policy must be checked first, but declining leaves Mrs Holt’s problem with her and offers no help, so it sits below E; it still puts no record at risk, so it sits above D (Std 4.1.3, 6.1)."
+   ],
+   [
+    "Offer to scan the records at home over the weekend on your own laptop and scanner, so that every record is kept electronically before the paper is shredded.",
+    "Preserving every record carries the first half, but taking boxes home to a personal laptop moves confidential records out of the practice into an insecure setting, so it falls below C (Std 4.5.1, 4.5.2)."
+   ],
+   [
+    "Offer to sort the boxes against the retention policy yourself on Saturday, and shred on site with Mia those records clearly past their retention dates.",
+    "Checking against the policy carries it, but shredding on site costs it: a month-3 FD becomes the practice’s disposal decision-maker for unsorted boxes holding children’s and complaint records, bypassing the secure route, so it sits below A (Std 4.1.3)."
+   ]
+  ],
+  "tk": "Records must be kept as long as the law and practice policy require and destroyed securely; when you don’t know what the boxes hold, checking comes before any shredding, however keen you are to help.",
+  "r": [
+   "4.1.3",
+   "4.5.1",
+   "4.5.2"
+  ]
+ },
+ {
+  "t": "best3",
+  "d": "E",
+  "g": "M",
+  "a": "Preference for a female dentist",
+  "k": "ACF",
+  "s": "Month 6, an NHS practice. 2:15pm: reception tells you that Mrs Nadia Rahim, 41, booked as an emergency with you for throbbing pain from a lower right molar, would prefer a female dentist for religious reasons. The only female dentist, Dr Sophie Lane, is fully booked but can offer a 5:30pm slot. You are free now, and your nurse, Asha, is a woman. The receptionist asks whether she should book Mrs Rahim into the 5:30pm slot. 2:20pm: you see Mrs Rahim in a quiet room. She says the pain kept her awake last night and that she ‘might’ be comfortable seeing you if a female nurse stays with her throughout, but she seems unsure. Her husband has come with her and is waiting in reception.",
+  "o": [
+   [
+    "Set out both options, treatment now with you and Asha present throughout or Dr Lane at 5:30pm, and give her time to choose without steering her either way.",
+    "Covers her choice: once she says she might see you with a female nurse, setting out both options and leaving the decision to her respects her values and her right to decide without pressure (Std 1.2.2, 2.2, 3.2.1)."
+   ],
+   [
+    "Ask reception to confirm Dr Lane’s 5:30pm slot as she first requested, and give Mrs Rahim advice on pain relief to manage the wait.",
+    "Pain advice carries the second half and it honours what she first said, but booking was right before she spoke to you; now it decides for her and leaves her in pain for three hours without the option she has raised (Std 2.2, 1.2.2)."
+   ],
+   [
+    "If she chooses to wait, give her advice on pain relief and tell her what to do and whom to contact if the pain worsens before 5:30pm.",
+    "Covers her safety if she waits: that is her right, and advice on pain relief and on what to do and whom to contact if it worsens keeps that choice safe, unlike D, which leans on a booked colleague (Std 1.2.4, 2.3.9)."
+   ],
+   [
+    "Ask Dr Lane whether she could see Mrs Rahim briefly between her booked patients, to assess the tooth and advise on what treatment it needs.",
+    "Assessment by a female dentist would meet her wish, but asking a fully booked colleague to fit her in puts pressure on Dr Lane and her patients when a slot is already offered and you are free now (Std 6.1, 1.2.2)."
+   ],
+   [
+    "Offer to start treatment now with Asha present throughout, and tell Mrs Rahim that she can ask you to stop at any point if she becomes uncomfortable.",
+    "A stop signal is respectful and it comes close, but putting one route to an unsure patient, rather than both, steers her towards you, unlike A, which sets out both and leaves the choice with her (Std 2.2, 3.2.1)."
+   ],
+   [
+    "Record her preference in her notes, and ask reception to flag it so that her future appointments are booked with a female clinician where possible.",
+    "Covers the system: recording and flagging her preference means she needn’t repeat a personal, religious request at every visit, and future bookings take account of her values from the start (Std 1.2.2, 1.6)."
+   ],
+   [
+    "Reassure her that the treatment would be exactly the same whoever provided it, and invite her to go ahead with you now, with Asha present.",
+    "Treatment is indeed the same, which keeps it plausible, but reassurance aimed at getting her to proceed pressures a patient who is unsure and treats a religious preference as a misunderstanding (Std 1.2.2, 1.6.1)."
+   ],
+   [
+    "Suggest she phones nearby practices to see whether a female dentist could see her as an emergency this afternoon, and give her a list of local practices.",
+    "Helpful in intent, but it sends a patient in pain elsewhere to make the calls herself for care you and Dr Lane can give here today, moving the problem rather than solving it, unlike A, which keeps her care here (Std 1.7, 1.2.2)."
+   ]
+  ],
+  "tk": "When a patient’s preference rests on her values, set out the real options and let her choose without pressure, keep her safe whichever she picks, and record the preference for next time.",
+  "r": [
+   "1.2.2",
+   "2.2",
+   "1.6.1"
+  ]
+ }
+];
+const RW_8_4 = [
+ {
+  "t": "best3",
+  "d": "P",
+  "g": "P",
+  "a": "Silent back-up failure",
+  "k": "BDG",
+  "s": "Month 11, a mixed practice, 8:30am. The practice server failed overnight. The IT supplier has just found that the nightly back-up to an external drive has been failing silently for three weeks because the drive was full. Clinical notes, medical-history updates and radiographs from those three weeks may be lost; recovery from the failed server is ‘possible but not certain’ and will take several days. Reception has today’s appointment book on paper. Your list starts at 9am with eight patients, several of them part-way through courses of treatment, and three of them seen by you within the past three weeks. Your nurse, Chloe, was given the job of checking the back-up drive each Friday. The owner, who is also your ES, Dr Imran Sheikh, is in the building and starts his own list at 9:30am.",
+  "o": [
+   [
+    "Ask reception to rebook this morning’s patients who are part-way through a course of treatment, so that no course continues until the IT supplier knows which records can be recovered.",
+    "Pausing courses avoids treating on records you can’t trust, but it costs several patients care they could safely have today, as a fresh history and examination make treatment safe, so it stays out, below B (Std 1.4.2, 4.1.1)."
+   ],
+   [
+    "Take a fresh medical history from each patient before treating them today, and plan their care on what you can verify now, retaking radiographs where there is a clinical need for them.",
+    "Covers the immediate problem: each patient’s safety today rests on what you can verify now, so a fresh history and examination let the list run, with radiographs retaken only where clinically justified (Std 4.1.1, 1.5.1)."
+   ],
+   [
+    "Retake the radiographs you took in the past three weeks when those patients next attend, so that their records are complete if the server can’t be recovered.",
+    "A complete record is a fair aim, but replacing a lost file is not a clinical justification for exposing a patient again, so it stays out, unlike B, which retakes only where there is a clinical need (Std 1.5.1)."
+   ],
+   [
+    "Tell Dr Sheikh about the back-up failure before your first patient, so that he can record it as an incident and lead the practice’s response on the back-ups and the affected patients.",
+    "Covers the system: three weeks of possibly lost records is a patient safety incident for the owner to record, report and lead on, and telling him before either list starts lets him act today, unlike F (Std 1.5.4, 4.5.3)."
+   ],
+   [
+    "Agree with Dr Sheikh how patients seen in the past three weeks will be told that their records may have been lost, once the IT supplier knows what can be recovered.",
+    "Planning how patients are told is sound and comes close, but it is a later step the owner leads once told (D) and depends on what can be recovered, unlike G, which can’t wait, so it stays out (GDC candour guidance; Std 1.5.4)."
+   ],
+   [
+    "Start your list at 9am as planned, and tell Dr Sheikh about the back-up failure between patients this morning, so that he can record it as an incident and lead the response.",
+    "Telling the owner the same morning keeps it close, but he is in the building now and starts at 9:30am, so starting first lets patients be seen before he can lead the response, unlike D (Std 1.5.4)."
+   ],
+   [
+    "For your own patients from the past three weeks, write dated retrospective notes from your day lists, lab tickets and memory, marking each one clearly as reconstructed after the back-up failure.",
+    "Covers the record: while memory is fresh, dated notes clearly marked as reconstructed keep it as complete as possible without disguising what happened; this can’t wait, which puts it above E (Std 4.1.5, 4.1)."
+   ],
+   [
+    "Ask Chloe privately what she found on each of the last three Fridays, so that you can give Dr Sheikh an accurate account of how the failure went unnoticed.",
+    "An accurate account helps, but how the back-up system failed is for the owner’s review, and questioning one nurse first frames it as her failing before he has looked, so it stays out, below D (Std 6.1.2, 1.5.4)."
+   ]
+  ],
+  "tk": "When records may be lost, treat today’s patients on what you can verify now, make sure the owner leads and reports the incident without delay, and rebuild your own records openly rather than wait for recovery.",
+  "r": [
+   "4.5.3",
+   "1.5.4",
+   "4.1"
+  ]
+ },
+ {
+  "t": "rank",
+  "d": "I",
+  "g": "R",
+  "a": "Prescribing a CDT’s partial denture",
+  "k": "BDCEA",
+  "s": "Month 8, a mixed practice, Monday. A clinical dental technician, Mr Phil Rhodes, rents a room here. 1:20pm: he asks you to sign a prescription he has written for a cobalt-chrome partial denture for Mrs Lena Cole, 70, whose impressions he took last week. She has six natural teeth left. You have never seen her. He says an associate, Dr Ben Ross, examined her 14 months ago; Dr Ross works only on Thursdays, and his note reads ‘several missing teeth, options discussed’, with nothing about a denture. 1:24pm: reception rings to say Mrs Cole has arrived early for her 2pm try-in with Mr Rhodes and has already paid him. Your next patient isn’t until 1:55pm, and your ES is on annual leave this week.",
+  "o": [
+   [
+    "Sign the prescription so that the 2pm try-in can go ahead, then examine Mrs Cole yourself at the try-in and ask Mr Rhodes to stop the work if you find a problem.",
+    "Examining her sounds like a safeguard, but it comes after you have prescribed, so the prescription rests on Mr Rhodes’s plan and a 14-month-old note, not your own assessment, and it ranks lowest, below E (Std 4.1.6, 6.4.2)."
+   ],
+   [
+    "Decline to sign a prescription for a patient you haven’t examined, and offer to examine Mrs Cole now and, if a partial denture is right for her, write your own prescription.",
+    "It edges out D because Mrs Cole is here and you are free: a patient with teeth needs a dentist’s referral or prescription, which must rest on your own assessment, and examining her now lets you write it today (GDC scope of practice guidance; Std 4.1.6)."
+   ],
+   [
+    "Explain to Mr Rhodes that a denture for a patient with teeth must start with a dentist’s prescription, and ask reception to book Mrs Cole an examination with you next week.",
+    "A patient with teeth does need a dentist’s referral or prescription, and an examination is secured, but next week sends her away for days while she is here, so it sits below D, yet above E as nothing is signed that isn’t your own decision (GDC scope of practice guidance)."
+   ],
+   [
+    "Decline to sign it today, and offer Mrs Cole an appointment with you after your last patient this afternoon, to examine her and, if a denture is right for her, write your own prescription.",
+    "Declining and prescribing on your own assessment carry it, so it sits just below B, as timing costs it: she is here now and you are free until 1:55pm, so making her wait hours or come back adds delay for nothing (Std 4.1.6)."
+   ],
+   [
+    "Examine Mrs Cole yourself before 1:55pm and, if her teeth and gums are healthy, sign the prescription Mr Rhodes has written so that the try-in can go ahead.",
+    "Examining her carries it, but signing his design as written costs it: a prescription is your own clinical decision, not a health check on someone else’s plan, so it falls below C, though above A as she is examined first (Std 4.1.6, 6.4.2)."
+   ]
+  ],
+  "tk": "A clinical dental technician needs a dentist’s prescription for a patient with teeth, and it must rest on the prescriber’s own assessment; when the patient is here and you are free, assess her and prescribe yourself now.",
+  "r": [
+   "4.1.6",
+   "6.4.2",
+   "7.2.1"
+  ]
+ },
+ {
+  "t": "rank",
+  "d": "E",
+  "g": "K",
+  "a": "Stopping a denture mid-course",
+  "k": "CEDAB",
+  "s": "Month 4, an NHS practice, Friday 11am. Mr Tom Reid, 66, is part-way through an NHS course of treatment. Last month you extracted two lower molars and took impressions for an acrylic partial denture, the final item on his written plan, and today is the try-in. His wife has come into the surgery with him. As you seat the try-in, Mr Reid says he would rather stop here and have implants privately at another practice. His wife then adds that he only changed his mind at the weekend, after his brother told him that dentures ‘rot your gums’. Mr Reid nods, looks at the floor and says nothing more. Your ES, Dr Paula Grant, is in the practice, and your next patient is booked for 11:30am.",
+  "o": [
+   [
+    "Pause the try-in, and ask Dr Grant to come and talk Mr Reid through his options, as she has more experience of patients who are weighing up implants.",
+    "Pausing carries it, but handing a conversation well within your competence to Dr Grant costs it: it delays his answer and implies the decision is beyond you, so it sits below D, yet above B as nothing proceeds (Std 3.1.1, 3.1.5)."
+   ],
+   [
+    "Complete the try-in today, as Mr Reid consented to the whole course and a try-in commits him to nothing, and note that he can decide about implants afterwards.",
+    "A try-in is low-risk and his options stay open, but going ahead after he has said he wants to stop treats earlier consent as binding, when it can be withdrawn at any stage, so it ranks lowest (Std 3.1.5, 3.3.1)."
+   ],
+   [
+    "Ask Mr Reid what has changed his mind, offering to talk with him alone, then explain what stopping now would mean and record his decision in his plan.",
+    "Comes first and edges out E: his wife’s account and his silence raise doubt that the decision is informed and his own, so asking his reasons and offering to see him alone come before explaining and recording it (Std 3.1.5; DH reference guide to consent)."
+   ],
+   [
+    "Explain that a well-fitting denture doesn’t damage the gums, and encourage Mr Reid to finish the denture now and think about implants once he has it.",
+    "Correcting the myth helps him decide, but urging him to finish tips into persuasion in front of his wife rather than finding out what he wants, so it falls below E, which leaves the choice with him (DH reference guide to consent)."
+   ],
+   [
+    "Accept Mr Reid’s decision to stop, explain what stopping now would mean for the gap and his remaining teeth, and update his written plan and notes to show the change.",
+    "Respecting his choice and explaining the consequences carries it, and would have been best before his wife spoke; it now records a decision that may rest on a myth and another’s influence, so it sits below C, above D (Std 3.1.5, 3.3.5)."
+   ]
+  ],
+  "tk": "A patient may stop a course at any point; when someone else may be shaping that decision, find out his reasons, give him the chance to speak alone and explain the consequences before recording what he decides.",
+  "r": [
+   "3.1.5",
+   "3.3.5",
+   "2.3.8"
+  ]
+ },
+ {
+  "t": "best3",
+  "d": "T",
+  "g": "S",
+  "a": "Apprentice nurse and associate",
+  "k": "BDF",
+  "s": "Month 9, an NHS practice, 5:15pm. In the empty staff room, Amy Fowler, 17, an apprentice dental nurse, tells you that Dr Luke Grey, 34, one of the associates, has been messaging her late at night, bought her a necklace last week, and has now asked to meet ‘somewhere private, just us’. She hasn’t shown you the messages. She asks you not to make a fuss: ‘I need this apprenticeship, and he hasn’t really done anything.’ She is rostered to nurse for Dr Grey tomorrow morning. The practice manager, Mrs Diane Shaw, is the practice safeguarding lead and is in the building until 6pm. Your ES, Dr Mike Harland, is Dr Grey’s business partner and has left for the day.",
+  "o": [
+   [
+    "Ask reception before you leave to swap Amy onto your list tomorrow in place of your own nurse, then tell Mrs Shaw what Amy has said and what you have arranged.",
+    "Telling Mrs Shaw today and moving Amy away from Dr Grey both carry it, but rearranging the rota through reception yourself takes a protective decision the lead, still in the building, should make, and may alert him, so it falls below F (Std 8.5.2)."
+   ],
+   [
+    "Share what Amy has told you with Mrs Shaw before you both leave today, and write down what Amy said in her own words, with the date and time.",
+    "One of the three: her account is enough without proof, so sharing it today with the safeguarding lead, who is here until 6pm, and recording her own words is what the local procedure expects (Std 8.5.2, 8.2.2; safeguarding toolkit)."
+   ],
+   [
+    "Ask Amy to show you the messages so that you can tell Mrs Shaw exactly what Dr Grey has written, rather than relying on your memory of what Amy said.",
+    "Accuracy is a fair aim, but asking for the messages makes you an investigator and presses a reluctant 17-year-old, when her own account already meets the threshold for sharing, so it stays out, below B (safeguarding toolkit; Std 8.2.2)."
+   ],
+   [
+    "Tell Amy that you can’t keep this between the two of you, and explain who you will share it with and what is likely to happen next.",
+    "One of the three: at 17 she is a child, so you can’t promise secrecy, but telling her honestly who will know and what happens next keeps her trust and her part in it, which outranks H (safeguarding toolkit; GDC child protection guidance)."
+   ],
+   [
+    "Phone children’s social care yourself tonight to report the concern about Dr Grey, then update Mrs Shaw in the morning on what you have reported.",
+    "Reporting carries weight and Mrs Shaw does hear, but bypassing a lead who is in the building, with no sign of immediate danger, skips a rung and loses her knowledge of the practice, so it stays out, below B (Std 8.5.2)."
+   ],
+   [
+    "Ask Mrs Shaw to make sure Amy isn’t rostered to work alone with Dr Grey while this is looked at, and leave any conversation with him to her.",
+    "One of the three: with Amy rostered to nurse for him tomorrow, the lead can change that without alerting him, and leaving the conversation with him to her avoids prejudicing what follows, which edges out A (Std 8.5.1, 8.5.2)."
+   ],
+   [
+    "Ask Dr Grey privately this evening to keep his contact with Amy to work matters, then tell Mrs Shaw what you have heard and what you have said.",
+    "Asking for work-only contact sounds measured, and Mrs Shaw does hear, but it alerts the person concerned before the lead can act and may expose Amy to pressure, so it is the weakest of the eight (safeguarding toolkit; Std 8.5.2)."
+   ],
+   [
+    "Offer to go with Amy to see Mrs Shaw before 6pm so that she can explain it herself, and write down what she has told you in her own words, with the date and time.",
+    "Going with her respects her voice and the record is right, but sharing then rests on Amy agreeing when she has asked you not to make a fuss, and the duty to share is yours, so it falls just short, below B (Std 8.5.1, 8.2.2)."
+   ]
+  ],
+  "tk": "A 17-year-old is a child: share her account with the safeguarding lead the same day without investigating or warning the colleague, tell her honestly what will happen, and protect her in the meantime.",
+  "r": [
+   "8.5.2",
+   "8.5.1",
+   "4.1.2"
+  ]
+ },
+ {
+  "t": "rank",
+  "d": "E",
+  "g": "M",
+  "a": "Informal wish, complaint already filed",
+  "k": "CAEBD",
+  "s": "Month 7, a community dental service clinic run by an NHS trust, 3pm. Mrs Elsie Grant, 84, who has capacity, attends for review with her daughter, Linda. Mrs Grant’s general anaesthetic list for multiple extractions has been cancelled twice at short notice, and she is managing on soft food and painkillers. Linda, with her mother nodding beside her, asks you to ‘sort it’, but adds that they don’t want ‘a formal complaint; we don’t want to be a nuisance’. The trust has a complaints and patient advice team, and the GA coordinator, Ms Priya Shah, works on the same corridor. There is no ES in the service; the clinical lead, Dr Ian Moore, is on site. As they stand to leave, Linda mentions that she ‘already wrote to the ICB last week’ about the cancellations and hasn’t heard back.",
+  "o": [
+   [
+    "Ask what outcome they want and check the next list date with Ms Shah while they wait, then, as they don’t want a formal complaint, deal with it informally and note what you’ve done.",
+    "Getting a real date is what they asked for, and before the turn this was best, but treating it as informal overlooks that Linda’s letter is already a complaint with the ICB, which they need help through, so it sits just below C (Std 5.1.3, 5.2.1)."
+   ],
+   [
+    "Give them the contact details of the trust’s complaints and patient advice team, and suggest they raise it there too so that the service itself looks into the two cancellations.",
+    "The team’s details are useful, but a second complaint to the trust on the same matter duplicates the one already with the ICB, when an NHS complaint goes to the provider or the commissioner, not both, so it falls below E (Std 5.1.3)."
+   ],
+   [
+    "Ask what outcome they want and check the next list date with Ms Shah now, then explain that the ICB will handle the complaint they have made, with the trust’s co-operation, and record this.",
+    "It edges out A because of the turn: once Linda has written to the ICB the concern is already in the NHS route, so you help them through it, and asking what outcome they want keeps it constructive (Std 5.2.1, 5.1.3)."
+   ],
+   [
+    "Tell Linda that you will phone the ICB’s complaints team yourself to explain the service’s side of the cancellations, so that the reply she gets is accurate and complete.",
+    "Telling Linda keeps it open and accuracy is a fair aim, but the trust answers the ICB through its own complaints procedure, not through one clinician acting alone, so it ranks lowest, below B (Std 5.1.3, 5.3.2)."
+   ],
+   [
+    "Apologise for the two cancellations and the worry they have caused, and assure them that Mrs Grant will be on the next available list, as you will raise it with Ms Shah today.",
+    "The apology is right and costs nothing, but the second half carries the flaw: a place on the next list isn’t yours to promise, and a third cancellation would make things worse, so it falls below A, though above B (Std 5.3.8, 1.3.1)."
+   ]
+  ],
+  "tk": "When a patient has already complained to the commissioner, help them through that route rather than treating it as informal, duplicating it or bypassing it, while still asking what outcome they want and fixing what you can.",
+  "r": [
+   "5.1.3",
+   "5.2.1",
+   "5.3.2"
+  ]
+ },
+ {
+  "t": "rank",
+  "d": "I",
+  "g": "H",
+  "a": "Health declaration on indemnity renewal",
+  "k": "ECDBA",
+  "s": "Month 11, an NHS practice, Tuesday. Your indemnity provider’s renewal form, due back by Friday, asks: ‘In the last five years, have you had any physical or mental health condition that affected your ability to practise?’ In month 6 you were off work for three weeks with depression, and your fit note said you were not fit for work. You are well now: an occupational health letter cleared you to return without restrictions, and your GP is pleased with your progress. The owner, who is also your ES, Dr Mark Fenton, sees the form on your desk and says, ‘Tick no. You’re fit now, and a yes will only push your premium up.’ You don’t know whether declaring it would change the premium. Apart from Dr Fenton, no one at the practice knows why you were off.",
+  "o": [
+   [
+    "Return the form by Friday with the health question unanswered, adding a note that you are fit to practise and will give details of any past illness if the provider asks.",
+    "Nothing false is written and the note flags something, but an unanswered question is still an incomplete declaration that leaves the provider to ask for what you must disclose, so it ranks lowest, below B (GDC indemnity guidance; Std 1.8.1)."
+   ],
+   [
+    "Tell Dr Fenton you aren’t comfortable ticking ‘no’, and ask him, as he has been with the same provider for years, to find out how a resolved illness should be declared.",
+    "Declining to tick ‘no’ carries it, but the second half costs it: your own declaration and your health go through an employer who has just advised a false answer, so it sits below D, though above A as it moves towards an honest answer (Std 1.3.1)."
+   ],
+   [
+    "Phone the provider’s advice line before Friday to ask whether an episode that has fully resolved needs to be declared, and complete the question as they advise.",
+    "Asking is sensible when wording is genuinely unclear, and you would answer honestly and on time, but the episode plainly falls within the question, so the call adds a step to an answer you already know, below E, above D (Std 1.8.1)."
+   ],
+   [
+    "Ask your GP this week for a letter confirming your recovery, then answer ‘yes’ with the dates of your absence once it arrives, telling the provider the form may be a few days late.",
+    "The answer would be honest and complete, which keeps it above B, but the timing costs it: the occupational health letter already shows you are fit, and a late return risks a gap in cover, during which you must not practise (Std 1.8.1)."
+   ],
+   [
+    "Answer ‘yes’, giving the dates of your absence and a short factual explanation, and enclose a copy of the occupational health letter confirming your return without restrictions.",
+    "It edges out C because the stem settles it: three weeks certified unfit for work is what the question asks about, and you must disclose all relevant matters; the letter shows you are fit now (GDC indemnity guidance; Std 1.8.1, 1.3.1)."
+   ]
+  ],
+  "tk": "Indemnity declarations must be complete, honest and on time: a period certified unfit for work is a relevant matter to disclose, even once you have recovered and even when your employer advises otherwise.",
+  "r": [
+   "1.8.1",
+   "1.3.1"
+  ]
+ },
+ {
+  "t": "best3",
+  "d": "P",
+  "g": "C",
+  "a": "Mistaken for the specialist",
+  "k": "BDG",
+  "s": "Month 2, a community dental service special-care clinic, 9:30am. Rereading Kevin Doyle’s referral letter before his appointment, you notice it says he will be ‘seen by a specialist in special-care dentistry’. That explains why, at his assessment last week, his mother and carer, Mrs Sandra Doyle, kept calling you ‘the specialist’; you didn’t correct her. Kevin, 30, has a learning disability. After a careful discussion using pictures, you judged that he had capacity for this decision, and he agreed to have a painful lower molar removed under local anaesthetic; he is booked with you at 9:45. You don’t know whether Kevin himself understood who would treat him, or whether it would matter to him. Your supervising specialist, Dr Anne Moss, is in the clinic with her own patients.",
+  "o": [
+   [
+    "Go ahead with the extraction as planned so as not to unsettle Kevin, then explain your role and Dr Moss’s to him and his mother while he recovers afterwards.",
+    "Honest in the end, but correcting your role after the extraction is too late: if it would have changed Kevin’s mind, he agreed on a misunderstanding, so it stays out, unlike B (Std 3.3.1, 2.3.1)."
+   ],
+   [
+    "Before starting, tell Kevin and his mother that you are a dentist in foundation training, not a specialist, and that Dr Moss, a specialist, supervises your work and is here today.",
+    "One of the three: patients must know who is treating them and in what role, and having let ‘the specialist’ stand last week, you put it right before treatment rather than after (Std 2.3.1, 6.1.5)."
+   ],
+   [
+    "Explain your role to Mrs Doyle before Kevin comes in, and ask her whether, knowing this, she is happy for him to go ahead with you or would rather wait.",
+    "Telling his mother is right, but asking her whether he should go ahead hands her a decision that Kevin has capacity to make himself, and that she has no power to make for him, so it stays out (DH reference guide to consent; Std 3.3.3)."
+   ],
+   [
+    "Check with Kevin, using the pictures that helped at his assessment, whether he is happy for you to do the extraction, and offer him the choice of Dr Moss treating him instead.",
+    "One of the three: who will treat him is part of what Kevin agreed to, so he decides whether to go ahead with you or wait for Dr Moss, supported in the way that worked before (Std 3.3.1, 3.3.3; MCA principle 2)."
+   ],
+   [
+    "Record what you told Kevin and his mother and the choice he made, and let the referring dentist know, so that future letters say patients may be seen by a supervised trainee.",
+    "Recording the conversation carries it, but going to the referrer yourself costs it: how the service deals with referral wording is for Dr Moss, who also needs to hear about the misunderstanding, so it falls just short, below G (Std 3.3.4, 6.5)."
+   ],
+   [
+    "Tell Kevin and his mother your role before starting, and ask Dr Moss whether she can do the extraction herself today, as the referral promised them a specialist.",
+    "Correcting your role carries it, but the second half costs it: it decides for Kevin that Dr Moss will treat him, taking away a choice he can make and may make in your favour, so it stays out, below D (Std 3.3.3, 2.3.1)."
+   ],
+   [
+    "Record what you told Kevin and his mother and the choice he made, and tell Dr Moss about the misunderstanding so that she can decide whether the referral wording needs changing.",
+    "Completes the package: the record shows his consent was confirmed on accurate information, and your supervisor hears today what happened and can deal with the wording at its source, which edges out E and outranks H (Std 3.3.4, 4.1.2)."
+   ],
+   [
+    "Note Kevin’s choice in his records, and write a reflective log entry on letting ‘the specialist’ stand at his assessment, to bring to your next supervision with Dr Moss.",
+    "The record is right and reflecting on your own lapse is valued, but waiting for your next supervision means the referral wording, which may mislead other families, isn’t raised today, so it falls just short, below G (Std 3.3.4, 6.5)."
+   ]
+  ],
+  "tk": "Tell patients who you are and what your role is; if they agreed believing someone else would treat them, put it right and let them choose before you start.",
+  "r": [
+   "2.3.1",
+   "6.1.5",
+   "3.3.1"
+  ]
+ },
+ {
+  "t": "consider",
+  "d": "T",
+  "g": "T",
+  "a": "Colleague’s explanations not understood",
+  "k": "DBCEA",
+  "s": "Month 12, a mixed practice. Over the last two weeks your nurse, Megan, has twice told you that patients who agreed to treatment with the new associate, Dr Petra Novak, said afterwards that they hadn’t followed her explanation. Megan says Dr Novak uses a lot of technical terms, rarely checks what patients have understood, and speaks fluent but very fast English; you haven’t seen this yourself. You and Dr Novak are peers, and she has been friendly and welcoming since you started. On Thursday, reception passes you a message: one of the two patients has cancelled her crown preparation with Dr Novak next week, saying she ‘didn’t realise it meant drilling the tooth down’. The owner, who is also your ES, Dr Rachel Abbott, is in the practice today. You are deciding what to do.",
+  "o": [
+   [
+    "Keeping a good working relationship with Dr Novak, so that she stays open to feedback from you and the rest of the team while she settles into the practice.",
+    "Worth weighing, as feedback lands better from a trusted colleague, but your relationship can’t outweigh patients agreeing to treatment they haven’t understood, so it matters least, below E (Std 8.1.1, 6.1.2)."
+   ],
+   [
+    "Whether Dr Novak knows patients have struggled to follow her, and how to raise it with her privately, using what patients said rather than Megan’s view.",
+    "Before Thursday this came first, and it is still the right first step with a new colleague who may not know; sharing what patients said, not Megan’s view, keeps it fair and outranks the owner’s role (Std 6.1.2; GDC raising concerns guidance)."
+   ],
+   [
+    "Dr Abbott’s responsibility as owner for the care patients receive, and the point at which this concern should go to her rather than stay between colleagues.",
+    "She must know if the problem continues or Dr Novak doesn’t engage, and knowing that threshold shapes the private conversation, so it sits below B but above practical help (GDC raising concerns guidance; Std 8.2.3)."
+   ],
+   [
+    "Whether Dr Novak’s patients understood what they agreed to, and so whether the patient who cancelled, and others, need the chance to have it explained again.",
+    "Comes first, just above B: the cancellation shows a patient agreed without understanding, so consent may not have been valid, and patients must be able to have treatment explained again (Std 3.1.4, 2.3.4)."
+   ],
+   [
+    "What practical help might work for Dr Novak, such as written treatment information, plainer language, asking patients to summarise back, and communication CPD.",
+    "Turns the concern into lasting improvement, but it follows from the conversation with Dr Novak and depends on her engaging, so it sits below the owner’s role and above your relationship with her (Std 2.3.3, 2.3.4)."
+   ]
+  ],
+  "tk": "When patients may be agreeing to treatment they don’t understand, their chance to understand comes first; then raise it privately with the colleague, knowing when the owner must be told, before working on practical fixes.",
+  "r": [
+   "3.1.4",
+   "2.3.4",
+   "2.3.3"
+  ]
+ }
+];
+
+const Q = [...RW_1_1, ...RW_1_2, ...RW_1_3, ...RW_1_4, ...RW_2_1, ...RW_2_2, ...RW_2_3, ...RW_2_4, ...RW_3_1, ...RW_3_2, ...RW_3_3, ...RW_3_4, ...RW_4_1, ...RW_4_2, ...RW_4_3, ...RW_4_4, ...RW_5_1, ...RW_5_2, ...RW_5_3, ...RW_5_4, ...RW_6_1, ...RW_6_2, ...RW_6_3, ...RW_6_4, ...RW_7_1, ...RW_7_2, ...RW_7_3, ...RW_7_4, ...RW_8_1, ...RW_8_2, ...RW_8_3, ...RW_8_4];
 
 // Themes for Paper 1 and Paper 2, in question order.
 const G12 = "IMTPCTNMFHWSKPTKRFPWKIMIMRIPTNHK" + "WISPNTKHHIWMRTMWCKFRPMIWITKWRPKC";

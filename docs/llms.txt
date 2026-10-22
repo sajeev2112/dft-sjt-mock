@@ -1,6 +1,6 @@
 # DFT SJT Mock Question Bank
 
-> Free, unofficial practice for the Dental Foundation Training (DFT) situational judgement test: 224 original questions with drag-to-rank answers, a timed 56-question mock, near-miss scoring and a pattern guide. The app itself runs in the browser and needs JavaScript; the teaching material is also published as plain pages.
+> Free, unofficial practice for the Dental Foundation Training (DFT) situational judgement test: 256 original questions with drag-to-rank answers, a timed 56-question mock, near-miss scoring and a pattern guide. The app itself runs in the browser and needs JavaScript; the teaching material is also published as plain pages.
 
 ## Read these
 - [Topics covered](https://sajeev2112.github.io/dft-sjt-mock/topics.html): the 12 themes, 4 skill areas and 3 question formats.

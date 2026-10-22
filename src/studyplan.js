@@ -20,18 +20,18 @@ const list = (v, max) => Array.isArray(v) && v.length <= max ? v : null;
 // Returns clean facts, or null if anything is malformed. Only values from the question bank's own vocabulary get through.
 export function cleanProfile(b) {
   if (!b || typeof b !== "object") return null;
-  if (!int(b.answered, 20, 224) || !int(b.pct, 0, 100)) return null;
+  if (!int(b.answered, 20, QA.length) || !int(b.pct, 0, 100)) return null;
   const themes = list(b.themes, 12), areas = list(b.areas, 4), h = b.habits || {};
   if (!themes || !areas) return null;
   const out = {answered: b.answered, pct: b.pct, themes: [], areas: [], habits: [], repeats: [], weakQs: {}, pace: null, trend: null};
   const seen = new Set();
   for (const t of themes) {
-    if (!t || !THEMES[t.g] || seen.has(t.g) || !int(t.n, 1, 224) || !int(t.pct, 0, 100)) return null;
+    if (!t || !THEMES[t.g] || seen.has(t.g) || !int(t.n, 1, QA.length) || !int(t.pct, 0, 100)) return null;
     seen.add(t.g); out.themes.push({g: t.g, name: THEMES[t.g], pct: t.pct, n: t.n});
   }
   const seenD = new Set();
   for (const a of areas) {
-    if (!a || !DOMAINS[a.d] || seenD.has(a.d) || !int(a.n, 1, 224) || !int(a.pct, 0, 100)) return null;
+    if (!a || !DOMAINS[a.d] || seenD.has(a.d) || !int(a.n, 1, QA.length) || !int(a.pct, 0, 100)) return null;
     seenD.add(a.d); out.areas.push({name: DOMAINS[a.d], pct: a.pct, n: a.n});
   }
   out.themes.sort((x, y) => x.pct - y.pct); out.areas.sort((x, y) => x.pct - y.pct);
@@ -48,19 +48,19 @@ export function cleanProfile(b) {
   };
   if (!habit(h.rank, "rate") || !habit(h.picked, "picked") || !habit(h.missed, "missed")) return null;
   const rp = list(b.repeats, 8); if (!rp) return null;
-  for (const q of rp) { if (!int(q, 1, 224) || out.repeats.includes(q)) return null; out.repeats.push(q); }
+  for (const q of rp) { if (!int(q, 1, QA.length) || out.repeats.includes(q)) return null; out.repeats.push(q); }
   // the questions that cost the most marks in each of the weakest themes (each must really belong to that theme)
   if (b.weakQs != null) {
     if (typeof b.weakQs !== "object" || Array.isArray(b.weakQs)) return null;
     const keys = Object.keys(b.weakQs); if (keys.length > 4) return null;
     for (const g of keys) {
       const l = list(b.weakQs[g], 3); if (!THEMES[g] || !l) return null;
-      for (const q of l) if (!int(q, 1, 224) || QG[q - 1] !== g) return null;
+      for (const q of l) if (!int(q, 1, QA.length) || QG[q - 1] !== g) return null;
       out.weakQs[g] = l.slice();
     }
   }
   if (b.pace != null) {
-    const p = b.pace; if (!p || !int(p.avg, 1, 900) || !int(p.slow, 0, 224) || !int(p.n, 1, 224)) return null;
+    const p = b.pace; if (!p || !int(p.avg, 1, 900) || !int(p.slow, 0, QA.length) || !int(p.n, 1, QA.length)) return null;
     out.pace = {avg: p.avg, slow: p.slow, n: p.n};
   }
   if (b.trend != null) {
@@ -87,7 +87,7 @@ const mmss = s => Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0");
 // The facts the model is given, as plain sentences, plus the exact focus names it may use.
 export function factsOf(p) {
   const lines = [], focus = [];
-  lines.push(`The trainee has answered ${p.answered} of 224 practice questions and scores ${p.pct}% on average (the live test's marking).`);
+  lines.push(`The trainee has answered ${p.answered} of ${QA.length} practice questions and scores ${p.pct}% on average (the live test's marking).`);
   const weak = p.themes.filter(t => t.n >= 2).slice(0, 4);
   weak.forEach(t => {
     const qs = (p.weakQs[t.g] || []).map(q => QA[q - 1]);
