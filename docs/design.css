@@ -810,3 +810,10 @@ html.nd .nd-revmis small{background:var(--bad)}
   html.nd .chart-top .legend{display:none}
   html.nd .chart-top{min-height:0}
 }
+
+/* New-version banner (shown when the site updated while the visitor was busy) */
+#update-bar{position:fixed; left:50%; bottom:16px; transform:translateX(-50%); z-index:90; display:flex; align-items:center; gap:10px; flex-wrap:wrap; justify-content:center; max-width:min(560px, calc(100vw - 32px)); padding:12px 14px; border-radius:14px; background:var(--surface); color:var(--ink); border:1px solid var(--line); box-shadow:var(--elev-2, 0 10px 30px rgba(0,0,0,.25)); font-size:.92rem}
+#update-bar span{flex:1 1 220px}
+#update-bar button{font:inherit; font-weight:600; padding:8px 14px; border-radius:10px; border:1px solid var(--line); background:transparent; color:var(--ink); cursor:pointer}
+#update-bar button.primary{background:var(--accent); border-color:var(--accent); color:#fff}
+#update-bar button:focus-visible{outline:2px solid var(--accent); outline-offset:2px}

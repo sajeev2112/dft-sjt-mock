@@ -1425,14 +1425,31 @@ function countVisit(){
 // ---------- start ----------
 window.addEventListener("online", flush);
 if ("serviceWorker" in navigator && location.protocol !== "file:") {
-  // When a new version installs, reload once so visitors see it straight away (progress is already saved).
+  // A new version installs in the background. If nothing is in progress, reload once so visitors see it straight away
+  // (progress is already saved); otherwise show a banner and let the visitor choose when to refresh.
   const hadController = !!navigator.serviceWorker.controller;
-  let reloading = false;
+  let reloading = false, swReg = null, lastCheck = Date.now();
+  const busyNow = () => ui.building || timerOn || busyTyping() || ui.fbOpen != null || document.querySelector(".dragging, .confirm");
+  const showUpdateBar = () => {
+    if (document.getElementById("update-bar")) return;
+    const bar = document.createElement("div");
+    bar.id = "update-bar"; bar.setAttribute("role", "status");
+    bar.innerHTML = '<span>A new version of the site is ready. Your answers are saved.</span><button type="button" class="primary">Refresh now</button><button type="button" class="ghost" aria-label="Dismiss">Later</button>';
+    bar.querySelector(".primary").addEventListener("click", () => { reloading = true; save(); location.reload(); });
+    bar.querySelector(".ghost").addEventListener("click", () => bar.remove());
+    document.body.appendChild(bar);
+  };
   navigator.serviceWorker.addEventListener("controllerchange", () => {
-    if (!hadController || reloading || ui.building || timerOn || busyTyping() || ui.fbOpen != null || document.querySelector(".dragging, .confirm") || (document.getElementById("code-in") || {}).value) return;
+    if (!hadController || reloading) return;
+    if (busyNow() || (document.getElementById("code-in") || {}).value) { showUpdateBar(); return; }
     reloading = true; save(); location.reload();
   });
-  navigator.serviceWorker.register("sw.js").catch(() => {});
+  navigator.serviceWorker.register("sw.js").then(reg => { swReg = reg; }).catch(() => {});
+  // Ask the server for a newer version every few minutes while the page is open, and when the visitor comes back to it.
+  const checkForUpdate = () => { if (!swReg || !navigator.onLine || Date.now() - lastCheck < 120000) return; lastCheck = Date.now(); swReg.update().catch(() => {}); };
+  setInterval(() => { if (document.visibilityState === "visible") checkForUpdate(); }, 300000);
+  document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") checkForUpdate(); });
+  window.addEventListener("online", checkForUpdate);
 }
 if (location.hash) fromHash(); else render();
 flush();
