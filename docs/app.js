@@ -120,12 +120,46 @@ function save(now, quiet){
   clearTimeout(idbTimer);
   if (now) idbPut(json); else idbTimer = setTimeout(() => idbPut(json), 800);
   if (!quiet && typeof scheduleSync === "function") scheduleSync();
+  keepPlace();
 }
 // Writes the current state without changing its timestamp (used when adopting a synced copy).
 function persistAsIs(){
   const json = JSON.stringify(S);
   try { localStorage.setItem(STORE, json); } catch(e) {}
   idbPut(json);
+  keepPlace();
+}
+// The timestamp of the copy in localStorage, which another open tab may have saved since this one last did.
+function storedTs(){ try { const raw = localStorage.getItem(STORE); return raw ? num(JSON.parse(raw).ts, 1e14) : 0; } catch(e) { return 0; } }
+// As the page closes or reloads: write anything not yet saved (the last few seconds of a clock) without marking it as a
+// new change, which Sync would treat as fresh progress. A tab holding an older copy than another tab saved writes nothing.
+function keepUnsaved(){
+  let raw = null; try { raw = localStorage.getItem(STORE); } catch(e) {}
+  let ts = 0; try { ts = raw ? num(JSON.parse(raw).ts, 1e14) : 0; } catch(e) {}
+  if ((S.ts || 0) < ts) return;
+  const json = JSON.stringify(S);
+  if (json !== raw) persistAsIs(); else idbPut(json);
+}
+// Which view, set and question this tab is on. Kept per tab (sessionStorage survives a reload), so a reload comes back
+// here even if another open tab has moved elsewhere since. The clock flags are only written as the page closes or reloads.
+const PLACE = "dft-place";
+function keepPlace(closing){
+  try {
+    const set = S.sets[S.setId], p = {view: S.view, setId: S.setId, c: (set && set.created) || 0, cur: set ? set.cur : 0};
+    if (closing) { p.at = Date.now(); p.run = timerOn && !isMock(set); p.paused = autoPausedSet === S.setId; p.summary = !!ui.summary; }
+    sessionStorage.setItem(PLACE, JSON.stringify(p));
+  } catch(e) {}
+}
+function applyPlace(clock){
+  let p = null; try { p = JSON.parse(sessionStorage.getItem(PLACE) || "null"); } catch(e) {}
+  const set = p && typeof p.setId === "string" && S.sets[p.setId];
+  if (!set || !(PAPER_IDS.includes(p.setId) || (p.setId === "custom" && set.created === p.c))) return;
+  S.setId = p.setId; set.cur = Math.min(listOf(p.setId).length - 1, Math.floor(num(p.cur, 1e4)));
+  if (["practice", "results", "guide", "settings"].includes(p.view)) S.view = p.view;
+  if (!clock || !(Date.now() - num(p.at, 1e14) < 120000)) return; // a running clock carries over a reload, not a visit days later
+  if (p.run && !isMock(set)) timerOn = true;
+  if (p.paused && !isMock(set)) autoPausedSet = p.setId;
+  if (p.summary && isMock(set) && set.marked) ui.summary = true;
 }
 window.addEventListener("storage", e => {
   if (e.key !== STORE || !e.newValue || document.querySelector(".dragging")) return;
@@ -143,7 +177,7 @@ window.addEventListener("storage", e => {
 let pendingRender = false;
 function busyTyping(){ const a = document.activeElement; return !!(a && a.matches && a.matches("input, textarea") && a.type !== "checkbox") || !!(document.getElementById("code-in") || {}).value || (typeof syncUi !== "undefined" && syncUi.open); }
 document.addEventListener("focusout", () => setTimeout(() => { if (pendingRender && !busyTyping()) { pendingRender = false; render(); } }, 0));
-window.addEventListener("pagehide", () => { clearTimeout(idbTimer); idbPut(JSON.stringify(S)); });
+window.addEventListener("pagehide", () => { clearTimeout(idbTimer); keepUnsaved(); keepPlace(true); });
 function idb(){
   return new Promise((res, rej) => {
     if (!window.indexedDB) return rej(new Error("no idb"));
@@ -152,7 +186,10 @@ function idb(){
     r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error);
   });
 }
-async function idbPut(json){ try { const db = await idb(); db.transaction("kv", "readwrite").objectStore("kv").put(json, STORE); } catch(e) {} }
+// The start-up read of the backup. Nothing is written to the backup until it has been read, so the first save of a
+// page whose localStorage copy was lost can't replace the backup before it is restored (see the end of this file).
+let idbFirst = null;
+async function idbPut(json){ try { if (idbFirst) await idbFirst; const db = await idb(); db.transaction("kv", "readwrite").objectStore("kv").put(json, STORE); } catch(e) {} }
 async function idbGet(){ try { const db = await idb(); return await new Promise(res => { const r = db.transaction("kv").objectStore("kv").get(STORE); r.onsuccess = () => res(r.result || null); r.onerror = () => res(null); }); } catch(e) { return null; } }
 function answeredCount(s){ return Object.values(s.att || {}).length; }
 
@@ -202,13 +239,12 @@ function addAttempt(s, set, qi, submit = true){
   }
 }
 // Load saved progress (after the helpers above exist).
-let hadLocal = false;
 try {
   const raw = localStorage.getItem(STORE);
-  if (raw) { S = normalise(JSON.parse(raw)); hadLocal = true; }
+  if (raw) S = normalise(JSON.parse(raw));
   else { const old = localStorage.getItem(V4); if (old) { S = carryOver(JSON.parse(old)); ui0.rewritten = true; } }
 } catch(e) {}
-const loadedTs = S.ts || 0; // captured before anything saves, for the backup comparison at startup
+idbFirst = idbGet();
 
 // Sends queued first attempts. Returns the in-flight promise so callers can wait for it.
 let flushP = null;
@@ -1297,7 +1333,7 @@ async function syncOnStart(){
   renderSyncButton(); if (syncUi.open || syncUi.conflict) renderSyncPanel();
 }
 window.addEventListener("pagehide", () => {
-  if (!SY || syncUi.conflict || S.ts <= (SY.lastTs || 0)) return;
+  if (!SY || syncUi.conflict || S.ts <= (SY.lastTs || 0) || storedTs() > S.ts) return; // an older copy than another tab saved is never uploaded
   const body = JSON.stringify({action: "save", name: SY.name, pin: SY.pin, data: JSON.stringify(S), ts: S.ts, base: SY.lastTs || 0});
   try { if (navigator.sendBeacon(API + "/api/sync", new Blob([body], {type: "text/plain"}))) { SY.sentTs = S.ts; saveLink(); } } catch(e) {}
 });
@@ -1444,27 +1480,36 @@ function countVisit(){
 // ---------- start ----------
 window.addEventListener("online", flush);
 window.addEventListener("online", flushMockEvents);
+// The site reloads itself to install an update only where that can't interrupt anything: never in Practice (a question is
+// always open there, answered or not), the exam screen or a running mock, and never with a clock running, a form, a
+// confirmation, a drag, the Sync panel or a study plan being written. Takes plain facts so tools/test-update.mjs can check it.
+function updateMayReload(f){ return ["results", "guide", "settings"].includes(f.view) && !f.exam && !f.mock && !f.timer && !f.building && !f.typing && !f.feedback && !f.dialog; }
 if ("serviceWorker" in navigator && location.protocol !== "file:") {
-  // A new version installs in the background. If nothing is in progress, reload once so visitors see it straight away
-  // (progress is already saved); otherwise show a banner and let the visitor choose when to refresh.
+  // A new version installs in the background. On a quiet screen (Results, Guide, Settings) the page reloads once so
+  // visitors see it straight away; anywhere else a banner lets them choose, and the update is applied the next time they
+  // open a quiet screen. The reload never marks progress as changed, so Sync can't mistake it for new answers.
   const hadController = !!navigator.serviceWorker.controller;
-  let reloading = false, swReg = null, lastCheck = Date.now();
+  let reloading = false, swReg = null, lastCheck = Date.now(), updateWaiting = false;
   const markUpdateReload = () => { try { sessionStorage.setItem("dft-update-reload", "1"); } catch (e) {} };
-  const busyNow = () => ui.building || timerOn || busyTyping() || ui.fbOpen != null || document.querySelector(".dragging, .confirm");
+  const quietFacts = () => { const c = S.sets.custom; return {view: S.view, exam: !!(window.Exam && Exam.isOpen()), mock: !!c && mockLive(c) && !c.left, timer: timerOn, building: ui.building,
+    typing: busyTyping() || !!(document.getElementById("code-in") || {}).value || !!ui.code, feedback: ui.fbOpen != null, dialog: !!syncUi.conflict || !!document.querySelector(".dragging, .confirm, .sp-go:disabled")}; };
+  const reloadNow = () => { reloading = true; markUpdateReload(); keepUnsaved(); location.reload(); };
+  const reloadIfQuiet = () => { if (updateWaiting && !reloading && updateMayReload(quietFacts())) { reloadNow(); return true; } return false; };
   const showUpdateBar = () => {
     if (document.getElementById("update-bar")) return;
     const bar = document.createElement("div");
     bar.id = "update-bar"; bar.setAttribute("role", "status");
     bar.innerHTML = '<span>A new version of the site is ready. Your answers are saved.</span><button type="button" class="primary">Refresh now</button><button type="button" class="ghost" aria-label="Dismiss">Later</button>';
-    bar.querySelector(".primary").addEventListener("click", () => { reloading = true; save(); markUpdateReload(); location.reload(); });
+    bar.querySelector(".primary").addEventListener("click", reloadNow);
     bar.querySelector(".ghost").addEventListener("click", () => bar.remove());
     document.body.appendChild(bar);
   };
   navigator.serviceWorker.addEventListener("controllerchange", () => {
     if (!hadController || reloading) return;
-    if (busyNow() || (document.getElementById("code-in") || {}).value) { showUpdateBar(); return; }
-    reloading = true; save(); markUpdateReload(); location.reload();
+    updateWaiting = true;
+    if (!reloadIfQuiet()) showUpdateBar();
   });
+  window.addEventListener("hashchange", () => setTimeout(reloadIfQuiet, 0)); // after the new view has been drawn
   navigator.serviceWorker.register("sw.js").then(reg => { swReg = reg; }).catch(() => {});
   // Ask the server for a newer version every few minutes while the page is open, and when the visitor comes back to it.
   const checkForUpdate = () => { if (!swReg || !navigator.onLine || Date.now() - lastCheck < 120000) return; lastCheck = Date.now(); swReg.update().catch(() => {}); };
@@ -1472,6 +1517,7 @@ if ("serviceWorker" in navigator && location.protocol !== "file:") {
   document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") checkForUpdate(); });
   window.addEventListener("online", checkForUpdate);
 }
+applyPlace(true); // this tab's own view, set, question and clock, if it was reloaded
 if (location.hash) fromHash(); else render();
 flush();
 countVisit();
@@ -1479,11 +1525,12 @@ flushMockEvents();
 renderSyncButton();
 syncOnStart();
 (async () => {
-  const backup = await idbGet();
+  const backup = await idbFirst;
   if (backup) {
     try {
       const b = normalise(JSON.parse(backup));
-      if (!hadLocal || b.ts > loadedTs) { const view = S.view; S = b; S.view = view; save(true); render(); }
+      // the freshest copy wins, compared with what the page holds now (Sync may already have loaded a newer one)
+      if (b.ts > (S.ts || 0)) { const view = S.view; S = b; applyPlace(false); S.view = view; persistAsIs(); scheduleSync(); render(); }
     } catch(e) {}
   } else if (answeredCount(S)) idbPut(JSON.stringify(S));
   try { if (navigator.storage && navigator.storage.persist && !(await navigator.storage.persisted())) await navigator.storage.persist(); } catch(e) {}
