@@ -229,9 +229,26 @@ function flush(){
   return flushP;
 }
 // Tells the dashboard a timed mock started or ended (anonymous: random browser code and the mock's creation time only).
+// Events wait in a small queue and are sent in order, so one that fails (offline, server hiccup) is retried later with the time it happened.
+let mockQ = []; try { const a = JSON.parse(localStorage.getItem("dft-mock-queue") || "[]"); if (Array.isArray(a)) mockQ = a.slice(-20); } catch (e) {}
+const saveMockQ = () => { try { if (mockQ.length) localStorage.setItem("dft-mock-queue", JSON.stringify(mockQ)); else localStorage.removeItem("dft-mock-queue"); } catch (e) {} };
+let mockSending = false;
+async function flushMockEvents(){
+  if (mockSending || location.protocol === "file:" || !mockQ.length) return;
+  mockSending = true;
+  try {
+    while (mockQ.length) {
+      let r;
+      try { r = await fetch(API + "/api/mock", {method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify(mockQ[0]), keepalive:true}); } catch (e) { break; }
+      if (r.ok || (r.status >= 400 && r.status < 500 && r.status !== 408 && r.status !== 429)) { mockQ.shift(); saveMockQ(); } else break; // a refusal that can never succeed is dropped; busy or server errors are tried again later
+    }
+  } finally { mockSending = false; }
+}
 function mockEvent(ev, set, mode){
   if (!S.share || location.protocol === "file:" || !set || !set.created) return;
-  try { fetch(API + "/api/mock", {method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({client:S.cid, run:set.created, event:ev, mode: mode || (window.Exam && Exam.isOpen() ? "exam" : "plain")}), keepalive:true}).catch(() => {}); } catch(e) {}
+  mockQ.push({client:S.cid, run:set.created, event:ev, mode: mode || (window.Exam && Exam.isOpen() ? "exam" : "plain"), at:Date.now()});
+  if (mockQ.length > 20) mockQ.shift();
+  saveMockQ(); flushMockEvents();
 }
 function logSetIfDone(id){
   const set = S.sets[id], list = listOf(id);
@@ -1426,6 +1443,7 @@ function countVisit(){
 
 // ---------- start ----------
 window.addEventListener("online", flush);
+window.addEventListener("online", flushMockEvents);
 if ("serviceWorker" in navigator && location.protocol !== "file:") {
   // A new version installs in the background. If nothing is in progress, reload once so visitors see it straight away
   // (progress is already saved); otherwise show a banner and let the visitor choose when to refresh.
@@ -1457,6 +1475,7 @@ if ("serviceWorker" in navigator && location.protocol !== "file:") {
 if (location.hash) fromHash(); else render();
 flush();
 countVisit();
+flushMockEvents();
 renderSyncButton();
 syncOnStart();
 (async () => {

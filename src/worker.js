@@ -146,11 +146,13 @@ async function mockEvent(request, env, ctx, cors) {
   const run = Number(body && body.run), now = Date.now();
   if (!body || !validClient(body.client) || !Number.isSafeInteger(run) || run < 1e12 || run > now + 86400000) return json({error: "bad_request"}, 400, cors);
   const mode = body.mode === "exam" ? "exam" : "plain";
+  // A browser that was offline sends the event later with the time it happened (at); anything unreasonable falls back to now.
+  const at = Number(body.at), when = Number.isSafeInteger(at) && at >= now - 7 * 86400000 && at <= now + 60000 ? Math.min(at, now) : now;
   if (!(await allow(request, env, ctx, 1, "mock"))) return json({error: "rate_limited"}, 429, cors);
   if (body.event === "start")
-    await env.DB.prepare("INSERT INTO mock_runs (client, run, mode, started) VALUES (?, ?, ?, ?) ON CONFLICT (client, run) DO UPDATE SET started = excluded.started, ended = NULL, status = NULL, mode = excluded.mode").bind(body.client, run, mode, now).run();
+    await env.DB.prepare("INSERT INTO mock_runs (client, run, mode, started) VALUES (?, ?, ?, ?) ON CONFLICT (client, run) DO UPDATE SET started = excluded.started, ended = NULL, status = NULL, mode = excluded.mode").bind(body.client, run, mode, when).run();
   else if (body.event === "finish" || body.event === "expired")
-    await env.DB.prepare("INSERT INTO mock_runs (client, run, mode, started, ended, status) VALUES (?, ?, ?, ?, ?, ?) ON CONFLICT (client, run) DO UPDATE SET ended = excluded.ended, status = excluded.status").bind(body.client, run, mode, now, now, body.event).run();
+    await env.DB.prepare("INSERT INTO mock_runs (client, run, mode, started, ended, status) VALUES (?, ?, ?, ?, ?, ?) ON CONFLICT (client, run) DO UPDATE SET ended = excluded.ended, status = excluded.status").bind(body.client, run, mode, when, when, body.event).run();
   else return json({error: "bad_request"}, 400, cors);
   return json({ok: true}, 200, cors);
 }
