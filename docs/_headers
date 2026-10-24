@@ -6,6 +6,9 @@
 /sw.js
   Cache-Control: no-cache
 
+/version.json
+  Cache-Control: no-cache, no-store
+
 /admin.html
   X-Robots-Tag: noindex, nofollow
   Cache-Control: no-cache

@@ -1484,12 +1484,12 @@ window.addEventListener("online", flushMockEvents);
 // always open there, answered or not), the exam screen or a running mock, and never with a clock running, a form, a
 // confirmation, a drag, the Sync panel or a study plan being written. Takes plain facts so tools/test-update.mjs can check it.
 function updateMayReload(f){ return ["results", "guide", "settings"].includes(f.view) && !f.exam && !f.mock && !f.timer && !f.building && !f.typing && !f.feedback && !f.dialog; }
+const BUILD = "6f951bd6d6"; // this page's build version, set by tools/build.js
 if ("serviceWorker" in navigator && location.protocol !== "file:") {
   // A new version installs in the background. On a quiet screen (Results, Guide, Settings) the page reloads once so
   // visitors see it straight away; anywhere else a banner lets them choose, and the update is applied the next time they
   // open a quiet screen. The reload never marks progress as changed, so Sync can't mistake it for new answers.
-  const hadController = !!navigator.serviceWorker.controller;
-  let reloading = false, swReg = null, lastCheck = Date.now(), updateWaiting = false;
+  let reloading = false, swReg = null, lastCheck = Date.now(), updateWaiting = false, newest = "", dismissed = "";
   const markUpdateReload = () => { try { sessionStorage.setItem("dft-update-reload", "1"); } catch (e) {} };
   const quietFacts = () => { const c = S.sets.custom; return {view: S.view, exam: !!(window.Exam && Exam.isOpen()), mock: !!c && mockLive(c) && !c.left, timer: timerOn, building: ui.building,
     typing: busyTyping() || !!(document.getElementById("code-in") || {}).value || !!ui.code, feedback: ui.fbOpen != null, dialog: !!syncUi.conflict || !!document.querySelector(".dragging, .confirm, .sp-go:disabled")}; };
@@ -1501,21 +1501,31 @@ if ("serviceWorker" in navigator && location.protocol !== "file:") {
     bar.id = "update-bar"; bar.setAttribute("role", "status");
     bar.innerHTML = '<span>A new version of the site is ready. Your answers are saved.</span><button type="button" class="primary">Refresh now</button><button type="button" class="ghost" aria-label="Dismiss">Later</button>';
     bar.querySelector(".primary").addEventListener("click", reloadNow);
-    bar.querySelector(".ghost").addEventListener("click", () => bar.remove());
+    bar.querySelector(".ghost").addEventListener("click", () => { dismissed = newest; bar.remove(); });
     document.body.appendChild(bar);
   };
-  navigator.serviceWorker.addEventListener("controllerchange", () => {
-    if (!hadController || reloading) return;
-    updateWaiting = true;
-    if (!reloadIfQuiet()) showUpdateBar();
-  });
   window.addEventListener("hashchange", () => setTimeout(reloadIfQuiet, 0)); // after the new view has been drawn
   navigator.serviceWorker.register("sw.js").then(reg => { swReg = reg; }).catch(() => {});
-  // Ask the server for a newer version every few minutes while the page is open, and when the visitor comes back to it.
-  const checkForUpdate = () => { if (!swReg || !navigator.onLine || Date.now() - lastCheck < 120000) return; lastCheck = Date.now(); swReg.update().catch(() => {}); };
+  // Compare this page's build with the version the server publishes (version.json, written by the build). Only a real difference
+  // is announced: the same number means nothing to say. Checked every few minutes while the page is open, when the visitor comes back
+  // to it, and when the connection returns.
+  const checkForUpdate = async force => {
+    if (reloading || !navigator.onLine || (!force && Date.now() - lastCheck < 120000)) return;
+    lastCheck = Date.now();
+    try {
+      const r = await fetch("version.json?t=" + Date.now(), {cache: "no-store"});
+      if (!r.ok) return;
+      const v = String((await r.json()).v || "");
+      if (!/^[a-f0-9]{10}$/.test(v) || !/^[a-f0-9]{10}$/.test(BUILD) || v === BUILD) return;
+      newest = v; updateWaiting = true;
+      if (swReg) swReg.update().catch(() => {}); // let the offline copy catch up too
+      if (!reloadIfQuiet() && dismissed !== v) showUpdateBar();
+    } catch (e) { /* offline or a hiccup: try again at the next check */ }
+  };
+  setTimeout(() => checkForUpdate(true), 15000);
   setInterval(() => { if (document.visibilityState === "visible") checkForUpdate(); }, 300000);
   document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") checkForUpdate(); });
-  window.addEventListener("online", checkForUpdate);
+  window.addEventListener("online", () => checkForUpdate());
 }
 applyPlace(true); // this tab's own view, set, question and clock, if it was reloaded
 if (location.hash) fromHash(); else render();

@@ -175,10 +175,13 @@ const worker = read("src/worker.js").replace(/\/\/ TYPES:start[\s\S]*?\/\/ TYPES
 fs.writeFileSync(path.join(root, "src/worker.js"), worker);
 
 const files = ["index.html", "styles.css", "design.css", "questions.js", "guide.js", "app.js", "design.js", "phrases.js", "standards.js", "explain.js", "exam.js", "exam.css", "tags.js", "studyplan.js", "manifest.webmanifest"];
-const hash = crypto.createHash("sha256"); files.forEach(f => hash.update(read("docs/" + f)));
+const hash = crypto.createHash("sha256"); files.forEach(f => hash.update(read("docs/" + f).replace(/const BUILD = "[^"]*";/, ""))); // the page's own build stamp is not part of what is hashed
 hash.update(read("docs/sw.js").replace(/const VERSION = "[^"]*";/, "")); // changes to the service worker itself also rotate the cache
 const version = hash.digest("hex").slice(0, 10);
 fs.writeFileSync(path.join(root, "docs/sw.js"), read("docs/sw.js").replace(/const VERSION = "[^"]*";/, `const VERSION = "${version}";`));
+// Stamp the page with its own version and publish the same number for pages to compare against (see checkForUpdate in app.js).
+fs.writeFileSync(path.join(root, "docs/app.js"), read("docs/app.js").replace(/const BUILD = "[^"]*";/, `const BUILD = "${version}";`));
+fs.writeFileSync(path.join(root, "docs/version.json"), JSON.stringify({v: version}) + "\n");
 
 const count = k => Q.filter(q => q.t === k).length;
 console.log(`OK: ${Q.length} questions (${count("rank")} rank, ${count("consider")} consider, ${count("best3")} best-three). SW version ${version}.`);
