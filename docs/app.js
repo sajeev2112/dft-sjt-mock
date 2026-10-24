@@ -1417,6 +1417,8 @@ window.addEventListener("unhandledrejection", e => {
   reportError("Unhandled: " + (r && r.message || r));
 });
 function countVisit(){
+  // A reload the site started itself to install an update is not a new visit.
+  try { if (sessionStorage.getItem("dft-update-reload")) { sessionStorage.removeItem("dft-update-reload"); return; } } catch (e) {}
   if (!S.share || location.protocol === "file:" || /^(localhost|127\.)/.test(location.hostname)) return;
   const app = !!(window.matchMedia && window.matchMedia("(display-mode: standalone)").matches);
   fetch(API + "/api/visit", {method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({client:S.cid, app}), keepalive:true}).catch(() => {});
@@ -1429,20 +1431,21 @@ if ("serviceWorker" in navigator && location.protocol !== "file:") {
   // (progress is already saved); otherwise show a banner and let the visitor choose when to refresh.
   const hadController = !!navigator.serviceWorker.controller;
   let reloading = false, swReg = null, lastCheck = Date.now();
+  const markUpdateReload = () => { try { sessionStorage.setItem("dft-update-reload", "1"); } catch (e) {} };
   const busyNow = () => ui.building || timerOn || busyTyping() || ui.fbOpen != null || document.querySelector(".dragging, .confirm");
   const showUpdateBar = () => {
     if (document.getElementById("update-bar")) return;
     const bar = document.createElement("div");
     bar.id = "update-bar"; bar.setAttribute("role", "status");
     bar.innerHTML = '<span>A new version of the site is ready. Your answers are saved.</span><button type="button" class="primary">Refresh now</button><button type="button" class="ghost" aria-label="Dismiss">Later</button>';
-    bar.querySelector(".primary").addEventListener("click", () => { reloading = true; save(); location.reload(); });
+    bar.querySelector(".primary").addEventListener("click", () => { reloading = true; save(); markUpdateReload(); location.reload(); });
     bar.querySelector(".ghost").addEventListener("click", () => bar.remove());
     document.body.appendChild(bar);
   };
   navigator.serviceWorker.addEventListener("controllerchange", () => {
     if (!hadController || reloading) return;
     if (busyNow() || (document.getElementById("code-in") || {}).value) { showUpdateBar(); return; }
-    reloading = true; save(); location.reload();
+    reloading = true; save(); markUpdateReload(); location.reload();
   });
   navigator.serviceWorker.register("sw.js").then(reg => { swReg = reg; }).catch(() => {});
   // Ask the server for a newer version every few minutes while the page is open, and when the visitor comes back to it.
