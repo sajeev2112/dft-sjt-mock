@@ -108,24 +108,76 @@ function carryOver(o){
   }
   return normalise(s);
 }
+// Combines two copies of progress (this tab and another tab's newer save, or this device and a Sync copy) so nothing
+// answered in either is lost. Every answered question is kept; one answered in both copies keeps the checked answer, or
+// if both were checked the one checked more recently. Attempts, history, finished mocks, flags and timings are joined,
+// a day's score keeps the fuller count, and plain settings come from the newer copy. Takes untrusted input.
+// Tested by tools/test-merge.mjs.
+function mergeState(mine, other){
+  const a = normalise(mine), b = normalise(other), nw = b.ts > a.ts ? b : a, ol = nw === a ? b : a, m = nw;
+  const lastT = (s, qi) => { const l = s.att[qi]; return l && l.length ? l[l.length - 1].t : 0; };
+  const join = (x, y) => { // x from the newer copy (kept and added to), y from the older one
+    for (const k of new Set([...Object.keys(y.ans), ...Object.keys(y.chk)])) {
+      const xc = !!x.chk[k], yc = !!y.chk[k];
+      if (!(!x.ans[k] && !xc) && !(yc && !xc) && !(yc && xc && lastT(ol, k) > lastT(nw, k))) continue;
+      if (y.ans[k]) x.ans[k] = y.ans[k]; else delete x.ans[k];
+      if (yc) x.chk[k] = true; else delete x.chk[k];
+    }
+    for (const f of ["qt", "qs"]) if (y[f]) { x[f] = x[f] || {}; for (const k of Object.keys(y[f])) x[f][k] = Math.max(x[f][k] || 0, y[f][k]); }
+    x.el = Math.max(x.el, y.el); x.logged = x.logged || y.logged;
+    if (y.marked && !x.marked) { x.marked = true; x.mode = y.mode; }
+    if (y.list) { x.started = x.started || y.started; x.left = x.left || y.left; }
+  };
+  for (const id of Object.keys(PAPERS)) { join(m.sets[id], ol.sets[id]); m.sets[id].cur = a.sets[id].cur; }
+  const xc = nw.sets.custom, yc = ol.sets.custom; let gone = null;
+  if (xc && yc && xc.created === yc.created) { join(xc, yc); xc.cur = a.sets.custom.cur; }
+  else if (yc && (!xc || yc.created > xc.created)) { m.sets.custom = yc; gone = xc; } // the more recently built quiz stays current
+  else gone = yc;
+  const mocks = new Map();
+  for (const x of [...ol.mocks, ...(gone && gone.marked && gone.kind === "mock" ? [gone] : []), ...nw.mocks]) mocks.set(x.created, x);
+  m.mocks = [...mocks.values()].sort((p, q) => p.created - q.created).slice(-3);
+  for (const k of new Set([...Object.keys(nw.att), ...Object.keys(ol.att)])) {
+    const seen = new Set();
+    m.att[k] = [...(nw.att[k] || []), ...(ol.att[k] || [])].filter(x => { const id = x.t + "|" + x.g + "|" + x.m; return !seen.has(id) && seen.add(id); }).sort((p, q) => p.t - q.t || p.g - q.g || p.m - q.m).slice(-5);
+  }
+  for (const d of Object.keys(ol.days)) { const x = nw.days[d], y = ol.days[d]; if (!x || y.n > x.n || (y.n === x.n && y.m > x.m)) m.days[d] = y; }
+  const hs = new Set();
+  m.hist = [...nw.hist, ...ol.hist].filter(h => { const id = [h.t, h.name, h.g, h.m, h.n, h.total].join("|"); return !hs.has(id) && hs.add(id); }).sort((p, q) => p.t - q.t).slice(-200);
+  for (const f of ["sent", "fb", "flags"]) Object.assign(m[f], ol[f]);
+  const ob = new Set(nw.outbox.map(x => x.q + ":" + x.a));
+  m.outbox = [...ol.outbox.filter(x => !ob.has(x.q + ":" + x.a)), ...nw.outbox].slice(-300);
+  if (ol.plan && (!nw.plan || ol.plan.at > nw.plan.at)) m.plan = ol.plan;
+  m.cid = a.cid; m.view = a.view; m.setId = m.sets[a.setId] ? a.setId : "p1";
+  return m;
+}
 const ui0 = {rewritten:false};
 let timerOn = false; let autoPausedSet = null; // the practice set whose timer paused itself when an answer was checked; it restarts on the next question
 // Progress lives in localStorage, with a debounced backup copy in IndexedDB in case one store is cleared.
 let storageOk = true, savedAt = 0, idbTimer = null;
-function save(now, quiet){
-  S.ts = Math.max(Date.now(), (S.ts || 0) + 1); // never go backwards, even if another device's clock was ahead
+let knownTs = 0; // the timestamp of the copy in localStorage when this tab last read or wrote it
+// quiet: only the clock changed. replace: a deliberate replacement (Clear everything, a progress code, a restore).
+function save(now, quiet, replace){
+  // Another tab saved since this one last looked (it was asleep, or a drag was in progress): never write over that copy.
+  // A clock tick takes the newer copy; a real change is combined with it, so answers made in either tab are kept.
+  const o = replace ? null : unseenCopy(), floor = o ? o.ts : replace ? storedTs() : 0;
+  let combine = !!o;
+  if (o && quiet && o.ts > (S.ts || 0) && !document.querySelector(".dragging")) { takeCopy(o); combine = false; }
+  S.ts = Math.max(Date.now(), (S.ts || 0) + 1, floor + 1); // never go backwards, even if another device's clock was ahead; newer than any other tab's copy
+  if (combine) takeCopy(mergeState(S, o));
   const json = JSON.stringify(S);
   try { localStorage.setItem(STORE, json); storageOk = true; } catch(e) { storageOk = false; }
-  savedAt = Date.now();
+  knownTs = S.ts; savedAt = Date.now();
   clearTimeout(idbTimer);
   if (now) idbPut(json); else idbTimer = setTimeout(() => idbPut(json), 800);
   if (!quiet && typeof scheduleSync === "function") scheduleSync();
   keepPlace();
 }
-// Writes the current state without changing its timestamp (used when adopting a synced copy).
-function persistAsIs(){
+// Writes the current state without changing its timestamp (moving between questions, or adopting a synced copy with
+// force). If another tab has saved newer progress meanwhile, that copy is taken first (keeping this tab's place).
+function persistAsIs(force){
+  if (!force && !catchUp(false)) return; // a drag is in progress: its drop saves (and combines) instead
   const json = JSON.stringify(S);
-  try { localStorage.setItem(STORE, json); } catch(e) {}
+  try { localStorage.setItem(STORE, json); knownTs = S.ts; } catch(e) {}
   idbPut(json);
   keepPlace();
 }
@@ -161,18 +213,34 @@ function applyPlace(clock){
   if (p.paused && !isMock(set)) autoPausedSet = p.setId;
   if (p.summary && isMock(set) && set.marked) ui.summary = true;
 }
-window.addEventListener("storage", e => {
-  if (e.key !== STORE || !e.newValue || document.querySelector(".dragging")) return;
-  try {
-    const n = normalise(JSON.parse(e.newValue));
-    if (n.ts < (S.ts || 0)) return;
-    // Take the other tab’s answers, but keep this tab’s view, set and question.
-    const view = S.view, setId = S.setId, cur = S.sets[S.setId] && S.sets[S.setId].cur;
-    S = n; S.view = view;
-    if (S.sets[setId]) { S.setId = setId; S.sets[setId].cur = cur; }
-    if (busyTyping()) pendingRender = true; else render();
-  } catch(err) {}
-});
+// The copy in localStorage, if another tab has saved it since this tab last read or wrote it.
+function unseenCopy(){
+  try { const raw = localStorage.getItem(STORE), o = raw && JSON.parse(raw); return o && num(o.ts, 1e14) !== knownTs ? normalise(o) : null; } catch(e) { return null; }
+}
+// Puts another copy into S, keeping this tab's view, set and question. Sets are updated in place, so code holding the
+// current set (a drag handler) keeps working on the live copy.
+function takeCopy(n){
+  const view = S.view, setId = S.setId, cur = S.sets[setId] && S.sets[setId].cur;
+  for (const id of Object.keys(n.sets)) { const x = S.sets[id], y = n.sets[id]; if (x && y && (id !== "custom" || x.created === y.created)) { for (const k of Object.keys(x)) delete x[k]; n.sets[id] = Object.assign(x, y); } }
+  Object.assign(S, n); S.view = view;
+  if (S.sets[setId]) { S.setId = setId; S.sets[setId].cur = cur; }
+}
+// A tab that was asleep, hidden or in the back/forward cache may have missed other tabs' saves. When it wakes (and on
+// every save another tab makes), take a newer saved copy so this tab never writes its older one over it.
+// Returns false only if a newer copy is waiting but a drag is in progress (the drop then combines the two).
+function catchUp(draw){
+  const n = unseenCopy();
+  if (!n || n.ts <= (S.ts || 0)) return true;
+  if (document.querySelector(".dragging")) return false;
+  takeCopy(n); knownTs = n.ts;
+  if (draw) { if (busyTyping()) pendingRender = true; else render(); }
+  return true;
+}
+window.addEventListener("storage", e => { if (e.key === STORE && e.newValue) catchUp(true); });
+document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") catchUp(true); });
+window.addEventListener("pageshow", e => { if (e.persisted) catchUp(true); });
+window.addEventListener("focus", () => catchUp(true));
+document.addEventListener("resume", () => catchUp(true)); // a frozen tab coming back (Chrome)
 // Re-rendering rebuilds forms, so wait until the person has finished typing.
 let pendingRender = false;
 function busyTyping(){ const a = document.activeElement; return !!(a && a.matches && a.matches("input, textarea") && a.type !== "checkbox") || !!(document.getElementById("code-in") || {}).value || (typeof syncUi !== "undefined" && syncUi.open); }
@@ -244,6 +312,7 @@ try {
   if (raw) S = normalise(JSON.parse(raw));
   else { const old = localStorage.getItem(V4); if (old) { S = carryOver(JSON.parse(old)); ui0.rewritten = true; } }
 } catch(e) {}
+knownTs = storedTs();
 idbFirst = idbGet();
 
 // Sends queued first attempts. Returns the in-flight promise so callers can wait for it.
@@ -954,6 +1023,9 @@ function renderSettingsRaw(){
   const standalone = window.matchMedia && window.matchMedia("(display-mode: standalone)").matches;
   let h = `<div class="card"><h2 class="bh">Settings</h2>`;
   h += `<section class="sset"><h3>How your progress is saved</h3><p class="muted">Your answers, scores and settings are saved automatically in this browser, with a backup copy, so they’re still here when you come back. There’s no account, and nothing leaves your device apart from anonymous answers for the community stats. Progress can be lost if you clear your browsing data, use a private window, or (in Safari) don’t visit for 7 days. Adding the site to your home screen avoids the Safari limit. To carry on across devices automatically, use <b>Sync</b> in the top bar: pick a username and PIN, and your progress saves to the site’s server and loads on any device with the same pair.</p></section>`;
+  const snaps = snapshots();
+  if (snaps.length) h += `<section class="sset"><h3>Copies replaced by Sync</h3><p class="muted">When you chose to replace one copy of your progress with another, the replaced copy was kept here for ${KEEP_DAYS} days in case it was the wrong choice. Restoring one makes it this device’s progress (and, with Sync on, your other devices’); the progress it replaces is kept here too.</p><ul>` +
+    snaps.slice().reverse().map(x => `<li>${snapLabel(x)}: ${snapCount(x)} questions answered, replaced ${ago(x.at)} <button type="button" class="btn small" data-act="snap-restore" data-k="${x.at}">Restore this copy</button></li>`).join("") + `</ul></section>`;
   h += `<section class="sset"><h3>Move your progress to another device</h3><p class="muted">Copy a progress code here, then paste it into Settings on your other device. It replaces the progress there.</p><div class="row"><button type="button" class="btn small primary" data-act="copy-code">Create progress code</button></div>`;
   if (ui.code) h += `<label class="lbl" for="code-out">Your progress code</label><textarea class="code" id="code-out" rows="3" readonly>${ui.code}</textarea>`;
   h += `<label class="lbl" for="code-in">Paste a progress code</label><textarea class="code" id="code-in" rows="3" placeholder="SJT1.…"></textarea>`;
@@ -1165,13 +1237,14 @@ document.addEventListener("click", async e => {
     case "load-code": { const v = (document.getElementById("code-in") || {}).value || ""; if (!v.trim()) { ui.codeMsg = "Paste a code first."; renderSettings(); break; } ui.pending = v; ui.confirmLoad = true; ui.codeMsg = ""; renderSettings(); document.getElementById("code-in").value = v; break; }
     case "load-no": ui.confirmLoad = false; renderSettings(); break;
     case "load-yes":
-      try { S = await readCode(ui.pending || ""); S.view = "settings"; timerOn = false; autoPausedSet = null; save(true); ui.codeMsg = "Progress loaded."; flush(); }
+      try { S = await readCode(ui.pending || ""); S.view = "settings"; timerOn = false; autoPausedSet = null; save(true, false, true); ui.codeMsg = "Progress loaded."; flush(); }
       catch(err) { ui.codeMsg = /^This browser/.test(err && err.message) ? err.message : "That code couldn’t be read. Check you copied all of it."; }
       ui.confirmLoad = false; ui.pending = ""; render(); break;
     case "install": if (installPrompt) { installPrompt.prompt(); installPrompt = null; renderSettings(); } break;
+    case "snap-restore": restoreSnapshot(+b.dataset.k); break;
     case "wipe": ui.confirmWipe = true; renderSettings(); break;
     case "wipe-no": ui.confirmWipe = false; renderSettings(); break;
-    case "wipe-yes": { if (SY) { SY = null; saveLink(); syncUi.conflict = null; syncUi.status = ""; renderSyncButton(); } const cid = S.cid; S = fresh(); S.cid = cid; S.view = "settings"; ui.confirmWipe = false; timerOn = false; autoPausedSet = null; save(true); render(); break; }
+    case "wipe-yes": { if (SY) { SY = null; saveLink(); syncUi.conflict = null; syncUi.status = ""; renderSyncButton(); } const cid = S.cid; S = fresh(); S.cid = cid; S.view = "settings"; ui.confirmWipe = false; timerOn = false; autoPausedSet = null; save(true, false, true); try { localStorage.removeItem(REPLACED); } catch(e) {} render(); break; }
   }
 });
 document.addEventListener("change", e => {
@@ -1242,7 +1315,7 @@ setInterval(() => {
 // The link lives in its own localStorage key, so it's never uploaded with the progress itself.
 const SYNC_STORE = "dft-sjt-sync";
 let SY = (() => { try { return JSON.parse(localStorage.getItem(SYNC_STORE) || "null"); } catch(e) { return null; } })();
-const syncUi = {open: false, status: "", error: "", busy: false, conflict: null, confirmDelete: false, pendingLink: null};
+const syncUi = {open: false, status: "", error: "", busy: false, conflict: null, confirmDelete: false, pendingLink: null, note: null};
 let syncTimer = null;
 function saveLink(){ try { if (SY) localStorage.setItem(SYNC_STORE, JSON.stringify(SY)); else localStorage.removeItem(SYNC_STORE); } catch(e) {} }
 // Other tabs on this device may have synced since this one loaded; take the newest record of what the server holds.
@@ -1256,6 +1329,8 @@ function markSynced(ts){ SY.lastTs = ts; SY.at = Date.now(); saveLink(); }
 window.addEventListener("storage", e => {
   if (e.key !== SYNC_STORE) return;
   try { const x = JSON.parse(e.newValue || "null"); if (!x) SY = null; else if (!SY || x.name !== SY.name) SY = x; else freshLink(); } catch(err) {}
+  // another tab has already settled this conflict: don't offer its (now out-of-date) choices here as well
+  if (syncUi.conflict && (!SY || (SY.lastTs || 0) >= syncUi.conflict.ts)) { syncUi.conflict = null; syncUi.status = SY ? "saved" : ""; renderSyncPanel(); }
   renderSyncButton();
 });
 async function syncCall(action, extra){
@@ -1278,9 +1353,41 @@ function adopt(data, ts){
   const view = S.view, setId = S.setId, n = normalise(JSON.parse(data));
   S = n; S.view = view; S.ts = ts;
   if (S.sets[setId]) S.setId = setId; else { timerOn = false; autoPausedSet = null; }
-  ui.summary = false; ui.confirmMark = ui.confirmReset = false; persistAsIs();
+  ui.summary = false; ui.confirmMark = ui.confirmReset = false; persistAsIs(true);
   SY.lastTs = ts; SY.at = Date.now(); saveLink(); render();
 }
+// Before Sync replaces a whole copy of progress (a choice in the conflict panel), a safety copy of the one being replaced
+// is kept in this browser: the last 2, for 14 days, restorable from the Sync panel or Settings.
+const REPLACED = "dft-sjt-replaced", KEEP_DAYS = 14;
+function snapshots(){
+  try { const a = JSON.parse(localStorage.getItem(REPLACED) || "[]"); return Array.isArray(a) ? a.filter(x => x && typeof x.data === "string" && Date.now() - num(x.at, 1e14) < KEEP_DAYS * 864e5) : []; } catch(e) { return []; }
+}
+function keepSnapshot(data, from){
+  if (typeof data !== "string" || data.length > 1e6) return 0;
+  const at = Date.now(), list = snapshots().filter(x => x.at !== at).concat({at, from, data}).slice(-2);
+  try { localStorage.setItem(REPLACED, JSON.stringify(list)); return at; } catch(e) { return 0; }
+}
+// Restoring a safety copy makes it this device's progress (and, with Sync on, the synced copy). The progress it replaces
+// becomes a safety copy itself, so a restore can be undone too.
+function restoreSnapshot(at){
+  const list = snapshots(), i = list.findIndex(x => x.at === at); if (i < 0) return false;
+  let n; try { n = normalise(JSON.parse(list[i].data)); } catch(e) { return false; }
+  list.splice(i, 1); list.push({at: Date.now(), from: "restore", data: JSON.stringify(S)});
+  try { localStorage.setItem(REPLACED, JSON.stringify(list.slice(-2))); } catch(e) {}
+  const custom = S.sets.custom && S.sets.custom.created;
+  takeCopy(n); if (!S.sets.custom || S.sets.custom.created !== custom) { timerOn = false; autoPausedSet = null; }
+  ui.summary = false; ui.confirmMark = ui.confirmReset = false;
+  save(true, false, true); render(); announce("Copy restored.");
+  return true;
+}
+const snapLabel = x => ({this: "This device’s progress", other: "The other device’s progress", restore: "Progress replaced by a restore"})[x.from] || "Progress";
+// Questions answered in a copy: checked at least once, or answered in a quiz or mock that's still in progress.
+function answeredSet(s){
+  const out = new Set(Object.keys(s.att || {}).map(Number));
+  for (const set of Object.values(s.sets || {})) if (set) for (const k of Object.keys(set.ans || {})) if (isQi(+k) && started(set, +k)) out.add(+k);
+  return out;
+}
+function snapCount(x){ try { return answeredSet(normalise(JSON.parse(x.data))).size; } catch(e) { return 0; } }
 // Upload a few seconds after a change, but at most about once every 45 seconds; leaving the page sends the latest copy.
 let lastPushAt = 0;
 function scheduleSync(){
@@ -1296,7 +1403,7 @@ async function pushSync(force){
   try { await pushing; } finally { pushing = null; if (pushAgain) { pushAgain = false; scheduleSync(); } }
 }
 async function pushSyncNow(force){
-  freshLink(); lastPushAt = Date.now();
+  freshLink(); lastPushAt = Date.now(); catchUp(true); // never upload an older copy than another tab here has saved
   if (!SY || (!force && S.ts <= (SY.lastTs || 0))) return;
   clearTimeout(syncTimer);
   syncUi.status = "saving"; renderSyncButton();
@@ -1377,10 +1484,17 @@ function renderSyncPanelRaw(){
   let h = `<div class="sphead"><h2>Continue on another device</h2><button type="button" class="btn small" data-act="sync-close" aria-label="Close">Close</button></div>`;
   if (syncUi.error) h += `<p class="err" role="alert">${esc(syncUi.error)}</p>`;
   if (SY && syncUi.conflict) {
-    h += `<p>Your progress changed on this device <b>and</b> on another device (saved ${ago(syncUi.conflict.updated)}) since they last synced. Which copy do you want to keep?</p>
-      <div class="row"><button type="button" class="btn primary" data-act="sync-use-remote">Use the other device’s progress</button><button type="button" class="btn" data-act="sync-keep-local">Keep this device’s progress</button></div>
-      <p class="muted">The copy you don’t choose is replaced.</p>`;
+    const c = syncUi.conflict; let r = null; try { r = normalise(JSON.parse(c.data)); } catch(e) {}
+    const here = answeredSet(S), there = r ? answeredSet(r) : new Set(), only = (x, y) => [...x].filter(q => !y.has(q)).length;
+    const line = (n, k, when) => `${n} question${n === 1 ? "" : "s"} answered${k ? ` (${k} not in the other copy)` : ""}, last changed ${when}`;
+    h += `<p>Your progress changed on this device <b>and</b> on another device since they last synced.</p>
+      <ul class="cmp"><li><b>This device:</b> ${line(here.size, only(here, there), ago(S.ts))}</li><li><b>Other device:</b> ${line(there.size, only(there, here), ago((r && r.ts) || c.updated))}</li></ul>
+      <p><b>Combine both</b> keeps every answer from both copies. If a question was answered on both, the more recently checked answer is kept.</p>
+      <div class="row"><button type="button" class="btn primary" data-act="sync-combine">Combine both</button></div>
+      <p class="muted">Or replace one copy completely. A safety copy of the replaced progress is kept on this device for ${KEEP_DAYS} days (Settings).</p>
+      <div class="row"><button type="button" class="btn small" data-act="sync-use-remote">Replace this device’s progress with the other device’s</button><button type="button" class="btn small" data-act="sync-keep-local">Replace the other device’s progress with this device’s</button></div>`;
   } else if (SY) {
+    if (syncUi.note) h += `<p class="snote" role="status">${esc(syncUi.note.msg)}${syncUi.note.at ? ` <button type="button" class="btn small" data-act="sync-undo">Undo</button>` : ""}</p>`;
     const stt = syncState(), line = {synced: `✓ Synced${SY.at ? " " + ago(SY.at) : ""}`, saving: "Saving…", pending: "Changes waiting to sync…", failed: "✕ Not synced. It will keep trying."}[stt];
     h += `<p class="sstate" data-s="${stt}" role="status">${line}</p>
       <p>Syncing as <b>${esc(SY.name)}</b>. Your progress saves automatically a few seconds after each change, and the newest copy loads when you open the site on any device.</p>
@@ -1423,8 +1537,8 @@ document.addEventListener("submit", e => {
 });
 async function syncAction(act){
   switch (act) {
-    case "sync-open": syncUi.open = !syncUi.open; syncUi.confirmDelete = false; syncUi.error = ""; renderSyncButton(); renderSyncPanel(); if (syncUi.open) document.getElementById(SY ? "syncpanel" : "sync-name")?.focus(); break;
-    case "sync-close": syncUi.open = false; syncUi.error = ""; renderSyncButton(); renderSyncPanel(); document.getElementById("syncbtn")?.focus(); break;
+    case "sync-open": syncUi.open = !syncUi.open; syncUi.confirmDelete = false; syncUi.error = ""; syncUi.note = null; renderSyncButton(); renderSyncPanel(); if (syncUi.open) document.getElementById(SY ? "syncpanel" : "sync-name")?.focus(); break;
+    case "sync-close": syncUi.open = false; syncUi.error = ""; syncUi.note = null; renderSyncButton(); renderSyncPanel(); document.getElementById("syncbtn")?.focus(); break;
     case "sync-now": // send this device’s changes if it has any, otherwise fetch the latest copy
       syncUi.busy = true; renderSyncPanel();
       if (!SY) { syncUi.busy = false; renderSyncPanel(); break; }
@@ -1440,8 +1554,32 @@ async function syncAction(act){
       else syncUi.error = syncErr(res);
       renderSyncButton(); renderSyncPanel(); break;
     }
-    case "sync-use-remote": { const c = syncUi.conflict; if (!c) break; syncUi.conflict = null; adopt(c.data, c.ts); syncUi.status = "saved"; renderSyncButton(); renderSyncPanel(); break; }
-    case "sync-keep-local": syncUi.conflict = null; await pushSync(true); break;
+    case "sync-combine": { // union of both copies, then saved here and uploaded on top of the other device's copy
+      const c = syncUi.conflict; if (!c) break;
+      let o = null; try { o = JSON.parse(c.data); } catch(e) {}
+      syncUi.conflict = null; SY.lastTs = c.ts; saveLink();
+      takeCopy(mergeState(S, o)); save(true); render();
+      syncUi.note = {msg: `Combined: both copies’ answers are kept (${answeredSet(S).size} questions answered).`};
+      announce("Both copies combined."); await pushSync(); break;
+    }
+    case "sync-use-remote": {
+      const c = syncUi.conflict; if (!c) break;
+      const at = keepSnapshot(JSON.stringify(S), "this");
+      if (!at && !confirm("A safety copy of this device’s progress couldn’t be saved, so this can’t be undone. Replace it anyway?")) break;
+      syncUi.conflict = null; const was = S.ts || 0; adopt(c.data, c.ts);
+      if (S.ts <= was) save(true, false, true); // newer than the copy other open tabs hold, so they take it too
+      syncUi.status = "saved"; syncUi.note = {msg: `This device now has the other device’s progress. Its own copy is kept for ${KEEP_DAYS} days.`, at};
+      renderSyncButton(); renderSyncPanel(); break;
+    }
+    case "sync-keep-local": { // uploads on top of the copy shown; if another device has saved again since, the panel asks again
+      const c = syncUi.conflict; if (!c) break;
+      const at = keepSnapshot(c.data, "other");
+      if (!at && !confirm("A safety copy of the other device’s progress couldn’t be saved, so this can’t be undone. Replace it anyway?")) break;
+      syncUi.conflict = null; SY.lastTs = c.ts; saveLink(); S.ts = Math.max(S.ts || 0, c.ts); save(true);
+      syncUi.note = {msg: `Your other devices will get this device’s progress. Their copy is kept here for ${KEEP_DAYS} days.`, at};
+      await pushSync(); break;
+    }
+    case "sync-undo": { const n = syncUi.note; if (n && n.at && restoreSnapshot(n.at)) syncUi.note = {msg: "Restored the copy that was replaced."}; renderSyncPanel(); break; }
     case "sync-link-load": { if (!syncUi.pendingLink) break; const {name, pin} = syncUi.pendingLink; syncUi.pendingLink = null; await linkDevice("load", name, pin); break; }
     case "sync-link-replace": {
       if (!syncUi.pendingLink) break;
@@ -1484,7 +1622,7 @@ window.addEventListener("online", flushMockEvents);
 // always open there, answered or not), the exam screen or a running mock, and never with a clock running, a form, a
 // confirmation, a drag, the Sync panel or a study plan being written. Takes plain facts so tools/test-update.mjs can check it.
 function updateMayReload(f){ return ["results", "guide", "settings"].includes(f.view) && !f.exam && !f.mock && !f.timer && !f.building && !f.typing && !f.feedback && !f.dialog; }
-const BUILD = "6f951bd6d6"; // this page's build version, set by tools/build.js
+const BUILD = "127c5a3dc8"; // this page's build version, set by tools/build.js
 if ("serviceWorker" in navigator && location.protocol !== "file:") {
   // A new version installs in the background. On a quiet screen (Results, Guide, Settings) the page reloads once so
   // visitors see it straight away; anywhere else a banner lets them choose, and the update is applied the next time they
