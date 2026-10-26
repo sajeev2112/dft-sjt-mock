@@ -833,6 +833,15 @@ function archiveMock(){
   const c = S.sets.custom; if (!c || !isMock(c) || !c.marked) return;
   S.mocks = (S.mocks || []).filter(m => m.created !== c.created); S.mocks.push(c); S.mocks = S.mocks.slice(-3);
 }
+// A history row made before results were linked to their saved mock has no mock id: match it to the saved mock that was finished then
+// (created up to 4 hours before the row, same number of questions, not already claimed by another row).
+function histMockId(x, claimed){
+  if (x.c) return x.c;
+  if (!/mock/i.test(String(x.name)) && x.total !== 56) return 0;
+  const pool = [S.sets.custom, ...(S.mocks || [])].filter(m => m && isMock(m) && m.marked && !claimed.has(m.created) && m.created <= x.t && x.t - m.created <= 4 * 3600000 && (!x.total || (m.list || []).length === x.total))
+    .sort((a, b) => b.created - a.created);
+  if (!pool.length) return 0; claimed.add(pool[0].created); return pool[0].created;
+}
 const mockKept = c => !!c && ((S.sets.custom && S.sets.custom.created === c && S.sets.custom.marked) || (S.mocks || []).some(m => m.created === c));
 function buildQuiz(kind, arg){
   const c0 = S.sets.custom;
@@ -966,7 +975,8 @@ function renderResults(){
   h += `<h3 class="bsub">By paper</h3><div class="doms wide">` + PAPER_IDS.map(id => { const P = PAPERS[id]; let pg = 0, pm = 0, n = 0; range(P.from, P.to).forEach(i => { const a = lastAtt(i); if (a) { pg += a.g; pm += a.m; n++; } }); return `<div class="dom"><span>${P.name} <small class="muted">${n}/32</small></span><span>${n ? pct(pg, pm) + "%" : "–"}</span><div class="bar"><i style="width:${pct(pg, pm)}%"></i></div></div>`; }).join("") + `</div>`;
   if (S.hist.length) {
     h += `<h3 class="bsub">Completed sets</h3><div class="tscroll"><table class="rtable rt-hist"><thead><tr><th>Date</th><th>Set</th><th>Mode</th><th>Score</th></tr></thead><tbody>`;
-    S.hist.slice().reverse().forEach(x => { h += `<tr><td>${new Date(x.t).toLocaleDateString("en-GB", {day:"numeric", month:"short"})}</td><td>${esc(x.name)}${x.c && mockKept(x.c) ? ` <button type="button" class="btn small" data-act="mock-open" data-c="${x.c}">Review</button>` : ""}</td><td>${x.mode === "exam" ? "Exam" : "Practice"}</td><td>${x.g} / ${x.m} · ${pct(x.g, x.m)}%</td></tr>`; });
+    const claimed = new Set(S.hist.filter(x => x.c).map(x => x.c));
+    S.hist.slice().reverse().forEach(x => { const mc = histMockId(x, claimed); h += `<tr><td>${new Date(x.t).toLocaleDateString("en-GB", {day:"numeric", month:"short"})}</td><td>${esc(x.name)}${mc && mockKept(mc) ? ` <button type="button" class="btn small" data-act="mock-open" data-c="${mc}">Review</button>` : ""}</td><td>${x.mode === "exam" ? "Exam" : "Practice"}</td><td>${x.g} / ${x.m} · ${pct(x.g, x.m)}%</td></tr>`; });
     h += `</tbody></table></div>`;
   }
   el.innerHTML = tidyResults(h) + `</div>`;
@@ -1697,7 +1707,7 @@ window.addEventListener("online", flushMockEvents);
 // always open there, answered or not), the exam screen or a running mock, and never with a clock running, a form, a
 // confirmation, a drag, the Sync panel or a study plan being written. Takes plain facts so tools/test-update.mjs can check it.
 function updateMayReload(f){ return ["results", "guide", "settings"].includes(f.view) && !f.exam && !f.mock && !f.timer && !f.building && !f.typing && !f.feedback && !f.dialog; }
-const BUILD = "cb4e97ce4d"; // this page's build version, set by tools/build.js
+const BUILD = "76d6c1ab29"; // this page's build version, set by tools/build.js
 if ("serviceWorker" in navigator && location.protocol !== "file:") {
   // A new version installs in the background. On a quiet screen (Results, Guide, Settings) the page reloads once so
   // visitors see it straight away; anywhere else a banner lets them choose, and the update is applied the next time they
