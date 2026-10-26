@@ -79,7 +79,7 @@ const J = x => JSON.stringify(x);
   b.sets.custom = mk(20, false); b.mocks = [mk(2, true), mk(3, true)];
   const m = mergeState(a, b);
   check("the more recently built quiz stays current", m.sets.custom.created === 20);
-  check("finished mocks from both copies are kept (newest 3), including one the other copy replaced", J(m.mocks.map(x => x.created)) === J([2, 3, 10])); }
+  check("every finished mock from both copies is kept (no cap), including one the other copy replaced", J(m.mocks.map(x => x.created)) === J([1, 2, 3, 10])); }
 { const a = state(100), b = state(200);
   a.sets.custom = {name: "Quick 10", kind: "quick", list: [0, 1, 2, 3], created: 5, ans: {0: {ord: [0, 1, 2, 3, 4], set: true}}, chk: {0: true}, cur: 3, el: 50};
   b.sets.custom = {name: "Quick 10", kind: "quick", list: [0, 1, 2, 3], created: 5, ans: {1: {p: [1, 2, 3]}}, chk: {1: true}, cur: 0, el: 80};

@@ -411,12 +411,12 @@
   }
   // Leaving a running mock: pause and come back later, mark what has been answered, or throw the mock away.
   function exitMock(){
-    dialog({title:"Exit mock", msg:"What would you like to do with this mock?<br><br><b>Leave for now</b> pauses the clock and keeps your answers, and you can resume from the Practice page.<br><b>Mark it now</b> ends the mock and marks what you have answered.<br><b>Discard</b> deletes it without marking.", icon:"info", def:3,
+    dialog({title:"Exit mock", msg:"What would you like to do with this mock?<br><br><b>Leave for now</b> pauses the clock and keeps your answers, and you can resume it from the Mock exams tab.<br><b>Mark it now</b> ends the mock and marks what you have answered.<br><b>Discard</b> deletes it without marking.", icon:"info", def:3,
       btns:[["Leave for now", "L", leaveForNow], ["Mark it now", "M", markNow], ["Discard", "D", () => setTimeout(confirmDiscard, 0)], ["Keep going", "K", null]]});
   }
   function leaveForNow(){
     const set = mock(); if (!set) return;
-    set.left = true; setClock(false); persist(); try { S.setId = "p1"; S.view = "practice"; ui.building = false; } catch(e) {} save();
+    set.left = true; setClock(false); persist(); try { S.setId = "p1"; ui.building = false; } catch(e) {} toMocks(); save();
     closeDom(); appRender();
   }
   function markNow(){ const set = mock(); if (set) { setClock(false); set.left = false; } finish(); }
@@ -426,11 +426,13 @@
   }
   function discard(){
     setClock(false); clearState(); closeDom();
-    try { S.sets.custom = null; S.setId = "p1"; S.view = "practice"; ui.building = false; ui.summary = false; } catch(e) {}
-    save(); appRender();
+    try { S.sets.custom = null; S.setId = "p1"; ui.building = false; ui.summary = false; } catch(e) {}
+    toMocks(); save(); appRender();
   }
   // Before the clock starts, End Exam simply leaves; the mock stays unstarted in the app.
-  function leave(){ clearState(); closeDom(); appRender(); try { focusCard(); } catch(e) {} }
+  function leave(){ clearState(); closeDom(); toMocks(); try { persistAsIs(); } catch(e) {} appRender(); }
+  // Leaving the overlay without finishing goes back to the Mock exams tab (where the mock can be resumed).
+  function toMocks(){ try { S.view = "mocks"; if (location.hash !== "#mocks") history.replaceState(history.state, "", "#mocks"); } catch(e) {} }
   // After the survey: close the overlay and hand over to the app's own mock marking and summary.
   function finish(){
     const set = mock(); keepSurvey(); clearState(); closeDom(); setClock(false);

@@ -102,12 +102,13 @@
       const c = S.sets.custom, live = c && c.kind === "mock" && c.limit && !c.marked;
       const lastMock = (S.hist || []).filter(h => /mock/i.test(h.name)).slice(-1)[0];
       const left = live ? Math.max(0, c.limit - c.el) : 0, mm = String(Math.floor(left / 60)).padStart(2, "0") + ":" + String(Math.floor(left % 60)).padStart(2, "0");
-      const sig = [live, live && c.started, Math.floor(left / 60), lastMock && lastMock.t].join("|");
+      const nx = typeof nextMock === "function" ? nextMock() : 0, which = live ? c.name : nx; // the numbered mock papers (app.js)
+      const sig = [live, live && c.started, Math.floor(left / 60), lastMock && lastMock.t, which].join("|");
       if (cta.dataset.sig !== sig) {
         cta.dataset.sig = sig;
         cta.innerHTML = `<div class="nd-cta-ico" aria-hidden="true"><svg viewBox="0 0 24 24" width="26" height="26"><circle cx="12" cy="13" r="8" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 9v4l2.6 1.6M9.5 2.8h5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></div>` +
-          `<div class="nd-cta-txt"><b>${live ? (c.started ? "Mock in progress" : "Your mock is ready") : "Timed mock exam"}</b><span>${live && c.started ? `${mm} left · ${c.list.filter(i => complete(c, i)).length}/${c.list.length} answered` : "56 random questions · 105 minutes · marked like the real test"}${!live && lastMock ? ` · last time ${Math.round(lastMock.g / lastMock.m * 100)}%` : ""}</span></div>` +
-          `<button type="button" class="btn primary nd-cta-btn" data-act="mock-quick">${live ? (c.started ? "Resume mock" : "Start the clock") : "Start timed mock"}</button>`;
+          `<div class="nd-cta-txt"><b>${live ? (c.started ? esc(c.name) + " in progress" : esc(c.name) + " is ready") : "Timed mock exams"}</b><span>${live && c.started ? `${mm} left · ${c.list.filter(i => complete(c, i)).length}/${c.list.length} answered` : (live ? "56 questions · 105 minutes · marked like the real test" : nx ? `Five fixed papers of 56 questions in 105 minutes · next up: Mock ${nx}` : "All five mocks taken · retake any of them")}${!live && lastMock ? ` · last time ${Math.round(lastMock.g / lastMock.m * 100)}%` : ""}</span></div>` +
+          `<button type="button" class="btn primary nd-cta-btn" data-act="mock-quick">${live ? (c.started ? "Resume mock" : "Start the clock") : "Open Mock exams"}</button>`;
       }
       const nf = Object.keys(S.flags || {}).length;
       revFlag.hidden = !nf; const rf = `⚑ Review flagged <small>${nf}</small>`; if (revFlag.innerHTML !== rf) revFlag.innerHTML = rf;
@@ -160,7 +161,7 @@
   // clock ticks and the score count-up only change text inside these; they don't need the page re-enhanced
   const quiet = n => { const el = n.nodeType === 1 ? n : n.parentElement; return !!(el && el.closest && el.closest("#clock, #mclock, #pace, .sv")); };
   const mo = new MutationObserver(recs => { if (recs.every(r => quiet(r.target))) return; now(); });
-  ["card", "panel", "ptabs", "grid", "view-results", "view-guide", "view-settings"].forEach(id => { const el = document.getElementById(id); if (el) mo.observe(el, {childList: true, subtree: true}); });
+  ["card", "panel", "ptabs", "grid", "view-mocks", "view-results", "view-guide", "view-settings"].forEach(id => { const el = document.getElementById(id); if (el) mo.observe(el, {childList: true, subtree: true}); });
   document.querySelectorAll(".views [data-v]").forEach(b => new MutationObserver(now).observe(b, {attributes: true, attributeFilter: ["aria-current"]}));
   window.addEventListener("resize", schedule);
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(schedule); // the nav pill is measured again once web fonts arrive
@@ -267,12 +268,14 @@
   // mobile tab bar
   const ICONS = {
     practice: '<path d="M4 5.5h16M4 12h16M4 18.5h10" />',
+    mocks: '<circle cx="12" cy="13" r="7.5"/><path d="M12 9v4l2.6 1.6M9.5 2.8h5" />',
     results: '<path d="M5 19V11M12 19V5M19 19v-6" />',
     guide: '<path d="M5 4.5h9a3 3 0 0 1 3 3V20H8a3 3 0 0 1-3-3z M17 7.5h2V20" />',
     settings: '<circle cx="12" cy="12" r="3"/><path d="M12 3v2.5M12 18.5V21M3 12h2.5M18.5 12H21M5.6 5.6l1.8 1.8M16.6 16.6l1.8 1.8M5.6 18.4l1.8-1.8M16.6 7.4l1.8-1.8" />'
   };
   const tabbar = document.createElement("nav"); tabbar.className = "nd-tabbar nd-only"; tabbar.setAttribute("aria-label", "Sections");
-  tabbar.innerHTML = ["practice", "results", "guide", "settings"].map(v => `<button type="button" data-act="view" data-v="${v}"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${ICONS[v]}</svg><span>${v[0].toUpperCase() + v.slice(1)}</span></button>`).join("");
+  const LABEL = {practice: "Practice", mocks: "Mock exams", results: "Results", guide: "Guide", settings: "Settings"};
+  tabbar.innerHTML = ["practice", "mocks", "results", "guide", "settings"].map(v => `<button type="button" data-act="view" data-v="${v}"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${ICONS[v]}</svg><span>${LABEL[v]}</span></button>`).join("");
   document.body.appendChild(tabbar);
 
   // focus-mode bar (shown while a timed mock is running)
@@ -341,7 +344,7 @@
   let q = false;
   const later = () => { if (q) return; q = true; setTimeout(() => { q = false; sync(); }, 0); };
   const mo = new MutationObserver(later);
-  ["card", "panel", "view-results", "view-settings", "view-guide"].forEach(id => { const el = document.getElementById(id); if (el) mo.observe(el, {childList: true}); });
+  ["card", "panel", "view-mocks", "view-results", "view-settings", "view-guide"].forEach(id => { const el = document.getElementById(id); if (el) mo.observe(el, {childList: true}); });
   document.querySelectorAll("[data-view-panel]").forEach(el => mo.observe(el, {attributes: true, attributeFilter: ["hidden"]}));
   window.addEventListener("beforeinstallprompt", () => setTimeout(later, 0));
   sync();

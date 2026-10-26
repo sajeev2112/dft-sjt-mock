@@ -15,6 +15,9 @@ const PAPERS = {
 const PAPER_IDS = Object.keys(PAPERS).filter(id => Q.length >= PAPERS[id].to);
 const PACE = 112.5; // seconds per item at live-test pace (105 min / 56)
 const MOCK_SECS = 105 * 60; // the live test: 56 questions in 105 minutes
+// The numbered mock papers: MOCK_COUNT fixed papers of MOCK_RANK ranking-type + MOCK_BEST best-three questions, built from
+// Papers 1 to MOCK_LAST_PAPER only (so a later Paper 10 never reshuffles them). See mockPapers().
+const MOCK_COUNT = 5, MOCK_RANK = 37, MOCK_BEST = 19, MOCK_LAST_PAPER = 9;
 const calm = () => window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 const WORKER = "https://dft-sjt-mock.sajeev-r13.workers.dev";
 const API = (location.protocol === "file:" || location.hostname.endsWith("github.io")) ? WORKER : "";
@@ -64,19 +67,64 @@ function cleanCustom(c){
   const list = [...new Set(c.list.map(Number))].filter(isQi); if (!list.length) return null;
   return Object.assign(cleanSet(c, list), {list, name: typeof c.name === "string" ? c.name.slice(0, 60) : "Quiz",
     kind: typeof c.kind === "string" ? c.kind.slice(0, 10) : "quick", created: num(c.created, 1e14),
-    limit: Math.floor(num(c.limit, 20000)), started: !!c.started, left: !!c.left});
+    limit: Math.floor(num(c.limit, 20000)), started: !!c.started, left: !!c.left, mockNo: Math.floor(num(c.mockNo, 99))});
 }
+// Finished mocks are kept for ever (S.mocks), each attempt packed to what its review needs: the question list, the
+// answers and the seconds per question as short strings in list order, the time used and the mock's number (0 for an
+// earlier random mock). a: a ranking answer is its five option numbers in your order ("30412"), a best-three answer its
+// picks ("157"), "" if not answered; q: seconds on each question ("" for none). Older copies stored the whole quiz;
+// they are packed as they load (cleanArchived), keeping every answer that scores or shows in the review.
+function packMock(s){
+  const r = {kind: "mock", name: s.name, mockNo: s.mockNo || 0, created: s.created, limit: s.limit || MOCK_SECS, el: s.el || 0, marked: true, list: s.list.slice(),
+    a: s.list.map(qi => { const x = s.ans[qi]; return !x ? "" : isRank(Q[qi]) ? (x.set ? x.ord.join("") : "") : x.p.slice().sort((p, q) => p - q).join(""); }).join(",")};
+  const qt = s.qt || {}; if (s.list.some(qi => qt[qi] > 0)) r.q = s.list.map(qi => qt[qi] > 0 ? qt[qi] : "").join(",");
+  if (s.mode === "practice") r.md = "practice";
+  return r;
+}
+// A packed attempt back as a marked quiz (for its summary and review). Takes untrusted input; null if nothing usable.
+function unpackMock(r){
+  if (!r || typeof r !== "object" || !Array.isArray(r.list)) return null;
+  const a = String(r.a || "").split(","), q = String(r.q || "").split(","), seen = new Set(), list = [], ans = {}, qt = {};
+  r.list.map(Number).forEach((qi, k) => {
+    if (!isQi(qi) || seen.has(qi)) return; seen.add(qi); list.push(qi);
+    const ds = /^[0-7]{1,5}$/.test(a[k] || "") ? a[k].split("").map(Number) : [];
+    const x = ds.length ? cleanAns(qi, isRank(Q[qi]) ? {ord: ds, set: true} : {p: ds}) : null;
+    if (x && (x.set || (x.p && x.p.length))) ans[qi] = x;
+    const t = Math.floor(num(q[k], 1e5)); if (t > 0) qt[qi] = t;
+  });
+  if (!list.length) return null;
+  const set = newSet({name: typeof r.name === "string" ? r.name.slice(0, 60) : "Timed mock", kind: "mock", list, ans, created: num(r.created, 1e14), limit: Math.floor(num(r.limit, 20000)) || MOCK_SECS,
+    el: Math.floor(num(r.el, 1e6)), mode: r.md === "practice" ? "practice" : "exam", marked: true, logged: true, started: true, left: false, mockNo: Math.floor(num(r.mockNo, 99))});
+  for (const qi of Object.keys(ans)) set.chk[qi] = true;
+  if (Object.keys(qt).length) set.qt = qt;
+  return set;
+}
+// One saved attempt, cleaned: a packed one, or an older full copy of the quiz (packed now). null if it isn't a finished mock.
+function cleanArchived(x){
+  if (!x || typeof x !== "object") return null;
+  if (typeof x.a !== "string") { const c = cleanCustom(x); return c && c.marked ? packMock(c) : null; }
+  const s = unpackMock(x); return s ? packMock(s) : null;
+}
+// Adds attempts to a list of packed attempts, once each (by attempt id, created), oldest first; nothing is ever removed.
+// Returns how many were new.
+function addMocks(into, more){
+  let n = 0;
+  for (const m of more || []) if (m && !into.some(x => x.created === m.created)) { into.push(m); n++; }
+  into.sort((p, q) => p.created - q.created); return n;
+}
+// The finished mock in the quiz slot of a copy, packed (it is also in that copy's mocks once saved).
+const slotMock = s => { const c = s && s.sets && s.sets.custom; return c && c.kind === "mock" && c.limit > 0 && c.marked ? [packMock(c)] : []; };
 function normalise(o){
   const s = fresh();
   if (!o || typeof o !== "object") return s;
   if (typeof o.cid === "string" && /^[A-Za-z0-9-]{8,64}$/.test(o.cid)) s.cid = o.cid;
   s.share = o.share !== false; // on unless someone turns it off
   s.ts = num(o.ts, 1e14);
-  s.view = ["practice", "results", "guide", "settings"].includes(o.view) ? o.view : "practice";
+  s.view = ["practice", "mocks", "results", "guide", "settings"].includes(o.view) ? o.view : "practice";
   const sets = o.sets || {};
   for (const id of Object.keys(PAPERS)) s.sets[id] = cleanSet(sets[id], range(PAPERS[id].from, PAPERS[id].to));
   const cc = cleanCustom(sets.custom); if (cc) s.sets.custom = cc;
-  s.mocks = (Array.isArray(o.mocks) ? o.mocks : []).map(cleanCustom).filter(m => m && m.marked).slice(-3);
+  addMocks(s.mocks, (Array.isArray(o.mocks) ? o.mocks : []).map(cleanArchived)); addMocks(s.mocks, slotMock(s)); // every finished mock, never capped
   s.setId = s.sets[o.setId] && (o.setId === "custom" || PAPER_IDS.includes(o.setId)) ? o.setId : "p1";
   for (const k of Object.keys(o.att || {})) { const i = +k; if (isQi(i) && Array.isArray(o.att[k])) s.att[i] = o.att[k].slice(-5).map(a => { const r = {g: num(a && a.g, 20), m: num(a && a.m, 20) || 20, t: num(a && a.t, 1e14)}; const sec = Math.floor(num(a && a.s, 3600)); if (sec > 0) r.s = sec; return r; }); }
   for (const d of Object.keys(o.days || {})) { const x = o.days[d]; if (/^\d{4}-\d{2}-\d{2}$/.test(d) && x) s.days[d] = {g: num(x.g), m: num(x.m), n: num(x.n)}; }
@@ -134,9 +182,8 @@ function mergeState(mine, other){
   if (xc && yc && xc.created === yc.created) { join(xc, yc); xc.cur = Math.max(0, xc.list.indexOf(a.sets.custom.list[a.sets.custom.cur])); } // same question this copy was on
   else if (yc && (!xc || yc.created > xc.created)) { m.sets.custom = yc; gone = xc; } // the more recently built quiz stays current
   else gone = yc;
-  const mocks = new Map();
-  for (const x of [...ol.mocks, ...(gone && gone.marked && gone.kind === "mock" ? [gone] : []), ...nw.mocks]) mocks.set(x.created, x);
-  m.mocks = [...mocks.values()].sort((p, q) => p.created - q.created).slice(-3);
+  addMocks(m.mocks, ol.mocks); // m is the newer copy: every finished mock from both copies, never capped
+  if (gone) addMocks(m.mocks, slotMock({sets: {custom: gone}})); addMocks(m.mocks, slotMock(m));
   for (const k of new Set([...Object.keys(nw.att), ...Object.keys(ol.att)])) {
     const seen = new Set();
     m.att[k] = [...(nw.att[k] || []), ...(ol.att[k] || [])].filter(x => { const id = x.t + "|" + x.g + "|" + x.m; return !seen.has(id) && seen.add(id); }).sort((p, q) => p.t - q.t || p.g - q.g || p.m - q.m).slice(-5);
@@ -208,7 +255,7 @@ function applyPlace(clock){
   const set = p && typeof p.setId === "string" && S.sets[p.setId];
   if (!set || !(PAPER_IDS.includes(p.setId) || (p.setId === "custom" && set.created === p.c))) return;
   S.setId = p.setId; set.cur = Math.min(listOf(p.setId).length - 1, Math.floor(num(p.cur, 1e4)));
-  if (["practice", "results", "guide", "settings"].includes(p.view)) S.view = p.view;
+  if (["practice", "mocks", "results", "guide", "settings"].includes(p.view)) S.view = p.view;
   if (!clock || !(Date.now() - num(p.at, 1e14) < 120000)) return; // a running clock carries over a reload, not a visit days later
   if (p.run && !isMock(set)) timerOn = true;
   if (p.paused && !isMock(set)) autoPausedSet = p.setId;
@@ -222,6 +269,7 @@ function unseenCopy(){
 // current set (a drag handler) keeps working on the live copy.
 function takeCopy(n){
   const view = S.view, setId = S.setId, cur = S.sets[setId] && S.sets[setId].cur, onQ = setId === "custom" && S.sets.custom ? S.sets.custom.list[cur] : null;
+  addMocks(n.mocks, S.mocks); addMocks(n.mocks, slotMock(S)); // a finished mock is never lost by taking another copy
   for (const id of Object.keys(n.sets)) { const x = S.sets[id], y = n.sets[id]; if (x && y && (id !== "custom" || x.created === y.created)) { for (const k of Object.keys(x)) delete x[k]; n.sets[id] = Object.assign(x, y); } }
   Object.assign(S, n); S.view = view;
   if (S.sets[setId]) { S.setId = setId; S.sets[setId].cur = cur; if (onQ != null && S.sets.custom.list.indexOf(onQ) >= 0) S.sets.custom.cur = S.sets.custom.list.indexOf(onQ); } // a quiz list may have grown in another tab
@@ -352,7 +400,9 @@ async function flushMockEvents(){
 }
 function mockEvent(ev, set, mode){
   if (!S.share || location.protocol === "file:" || !set || !set.created) return;
-  mockQ.push({client:S.cid, run:set.created, event:ev, mode: mode || (window.Exam && Exam.isOpen() ? "exam" : "plain"), at:Date.now()});
+  const e = {client:S.cid, run:set.created, event:ev, mode: mode || (window.Exam && Exam.isOpen() ? "exam" : "plain"), at:Date.now()};
+  if (set.mockNo) e.no = set.mockNo; // which numbered mock (the server ignores fields it doesn't use)
+  mockQ.push(e);
   if (mockQ.length > 20) mockQ.shift();
   saveMockQ(); flushMockEvents();
 }
@@ -444,7 +494,7 @@ function focusKey(el){
   return "[data-act=\"" + a.dataset.act + "\"]" + ["k", "o", "d", "mode", "id", "kind", "arg", "v", "a", "nd"].filter(k => a.dataset[k] != null).map(k => `[data-${k}="${CSS.escape(a.dataset[k])}"]`).join("");
 }
 function keepFocus(fn){
-  const was = document.activeElement, key = focusKey(was), box = was && was.closest && was.closest("#panel, #card, #view-settings, #syncpanel, #view-results, #resetrow");
+  const was = document.activeElement, key = focusKey(was), box = was && was.closest && was.closest("#panel, #card, #view-settings, #syncpanel, #view-results, #view-mocks, #resetrow");
   fn();
   if (!was || was === document.body || document.activeElement !== document.body) return;
   let t = key && document.querySelector(key);
@@ -458,6 +508,7 @@ function renderAll(){
   document.querySelectorAll("[data-view-panel]").forEach(el => el.hidden = el.dataset.viewPanel !== S.view);
   document.querySelectorAll(".views [data-v]").forEach(b => b.setAttribute("aria-current", b.dataset.v === S.view ? "page" : "false"));
   if (S.view === "practice") { renderTabs(); renderGrid(); renderCard(); renderPanelRaw(); }
+  else if (S.view === "mocks") renderMocks();
   else if (S.view === "results") renderResults();
   else if (S.view === "guide") renderGuide();
   else if (S.view === "settings") renderSettings();
@@ -499,6 +550,10 @@ function renderGrid(){
   document.getElementById("grid").innerHTML = h;
   // Reset sits quietly under the grid, away from the main controls; it still asks before clearing anything.
   const name = setName(S.setId);
+  if (isMock(set) && set.marked) { // a finished mock is never cleared: it can be retaken as a fresh attempt instead
+    document.getElementById("resetrow").innerHTML = set.mockNo ? `<button type="button" class="resetlink" data-act="build" data-kind="mock" data-arg="${set.mockNo}">Retake ${esc(name)}</button>` : "";
+    return;
+  }
   document.getElementById("resetrow").innerHTML = ui.confirmReset
     ? `<div class="confirm"><span>Clear the answers and timer for ${esc(name)}? Your Results history is kept.</span><div class="row"><button type="button" class="btn small danger" data-act="reset-yes">Clear ${esc(name)}</button><button type="button" class="btn small" data-act="reset-no">Cancel</button></div></div>`
     : `<button type="button" class="resetlink" data-act="reset">Reset ${esc(name)}</button>`;
@@ -539,6 +594,7 @@ function renderCard(){
   const roll = rolling(set), nleft = roll ? rollLeft() : 0, more = roll && upNext(set, 1).length > 0; // a rolling quiz has no fixed length
   let h = ui0.rewritten ? `<div class="notice"><b>The questions have been rewritten to be harder.</b> Every option is now plausible, so your earlier answers have been cleared. Your progress chart and visit history are kept. <button type="button" class="btn small" data-act="dismiss-notice">OK</button></div>` : "";
   if (mockLive(set)) h += mockBarHtml(set);
+  if (isMock(set) && set.marked) h += `<div class="mxback"><button type="button" class="btn small" data-act="view" data-v="mocks">← Back to Mock exams</button><button type="button" class="btn small" data-act="summary">${esc(set.mockNo ? set.name : "Mock")} summary</button></div>`;
   h += `<div class="qhead"><span class="qnum" tabindex="-1">Question ${k + 1}${roll ? ` · ${nleft} mistake${nleft === 1 ? "" : "s"} left` : ` of ${list.length}`}${where}</span><div class="chips"><span class="chip type">${TYPES[q.t]}</span><span class="chip">${DOMAINS[q.d]}</span>${q.p >= 8 ? `<span class="chip hard" title="Paper 8 is the hardest set: harder than the Advanced papers and the live test">Expert</span>` : q.p >= 4 ? `<span class="chip hard" title="Papers 4 to 7 are deliberately harder than the live test">Advanced</span>` : ""}` +
     `<button type="button" class="flagbtn" data-act="flag" aria-pressed="${flagged(qi)}" title="Flag this question to come back to (shortcut: F)">${FLAG}<span>${flagged(qi) ? "Flagged" : "Flag"}</span></button></div></div>`;
   h += `<p class="scenario">${rev ? markPhrases(q.s, qi) : q.s}</p><p class="instr">${PROMPTS[q.t]}</p>`;
@@ -648,8 +704,8 @@ function mockBarHtml(set){
 }
 function mockIntroHtml(set){
   const n = curList().length, r = curList().filter(i => isRank(Q[i])).length;
-  return `<h2 class="bh" tabindex="-1">Timed mock</h2><p class="lead">${n} questions from across the site in ${fmt(set.limit)}, the same length and timing as the live test.</p>` +
-    `<ul class="mocklist"><li><b>${r}</b> ranking and <b>${n - r}</b> best-three questions, in random order.</li><li>The countdown stays at the top of the question. You get warnings at 15 and 5 minutes left.</li>` +
+  return `<h2 class="bh" tabindex="-1">${esc(set.name)}</h2><p class="lead">${n} questions in ${fmt(set.limit)}, the same length and timing as the live test.</p>` +
+    `<ul class="mocklist"><li><b>${r}</b> ranking questions, then <b>${n - r}</b> best-three questions${set.mockNo ? ", the same for everyone taking this mock" : ", in random order"}.</li><li>The countdown stays at the top of the question. You get warnings at 15 and 5 minutes left.</li>` +
     `<li>There’s no feedback until the end. Flag anything you want to come back to, and move freely between questions.</li><li>When time runs out, the mock is marked automatically. You can also finish early.</li><li>Leaving the site pauses the clock; Pause is there if you need it, but the real test has no pause.</li></ul>` +
     `<div class="actions"><button type="button" class="btn" data-act="new">Choose a different quiz</button><button type="button" class="btn primary" data-act="mock-start">Start the clock</button></div>`;
 }
@@ -666,10 +722,18 @@ function mockSummaryHtml(set){
   const timed = list.filter(qi => qt[qi]), avg = timed.length ? Math.round(timed.reduce((a, qi) => a + qt[qi], 0) / timed.length) : 0;
   const verdict = p >= 80 ? "Excellent: you’re reading almost every scenario the way the key does." : p >= 70 ? "Strong: most of your rankings line up with the key." : p >= 60 ? "Solid, with room to tighten the middle ranks." : "Keep going: the weakest questions below are the quickest wins.";
   const bar = (label, g, m, extra) => `<div class="dom"><span>${label}${extra || ""}</span><span>${m ? pct(g, m) + "%" : "–"}</span><div class="bar"><i style="width:${pct(g, m)}%"></i></div></div>`;
-  let h = `<h2 class="bh" tabindex="-1">Mock complete</h2><div class="mhero"><div class="mring">${ringSvg(max ? got / max : 0, 132, 12, band(got, max || 1))}<div class="mrc"><b>${p}%</b><span>${got} / ${max}</span></div></div>` +
-    `<div class="mside"><p class="mverdict">${verdict}</p><div class="mtiles"><div><span>Time used</span><b>${fmt(Math.floor(used))}</b><small>of ${fmt(set.limit)}</small></div><div><span>Answered</span><b>${done}</b><small>of ${list.length}</small></div><div><span>Per question</span><b>${avg ? fmt(avg) : "–"}</b><small>pace ${fmt(Math.round(PACE))}</small></div></div></div></div>`;
+  let h = `<div class="mxback"><button type="button" class="btn small" data-act="view" data-v="mocks">← Back to Mock exams</button></div><h2 class="bh" tabindex="-1">${esc(set.mockNo ? set.name : "Earlier random mock")} complete</h2><p class="muted mdate">Taken ${new Date(set.created).toLocaleDateString("en-GB", {weekday: "short", day: "numeric", month: "short", year: "numeric"})}${set.mockNo ? ` · attempt ${Math.max(1, mockAttempts(set.mockNo).findIndex(a => a.r.created === set.created) + 1)} of ${Math.max(1, mockAttempts(set.mockNo).length)}` : ""}</p><div class="mhero"><div class="mring">${ringSvg(max ? got / max : 0, 132, 12, band(got, max || 1))}<div class="mrc"><b>${p}%</b><span>${got} / ${max}</span></div></div>` +
+    `<div class="mside"><p class="mverdict">${verdict}</p><div class="mtiles"><div><span>Time used</span><b>${fmt(Math.floor(used))}</b><small>of ${fmt(set.limit)}</small></div><div><span>Answered</span><b>${done}</b><small>of ${list.length}</small></div><div><span>Per question</span><b>${avg ? fmt(avg) : "–"}</b><small>pace ${fmt(Math.round(PACE))}</small></div></div>` +
+    `<div class="mtiles mparts"><div><span>Part One · ranking</span><b>${typ.rank[1] ? pct(...typ.rank) + "%" : "–"}</b><small>${typ.rank[0]} / ${typ.rank[1]} marks</small></div><div><span>Part Two · best three</span><b>${typ.best3[1] ? pct(...typ.best3) + "%" : "–"}</b><small>${typ.best3[0]} / ${typ.best3[1]} marks</small></div></div></div></div>`;
   // the five questions that cost the most marks
   const weak = list.map((qi, k) => ({qi, k, s: qScore(set, qi)})).sort((a, b) => (a.s.got / a.s.max) - (b.s.got / b.s.max) || a.k - b.k).slice(0, 5);
+  // every question that lost marks, in paper order, to jump straight to (numbered as in the review: 1 to 56)
+  const lost = list.map((qi, k) => ({qi, k, s: qScore(set, qi)})).filter(x => x.s.got < x.s.max);
+  if (lost.length) {
+    const row = (label, xs) => xs.length ? `<div class="mlrow"><span class="plabel">${label}</span><div class="mlost">` + xs.map(x => `<button type="button" class="mlq ${band(x.s.got, x.s.max)}" data-act="review-q" data-k="${x.k}" aria-label="Question ${x.k + 1}: ${x.s.got} of ${x.s.max} marks"><span>Q${x.k + 1}</span><b>${x.s.got}/${x.s.max}</b></button>`).join("") + `</div></div>` : "";
+    h += `<h3 class="bsub">Questions that lost marks · ${lost.length} of ${list.length}</h3>` + row("Part One · ranking", lost.filter(x => isRank(Q[x.qi]))) + row("Part Two · best three", lost.filter(x => !isRank(Q[x.qi]))) +
+      `<p class="muted">Tap a question to see the key, your marks and the reasoning. Previous and Next then take you through the whole paper.</p>`;
+  }
   h += `<h3 class="bsub">Your weakest 5</h3><div class="mweak">` + weak.map(w => { const q = Q[w.qi]; return `<button type="button" class="mwrow" data-act="review-q" data-k="${w.k}"><span class="pill ${band(w.s.got, w.s.max)}">${w.s.got}/${w.s.max}</span><span class="mwt"><b>Question ${w.k + 1} · ${THEMES[q.g]}</b><span>${esc(q.s.replace(/<[^>]+>/g, "").slice(0, 110))}…</span></span><span class="mwgo" aria-hidden="true">→</span></button>`; }).join("") + `</div>`;
   // time spent on each question
   if (timed.length) {
@@ -686,7 +750,7 @@ function mockSummaryHtml(set){
   h += `<div class="mcols"><div><h3 class="bsub">By area</h3><div class="doms">` + Object.keys(DOMAINS).filter(d => dom[d]).map(d => bar(DOMAINS[d], dom[d][0], dom[d][1])).join("") + `</div>`;
   h += `<h3 class="bsub">By question type</h3><div class="doms">${bar("Ranking", ...typ.rank)}${bar("Best three of eight", ...typ.best3)}</div></div>`;
   h += `<div><h3 class="bsub">By theme</h3><div class="doms">` + Object.keys(thm).sort((a, b) => thm[a][0] / thm[a][1] - thm[b][0] / thm[b][1]).map(g => bar(`<a href="#guide-${g}">${THEMES[g]}</a>`, thm[g][0], thm[g][1], ` <small class="muted">${thm[g][2]}</small>`)).join("") + `</div></div></div>`;
-  h += `<div class="actions"><button type="button" class="btn" data-act="build" data-kind="mock">New timed mock</button><div class="act-r">` +
+  h += `<div class="actions"><div class="act-l">${set.mockNo ? `<button type="button" class="btn" data-act="build" data-kind="mock" data-arg="${set.mockNo}">Retake ${esc(set.name)}</button>` : ""}<button type="button" class="btn" data-act="view" data-v="mocks">← Back to Mock exams</button></div><div class="act-r">` +
     (nf ? `<button type="button" class="btn" data-act="review-flagged">Review ${nf} flagged</button>` : "") +
     (mistakesList().length ? `<button type="button" class="btn" data-act="build" data-kind="mistakes">Practise my mistakes</button>` : "") + `<button type="button" class="btn" data-act="review-q" data-k="${weak[0] ? weak[0].k : 0}">Review weakest</button><button type="button" class="btn primary" data-act="review">Review all answers</button></div></div>`;
   return h;
@@ -813,25 +877,105 @@ function pickFresh(pool, n){
   const unseen = shuffle(pool.filter(i => !S.att[i])), seen = shuffle(pool.filter(i => S.att[i]));
   return unseen.concat(seen).slice(0, n);
 }
+// ---------- numbered mock papers ----------
+// Mock 1 to Mock 5 are fixed papers, the same for everyone and after every update. Each has MOCK_RANK ranking-type
+// questions (Part One: rank and considerations) and MOCK_BEST best-three (Part Two), and no question is in more than one
+// mock. They are worked out from the question data of Papers 1 to MOCK_LAST_PAPER, using only each question's number,
+// format, area, theme and paper, so rewording a question never moves it, and a later Paper 10 never reshuffles them:
+// 1. Each part's questions are sorted by paper, area, theme, then a fixed scramble of the question number, and dealt in
+//    turn to the five mocks; what's left over (1 ranking-type and 7 best-three today) sits out of every mock.
+// 2. Pairs of questions in the same part are then swapped between two mocks (or with one sitting out) whenever that
+//    makes the mocks more alike, measured as the spread across the five mocks of the count of each area, theme, paper and
+//    format (ranking vs considerations), plus each part's papers and areas at half weight (sum of squared differences from
+//    the average). Pairs are tried in a fixed order until no swap helps.
+// 3. Within each part, a mock's questions are put in a fixed shuffled order.
+// Pure: bank is Q. Returns MOCK_COUNT lists of question indices, Part One first. Tested by tools/test-mocks.mjs.
+function mockPapers(bank){
+  const N = MOCK_COUNT, mix = n => { let x = Math.imul(n >>> 0, 2654435761) >>> 0; x ^= x >>> 15; x = Math.imul(x, 2246822519) >>> 0; x ^= x >>> 13; x = Math.imul(x, 3266489917) >>> 0; return (x ^ (x >>> 16)) >>> 0; };
+  const ids = new Map(), id = k => ids.has(k) ? ids.get(k) : (ids.set(k, ids.size), ids.size - 1);
+  const items = bank.map((q, i) => ({i, q, n: q.n, part: q.t === "best3" ? 2 : 1})).filter(x => x.q.p >= 1 && x.q.p <= MOCK_LAST_PAPER)
+    .map(x => Object.assign(x, {keys: ["d" + x.q.d, "g" + x.q.g, "p" + x.q.p, "t" + x.q.t, x.part + "p" + x.q.p, x.part + "d" + x.q.d].map(id)}));
+  const W = [...ids.keys()].map(k => /^[12]/.test(k) ? 0.5 : 1), cnt = [...ids.keys()].map(() => new Array(N + 1).fill(0)), bin = new Array(items.length); // bin N = sits out
+  const by = (a, b) => (a < b ? -1 : a > b ? 1 : 0);
+  for (const part of [1, 2]) {
+    const size = part === 1 ? MOCK_RANK : MOCK_BEST;
+    items.map((x, u) => u).filter(u => items[u].part === part)
+      .sort((u, v) => { const a = items[u], b = items[v]; return a.q.p - b.q.p || by(a.q.d, b.q.d) || by(a.q.g, b.q.g) || mix(a.n) - mix(b.n) || a.n - b.n; })
+      .forEach((u, k) => { bin[u] = k < size * N ? k % N : N; for (const key of items[u].keys) cnt[key][bin[u]]++; });
+  }
+  const cost = key => { const c = cnt[key]; let s = 0, s2 = 0; for (let b = 0; b < N; b++) { s += c[b]; s2 += c[b] * c[b]; } return W[key] * (s2 - s * s / N); };
+  const move = (u, from, to) => { for (const key of items[u].keys) { cnt[key][from]--; cnt[key][to]++; } };
+  const ord = items.map((x, u) => u).sort((u, v) => mix(items[u].n) - mix(items[v].n) || items[u].n - items[v].n);
+  for (let better = true, pass = 0; better && pass < 100; pass++) {
+    better = false;
+    for (let x = 0; x < ord.length; x++) for (let y = x + 1; y < ord.length; y++) {
+      const u = ord[x], v = ord[y], bu = bin[u], bv = bin[v];
+      if (items[u].part !== items[v].part || bu === bv) continue;
+      const keys = items[u].keys.concat(items[v].keys); let d = 0; // a key both share doesn't change, so counting it twice is harmless
+      for (const k of keys) d -= cost(k);
+      move(u, bu, bv); move(v, bv, bu);
+      for (const k of keys) d += cost(k);
+      if (d < -1e-9) { bin[u] = bv; bin[v] = bu; better = true; } else { move(u, bv, bu); move(v, bu, bv); }
+    }
+  }
+  return Array.from({length: N}, (_, m) => { const mine = items.filter((x, u) => bin[u] === m), o = x => mix(x.n * 7919 + m + 1);
+    return [1, 2].flatMap(part => mine.filter(x => x.part === part).sort((a, b) => o(a) - o(b) || a.n - b.n).map(x => x.i)); });
+}
+let mockCache = null;
+function mockPaperList(n){ if (!mockCache) mockCache = mockPapers(Q); return (mockCache[n - 1] || []).slice(); }
+// Every finished attempt at Mock n (0: the earlier random mocks), oldest first, with its score.
+const scoreCache = new Map();
+function attemptScore(r){
+  if (scoreCache.has(r.created)) return scoreCache.get(r.created);
+  const s = unpackMock(r); let got = 0, max = 0, p1 = [0, 0], p2 = [0, 0];
+  if (s) s.list.forEach(qi => { const x = qScore(s, qi), t = isRank(Q[qi]) ? p1 : p2; got += x.got; max += x.max; t[0] += x.got; t[1] += x.max; });
+  const v = {got, max, p: pct(got, max), p1, p2, used: s ? Math.min(s.el, s.limit) : 0, n: s ? s.list.length : 0}; scoreCache.set(r.created, v); return v;
+}
+function mockAttempts(n){ return (S.mocks || []).filter(m => (m.mockNo || 0) === n).map(r => Object.assign({r}, attemptScore(r))); }
+// Where Mock n stands: the attempt in the quiz slot (if unfinished), finished attempts and the best one.
+function mockStatus(n){
+  const c = S.sets.custom, live = !!c && isMock(c) && c.mockNo === n && !c.marked, atts = mockAttempts(n);
+  const best = atts.reduce((b, a) => !b || a.p > b.p ? a : b, null);
+  return {live, started: live && c.started, atts, best, word: live ? (c.started ? "In progress" : "Ready to start") : atts.length ? "Completed" : "Not started"};
+}
+// The mock the home-page button starts: the one in progress, else the first not yet taken (0 if all have been taken).
+function nextMock(){
+  const c = S.sets.custom; if (c && isMock(c) && !c.marked && c.mockNo) return c.mockNo;
+  for (let n = 1; n <= MOCK_COUNT; n++) if (!mockAttempts(n).length) return n;
+  return 0;
+}
+const dayLabel = t => new Date(t).toLocaleDateString("en-GB", {day: "numeric", month: "short"});
+function mockCardsHtml(){
+  let h = "";
+  for (let n = 1; n <= MOCK_COUNT; n++) {
+    const st = mockStatus(n), list = mockPaperList(n), seen = list.filter(i => S.att[i]).length, last = st.atts[st.atts.length - 1];
+    const cls = st.live ? "live" : st.atts.length ? "done" : "new", go = st.live ? (st.started ? "Resume" : "Start") : st.atts.length ? "Retake" : "Start";
+    h += `<button type="button" class="bcard mcard" data-act="build" data-kind="mock" data-arg="${n}"><b>Mock ${n} <span class="mst ${cls}">${st.word}</span></b>` +
+      `<span>${st.started ? `${S.sets.custom.list.filter(i => complete(S.sets.custom, i)).length} of ${list.length} answered · ${fmt(Math.floor(left(S.sets.custom)))} left` : st.atts.length ? `Best <b class="mbest">${st.best.p}%</b> · ${st.atts.length} attempt${st.atts.length === 1 ? "" : "s"} · last ${dayLabel(last.r.created)}` : `${list.length} questions · ${fmt(MOCK_SECS).replace(/:00$/, "")} minutes`}</span>` +
+      `<span class="muted" title="Questions in this mock you have already answered somewhere on the site">${seen ? `${seen} of ${list.length} seen before` : "All new to you"}</span><span class="mgo">${go} →</span></button>`;
+  }
+  return h;
+}
 function builderHtml(){
   const weak = weakList().length, mist = mistakesList().length, c = S.sets.custom;
   const themeCounts = {}; Q.forEach(q => themeCounts[q.g] = (themeCounts[q.g] || 0) + 1);
   let h = `<h2 class="bh">Build a quiz</h2><p class="muted">${c ? `Starting a new quiz replaces “${esc(c.name)}”. Your scores so far are kept in Results.` : "Pick a format. Your scores are saved in Results."}</p><div class="bgrid">`;
   h += `<button type="button" class="bcard" data-act="build" data-kind="quick"><b>Quick 10</b><span>10 random questions from all papers, unseen ones first. Practice mode.</span></button>`;
-  h += `<button type="button" class="bcard" data-act="build" data-kind="mock"><b>Timed mock · 56 in 105 min</b><span>Random questions from every paper in the live test’s mix, with a countdown, flags and a summary at the end.</span></button>`;
   h += `<button type="button" class="bcard" data-act="build" data-kind="weak"${weak ? "" : " disabled"}><b>Weak spots</b><span>${weak ? `Up to 20 of the ${weak} questions you last scored under 70% on, lowest first.` : "Nothing yet: questions you score under 70% on will appear here."}</span></button>`;
   h += `<button type="button" class="bcard" data-act="build" data-kind="mistakes"${mist ? "" : " disabled"}><b>Practise my mistakes</b><span>${mist ? `${mist} mistake${mist === 1 ? "" : "s"} waiting (questions where your latest attempt lost marks). Oldest mistakes first, so what you got wrong long ago comes back before what you got wrong today. ${ROLL} at a time, topped up as you go; stop whenever you like.` : "Nothing yet: questions where you lose marks will appear here."}</span></button>`;
   const nf = Object.keys(S.flags).length;
   h += `<button type="button" class="bcard" data-act="build" data-kind="flagged"${nf ? "" : " disabled"}><b>Flagged questions</b><span>${nf ? `The ${nf} question${nf === 1 ? "" : "s"} you’ve flagged to come back to. Practice mode.` : "Nothing flagged yet: use the flag on any question to collect it here."}</span></button>`;
-  h += `</div><h3 class="bsub">Focus on an area</h3><div class="chips wrap">` + Object.keys(DOMAINS).map(d => `<button type="button" class="chipbtn" data-act="build" data-kind="area" data-arg="${d}">${DOMAINS[d]}</button>`).join("") + `</div>`;
+  h += `</div><div class="callout mxpoint"><div class="wrow"><span><b>Timed mocks are in the Mock exams tab:</b> five fixed ${MOCK_RANK + MOCK_BEST}-question papers in ${MOCK_SECS / 60} minutes.</span><button type="button" class="btn small" data-act="view" data-v="mocks">Open Mock exams</button></div></div>`;
+  h += `<h3 class="bsub">Focus on an area</h3><div class="chips wrap">` + Object.keys(DOMAINS).map(d => `<button type="button" class="chipbtn" data-act="build" data-kind="area" data-arg="${d}">${DOMAINS[d]}</button>`).join("") + `</div>`;
   h += `<h3 class="bsub">Focus on a theme</h3><div class="chips wrap">` + Object.keys(THEMES).map(g => `<button type="button" class="chipbtn" data-act="build" data-kind="theme" data-arg="${g}">${THEMES[g]} <small>${themeCounts[g] || 0}</small></button>`).join("") + `</div>`;
   h += `<div class="actions"><button type="button" class="btn" data-act="cancel-build">Cancel</button></div>`;
   return h;
 }
-// A finished mock is kept (the last three) when something else takes the quiz slot, so its answers and review aren't lost.
+// A finished mock is saved (packed) in S.mocks as soon as it is marked, and kept for ever, so its answers and review are
+// never lost when something else takes the quiz slot. Safe to call again: an attempt is stored once.
 function archiveMock(){
   const c = S.sets.custom; if (!c || !isMock(c) || !c.marked) return;
-  S.mocks = (S.mocks || []).filter(m => m.created !== c.created); S.mocks.push(c); S.mocks = S.mocks.slice(-3);
+  S.mocks = S.mocks || []; addMocks(S.mocks, [packMock(c)]);
 }
 // A history row made before results were linked to their saved mock has no mock id: match it to the saved mock that was finished then
 // (created up to 4 hours before the row, same number of questions, not already claimed by another row).
@@ -845,6 +989,11 @@ function histMockId(x, claimed){
 const mockKept = c => !!c && ((S.sets.custom && S.sets.custom.created === c && S.sets.custom.marked) || (S.mocks || []).some(m => m.created === c));
 function buildQuiz(kind, arg){
   const c0 = S.sets.custom;
+  const no = kind === "mock" ? (Math.floor(+arg) >= 1 && Math.floor(+arg) <= MOCK_COUNT ? Math.floor(+arg) : nextMock() || 1) : 0;
+  if (no && c0 && isMock(c0) && !c0.marked && c0.mockNo === no) { // this mock is already under way (or ready): carry on with it
+    S.setId = "custom"; S.view = "practice"; ui.building = false; ui.warn = false; ui.summary = false;
+    save(); location.hash = "practice"; if (window.Exam && Exam.open()) return; render(); scrollToCard(); return;
+  }
   if (kind === "mistakes" && rolling(c0)) { // a mistakes round already going: carry on with it (it tops itself up) rather than replace it
     if (c0.cur >= c0.list.length - 1 && revealed(c0, c0.list[c0.cur]) && topUp(c0)) c0.cur++; // topUp keeps the place on this question
     S.setId = "custom"; S.view = "practice"; ui.building = false; ui.warn = false; ui.summary = false; timerOn = false; autoPausedSet = null;
@@ -857,10 +1006,7 @@ function buildQuiz(kind, arg){
   const all = Q.map((_, i) => i);
   let list = [], name = "", mode = "practice";
   if (kind === "quick") { list = pickFresh(all, 10); name = "Quick 10"; }
-  else if (kind === "mock") {
-    const r = shuffle(all.filter(i => isRank(Q[i]))).slice(0, 37), b = shuffle(all.filter(i => !isRank(Q[i]))).slice(0, 19);
-    list = r.concat(b); name = "Timed mock"; mode = "exam"; // exam overlay: Part One = all ranking items, Part Two = all best-three (each already shuffled)
-  }
+  else if (kind === "mock") { list = mockPaperList(no); name = "Mock " + no; mode = "exam"; } // a fixed paper (mockPapers): Part One = its ranking items, Part Two = its best-three; a retake is a fresh attempt
   else if (kind === "flagged") { list = Object.keys(S.flags).map(Number).filter(isQi).sort((x, y) => x - y); name = "Flagged questions"; }
   else if (kind === "weak") { list = weakList().slice(0, 20); name = "Weak spots"; }
   else if (kind === "mistakes") { list = nextBatch(mistakesList(), [], ROLL); name = "My mistakes"; } // rolling: tops up as you go
@@ -868,7 +1014,7 @@ function buildQuiz(kind, arg){
   else if (kind === "theme") { list = shuffle(all.filter(i => Q[i].g === arg)); name = THEMES[arg]; }
   if (!list.length) return;
   archiveMock();
-  S.sets.custom = newSet(Object.assign({name, kind, list, mode, created:Date.now()}, kind === "mock" ? {limit: MOCK_SECS, started: false} : {}));
+  S.sets.custom = newSet(Object.assign({name, kind, list, mode, created: Math.max(Date.now(), ...(S.mocks || []).map(m => m.created + 1))}, kind === "mock" ? {limit: MOCK_SECS, started: false, mockNo: no} : {})); // created is the attempt's id: never the same as a kept attempt
   S.setId = "custom"; S.view = "practice"; ui.building = false; ui.warn = false; ui.summary = false; ui.warned = {}; timerOn = false; autoPausedSet = null;
   save(); location.hash = "practice"; render(); scrollToCard();
   if (kind === "mock" && window.Exam) Exam.open(); // exam overlay (exam.js) takes over for a new timed mock
@@ -886,7 +1032,7 @@ function renderPanelRaw(){
   });
   const mock = isMock(set);
   let h = mock
-    ? `<div><p class="plabel">Mode · ${esc(name)}</p><p class="muted">${set.marked ? "Marked. Review each question’s key and reasoning." : "Exam conditions: no feedback until the mock is marked."}</p>${set.marked && !ui.summary ? `<button type="button" class="btn small" data-act="summary">View summary</button>` : ""}</div>`
+    ? `<div><p class="plabel">Mode · ${esc(name)}</p><p class="muted">${set.marked ? "Marked. Review each question’s key and reasoning." : "Exam conditions: no feedback until the mock is marked."}</p><div class="row">${set.marked && !ui.summary ? `<button type="button" class="btn small" data-act="summary">View summary</button>` : ""}<button type="button" class="btn small" data-act="view" data-v="mocks">Mock exams</button></div></div>`
     : `<div><p class="plabel">Mode · ${esc(name)}</p><div class="seg" role="group" aria-label="Mode">
     <button type="button" data-act="mode" data-mode="practice" aria-pressed="${set.mode === "practice"}"${set.marked ? " disabled" : ""}>Practice</button>
     <button type="button" data-act="mode" data-mode="exam" aria-pressed="${set.mode === "exam"}"${set.marked ? " disabled" : ""}>Exam</button></div>
@@ -952,6 +1098,7 @@ function renderResults(){
     h += `<div class="callout"><p class="xhead">Your weakest themes</p>` + weakest.map(t => `<div class="wrow"><span><b>${THEMES[t]}</b> · ${pct(byG[t].g, byG[t].m)}% over ${byG[t].n} question${byG[t].n === 1 ? "" : "s"}</span><span class="row"><a class="btn small" href="#guide-${t}">Read playbook</a><button type="button" class="btn small primary" data-act="build" data-kind="theme" data-arg="${t}">Practise</button></span></div>`).join("") + `</div>`;
   }
   { const nm = mistakesList().length; if (nm && !(window.StudyPlan && StudyPlan.enough())) h += `<div class="callout"><p class="xhead">My mistakes</p><div class="wrow"><span>${nm} mistake${nm === 1 ? "" : "s"} waiting (questions where your latest attempt lost marks), oldest first.</span><button type="button" class="btn small primary" data-act="build" data-kind="mistakes">Practise my mistakes</button></div></div>`; }
+  h += mockLineHtml();
   if (window.StudyPlan) h += StudyPlan.html();
   h += "<!--rs-->" + activityHtml();
   h += `<h3 class="bsub">Progress over time</h3>` + progressChart();
@@ -980,6 +1127,32 @@ function renderResults(){
     h += `</tbody></table></div>`;
   }
   el.innerHTML = tidyResults(h) + `</div>`;
+}
+// ---------- the Mock exams tab ----------
+// Where the learner picks Mock 1 to 5 (status, attempts seen before, Start / Resume / Retake), takes it (the exam
+// overlay, as before) and reviews earlier attempts: "Previous mocks" lists every finished attempt, newest first, from
+// S.mocks, so each stays reviewable however long ago it was taken (earlier random mocks included).
+function renderMocks(){
+  const el = document.getElementById("view-mocks"); if (!el) return;
+  const c = S.sets.custom, all = (S.mocks || []).map(r => Object.assign({r}, attemptScore(r))), best = {}, nth = {}, count = {};
+  all.forEach(a => { const n = a.r.mockNo || 0; count[n] = (count[n] || 0) + 1; nth[a.r.created] = count[n]; if (n && (!best[n] || a.p > best[n].p)) best[n] = a; });
+  let h = `<div class="card"><h2 class="bh" tabindex="-1">Mock exams</h2><p class="muted">Five fixed papers of ${MOCK_RANK + MOCK_BEST} questions in ${MOCK_SECS / 60} minutes, timed and marked like the live test: Part One has ${MOCK_RANK} ranking questions, Part Two ${MOCK_BEST} best-three. No question appears in more than one mock, and each mock has the same spread of areas, themes and papers, so they are about equally hard. Retake any mock as often as you like; every attempt is kept below.</p>`;
+  if (c && isMock(c) && !c.marked && !c.mockNo) h += `<div class="callout"><div class="wrow"><span>You have an unfinished earlier random mock (${c.list.filter(i => complete(c, i)).length} of ${c.list.length} answered).</span><button type="button" class="btn small primary" data-act="mock-quick">Resume it</button></div></div>`;
+  h += `<div class="bgrid mgrid">${mockCardsHtml()}</div>`;
+  h += `<h3 class="bsub" id="prev-mocks">Previous mocks${all.length ? ` · ${all.length}` : ""}</h3>`;
+  if (!all.length) h += `<p class="muted">Nothing yet. When you finish a mock, it appears here with its score, and you can review every question with the key, your marks and the reasoning.</p>`;
+  else h += `<ol class="mxatts">` + all.slice().reverse().map(a => { const n = a.r.mockNo || 0, isBest = n && count[n] > 1 && best[n] === a, name = n ? `Mock ${n}` : "Earlier random mock";
+    return `<li class="mxa${isBest ? " best" : ""}"><span class="mxl"><b>${name}</b>${n ? ` · attempt ${nth[a.r.created]}` : ""} · ${dayLabel(a.r.created)}</span>` +
+      `<span class="mxs"><span class="pill ${band(a.got, a.max || 1)}">${a.p}%</span>${isBest ? ` <b class="mxbadge">Best</b>` : ""}</span>` +
+      `<span class="mxd">${a.got} / ${a.max} marks · Part One ${pct(...a.p1)}% · Part Two ${pct(...a.p2)}% · ${fmt(Math.floor(a.used))} used</span>` +
+      `<button type="button" class="btn small" data-act="mock-open" data-c="${a.r.created}" aria-label="Review ${name}${n ? `, attempt ${nth[a.r.created]}` : ""}, ${dayLabel(a.r.created)}">Review</button></li>`; }).join("") + `</ol>`;
+  el.innerHTML = h + `</div>`;
+}
+// Results keeps only a short line about the mocks, with a way to the Mock exams tab.
+function mockLineHtml(){
+  const all = S.mocks || []; if (!all.length) return "";
+  const best = all.map(r => ({r, s: attemptScore(r)})).reduce((b, x) => !b || x.s.p > b.s.p ? x : b, null);
+  return `<div class="callout"><div class="wrow"><span><b>Mock exams</b> · ${all.length} mock${all.length === 1 ? "" : "s"} completed · best ${best.s.p}% (${best.r.mockNo ? "Mock " + best.r.mockNo : "earlier random mock"})</span><button type="button" class="btn small" data-act="view" data-v="mocks">Open Mock exams</button></div></div>`;
 }
 // The Results page keeps the main story on top (your numbers, the study plan, progress, areas) and tucks the long reference tables into
 // collapsible sections, so it reads as a short page. Each section starts with an <h3 class="bsub"> heading; open/closed is remembered.
@@ -1163,7 +1336,7 @@ function resumeAfterCheck(set, qi){
 function go(k){
   const set = curSet(), list = curList();
   set.cur = Math.max(0, Math.min(list.length - 1, k));
-  ui.warn = false; ui.confirmMark = false; ui.confirmReset = false; ui.fbOpen = null; ui.building = false;
+  ui.warn = false; ui.confirmMark = false; ui.confirmReset = false; ui.fbOpen = null; ui.building = false; ui.summary = false; // going to a question always leaves a mock or round summary
   resumeAfterCheck(set, list[set.cur]);
   persistAsIs(); render(); scrollToCard(); // moving between questions isn't a change to your answers
 }
@@ -1181,7 +1354,7 @@ function fromHash(){
     renderCiteBack();
     return;
   }
-  if (!h || ["practice", "results", "settings"].includes(h)) {
+  if (!h || ["practice", "mocks", "results", "settings"].includes(h)) {
     S.view = h || "practice"; persistAsIs(); render();
     const o = ui.citeFrom; ui.citeFrom = null;
     if (S.view === "practice" && o != null && o >= 0) setTimeout(() => { const x = document.querySelectorAll("#card .xitem")[o]; if (x) { x.scrollIntoView({block: "center"}); (x.querySelector("a.cite") || x).focus({preventScroll: true}); } }, 0);
@@ -1221,8 +1394,8 @@ document.addEventListener("click", async e => {
     case "build": buildQuiz(b.dataset.kind, b.dataset.arg); break;
     case "mock-quick": {
       const c = S.sets.custom;
-      if (c && isMock(c) && !c.marked) { S.setId = "custom"; ui.building = false; ui.summary = false; save(); if (window.Exam && Exam.open()) break; render(); scrollToCard(); } // exam overlay resumes the mock
-      else buildQuiz("mock");
+      if (c && isMock(c) && !c.marked) { S.setId = "custom"; S.view = "practice"; ui.building = false; ui.summary = false; save(); if (location.hash !== "#practice") location.hash = "practice"; if (window.Exam && Exam.open()) break; render(); scrollToCard(); } // exam overlay resumes the mock
+      else { ui.building = false; if (location.hash === "#mocks") fromHash(); else location.hash = "mocks"; } // choose one in the Mock exams tab
       break;
     }
     case "mock-start": if (window.Exam && Exam.open()) break; // exam overlay (exam.js): its Ready To Begin dialog starts the clock
@@ -1230,11 +1403,11 @@ document.addEventListener("click", async e => {
     case "summary": ui.summary = true; render(); scrollToCard(); break;
     case "mock-open": {
       const created = +b.dataset.c, cur = S.sets.custom;
-      let m = cur && cur.created === created && cur.marked ? cur : (S.mocks || []).find(x => x.created === created);
+      const m = cur && cur.created === created && cur.marked ? cur : unpackMock((S.mocks || []).find(x => x.created === created));
       if (!m) break;
-      if (m !== cur) {
+      if (m !== cur) { // the attempt stays saved in S.mocks; the quiz slot shows a copy of it for the review
         if (cur && !cur.marked && !cur.logged) { const done = cur.list.filter(i => started(cur, i)).length; if ((done || (isMock(cur) && cur.started)) && !confirm(`Open this mock? Your unfinished “${cur.name}” (${done} of ${cur.list.length} answered) will be replaced.`)) break; }
-        archiveMock(); S.mocks = S.mocks.filter(x => x !== m); S.sets.custom = m;
+        archiveMock(); S.sets.custom = m;
       }
       S.setId = "custom"; S.view = "practice"; ui.building = false; ui.summary = true; ui.warn = false; ui.confirmMark = ui.confirmReset = false; timerOn = false; autoPausedSet = null;
       save(); location.hash = "practice"; render(); scrollToCard(); break;
@@ -1290,6 +1463,7 @@ document.addEventListener("click", async e => {
     case "reset": ui.confirmReset = true; keepFocus(renderGrid); break;
     case "reset-no": ui.confirmReset = false; keepFocus(renderGrid); break;
     case "reset-yes":
+      if (isMock(set) && set.marked) { ui.confirmReset = false; renderGrid(); break; } // a finished mock is never cleared (Retake starts a fresh attempt)
       curList().forEach(i => { delete set.ans[i]; delete set.chk[i]; });
       set.marked = false; set.el = 0; set.cur = 0; set.logged = false; delete set.qt; ui.warned = {}; if (isMock(set)) set.started = false; timerOn = false; autoPausedSet = null; ui.confirmReset = false; ui.summary = false; save(); render();
       break;
@@ -1322,7 +1496,8 @@ document.addEventListener("click", async e => {
     case "load-code": { const v = (document.getElementById("code-in") || {}).value || ""; if (!v.trim()) { ui.codeMsg = "Paste a code first."; renderSettings(); break; } ui.pending = v; ui.confirmLoad = true; ui.codeMsg = ""; renderSettings(); document.getElementById("code-in").value = v; break; }
     case "load-no": ui.confirmLoad = false; renderSettings(); break;
     case "load-yes":
-      try { S = await readCode(ui.pending || ""); S.view = "settings"; timerOn = false; autoPausedSet = null; save(true, false, true); ui.codeMsg = "Progress loaded."; flush(); }
+      try { const n = await readCode(ui.pending || ""); // finished mocks on this device are kept
+        addMocks(n.mocks, S.mocks); addMocks(n.mocks, slotMock(S)); S = n; S.view = "settings"; timerOn = false; autoPausedSet = null; save(true, false, true); ui.codeMsg = "Progress loaded."; flush(); }
       catch(err) { ui.codeMsg = /^This browser/.test(err && err.message) ? err.message : "That code couldn’t be read. Check you copied all of it."; }
       ui.confirmLoad = false; ui.pending = ""; render(); break;
     case "install": if (installPrompt) { installPrompt.prompt(); installPrompt = null; renderSettings(); } break;
@@ -1343,7 +1518,7 @@ function markSet(){
   if (wasLive) mockEvent(ranOut ? "expired" : "finish", set);
   list.forEach(qi => { if (started(set, qi) && !set.chk[qi]) { set.chk[qi] = true; addAttempt(S, set, qi); } });
   if (isMock(set)) { ui.summary = true; set.cur = 0; }
-  logSetIfDone(S.setId); save(); render(); flush();
+  logSetIfDone(S.setId); archiveMock(); save(); render(); flush();
   if (isMock(set)) { scrollToCard(); focusCard(); }
 }
 function toggleFlag(qi){
@@ -1430,16 +1605,19 @@ const SYNC_ERRORS = {
   wrong_pin: "That username and PIN don’t match. If you’re saving for the first time, the username may already be taken.",
   not_found: "No saved progress with that username. Use “Save and link” to create it.",
   rate_limited: "Too many tries from this network. Please wait a while and try again.",
-  bad_data: "This progress is too large to sync.",
-  bad_request: "This progress is too large to sync.",
+  bad_data: "Sync couldn’t save: your progress is too large for the Sync server. Everything is still saved on this device, and nothing has been deleted.",
+  bad_request: "Sync couldn’t save: your progress is too large for the Sync server. Everything is still saved on this device, and nothing has been deleted.",
 };
 function syncErr(res){ if (res.body.error === "locked") return `Too many wrong PINs for that username. Try again in ${res.body.retry_after} minute${res.body.retry_after === 1 ? "" : "s"}.`; return SYNC_ERRORS[res.body.error] || "Couldn’t reach the server. Check your connection and try again."; }
 function adopt(data, ts){
   const view = S.view, setId = S.setId, n = normalise(JSON.parse(data));
+  const kept = addMocks(n.mocks, S.mocks) + addMocks(n.mocks, slotMock(S)); // finished mocks are never lost, even when a whole copy is replaced
   S = n; S.view = view; S.ts = ts;
   if (S.sets[setId]) S.setId = setId; else { timerOn = false; autoPausedSet = null; }
   ui.summary = false; ui.confirmMark = ui.confirmReset = false; persistAsIs(true);
-  SY.lastTs = ts; SY.at = Date.now(); saveLink(); render();
+  SY.lastTs = ts; SY.at = Date.now(); saveLink();
+  if (kept) save(); // the kept mocks are newer than the copy just taken: upload them too
+  render();
 }
 // Before Sync replaces a whole copy of progress (a choice in the conflict panel), a safety copy of the one being replaced
 // is kept in this browser: the last 2, for 14 days, restorable from the Sync panel or Settings.
@@ -1554,7 +1732,7 @@ function renderSyncButton(){
   b.querySelector(".slabel").textContent = !SY ? "Sync" : state === "saving" ? "Saving…" : state === "failed" ? "Not synced" : narrow.matches ? word : SY.name;
   const when = SY && SY.at ? ago(SY.at) : "";
   b.title = {off: "Save and continue on another device", synced: `Synced as ${SY && SY.name}${when ? " · " + when : ""}`, saving: "Saving your progress…", pending: `Changes are waiting to sync (${SY && SY.name})`,
-    failed: "Not synced: couldn’t reach the server. It will keep trying. Open to try again.", conflict: "Sync needs your attention"}[state];
+    failed: syncUi.error ? "Not synced: " + syncUi.error : "Not synced: couldn’t reach the server. It will keep trying. Open to try again.", conflict: "Sync needs your attention"}[state];
 }
 function renderSyncPanel(){
   const v = id => (document.getElementById(id) || {}).value, n = v("sync-name"), p = v("sync-pin");
@@ -1660,6 +1838,7 @@ async function syncAction(act){
       const c = syncUi.conflict; if (!c) break;
       const at = keepSnapshot(c.data, "other");
       if (!at && !confirm("A safety copy of the other device’s progress couldn’t be saved, so this can’t be undone. Replace it anyway?")) break;
+      try { const o = normalise(JSON.parse(c.data)); addMocks(S.mocks, o.mocks); addMocks(S.mocks, slotMock(o)); } catch(e) {} // the other device's finished mocks are kept
       syncUi.conflict = null; SY.lastTs = c.ts; saveLink(); S.ts = Math.max(S.ts || 0, c.ts); save(true);
       syncUi.note = {msg: `Your other devices will get this device’s progress. Their copy is kept here for ${KEEP_DAYS} days.`, at};
       await pushSync(); break;
@@ -1706,8 +1885,8 @@ window.addEventListener("online", flushMockEvents);
 // The site reloads itself to install an update only where that can't interrupt anything: never in Practice (a question is
 // always open there, answered or not), the exam screen or a running mock, and never with a clock running, a form, a
 // confirmation, a drag, the Sync panel or a study plan being written. Takes plain facts so tools/test-update.mjs can check it.
-function updateMayReload(f){ return ["results", "guide", "settings"].includes(f.view) && !f.exam && !f.mock && !f.timer && !f.building && !f.typing && !f.feedback && !f.dialog; }
-const BUILD = "76d6c1ab29"; // this page's build version, set by tools/build.js
+function updateMayReload(f){ return ["mocks", "results", "guide", "settings"].includes(f.view) && !f.exam && !f.mock && !f.timer && !f.building && !f.typing && !f.feedback && !f.dialog; }
+const BUILD = "6a52eab14e"; // this page's build version, set by tools/build.js
 if ("serviceWorker" in navigator && location.protocol !== "file:") {
   // A new version installs in the background. On a quiet screen (Results, Guide, Settings) the page reloads once so
   // visitors see it straight away; anywhere else a banner lets them choose, and the update is applied the next time they
@@ -1763,7 +1942,7 @@ syncOnStart();
     try {
       const b = normalise(JSON.parse(backup));
       // the freshest copy wins, compared with what the page holds now (Sync may already have loaded a newer one)
-      if (b.ts > (S.ts || 0)) { const view = S.view; S = b; applyPlace(false); S.view = view; persistAsIs(); scheduleSync(); render(); }
+      if (b.ts > (S.ts || 0)) { const view = S.view; addMocks(b.mocks, S.mocks); addMocks(b.mocks, slotMock(S)); S = b; applyPlace(false); S.view = view; persistAsIs(); scheduleSync(); render(); }
     } catch(e) {}
   } else if (answeredCount(S)) idbPut(JSON.stringify(S));
   try { if (navigator.storage && navigator.storage.persist && !(await navigator.storage.persisted())) await navigator.storage.persist(); } catch(e) {}

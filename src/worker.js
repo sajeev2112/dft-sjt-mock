@@ -221,7 +221,7 @@ async function health(env, cors) {
 
 // Optional cross-device sync. A username plus a 4–8 digit PIN; the PIN is stored salted and hashed.
 // Wrong PINs lock the name for 15 minutes after every 5 failures, doubling each time.
-const SYNC_MAX = 262144;
+const SYNC_MAX = 524288; // characters of progress JSON (raised from 262144 in Oct 2026 so finished mocks, which are kept for ever, keep fitting)
 async function sync(request, env, ctx, cors) {
   const noStore = {...cors, "Cache-Control": "no-store"};
   const body = await readJson(request, SYNC_MAX * 2 + 2048); // the progress JSON is string-escaped inside the body

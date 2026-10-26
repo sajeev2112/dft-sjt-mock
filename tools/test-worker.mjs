@@ -104,6 +104,11 @@ let lockedAt = 0; for (let i = 0; i < 6; i++) { const [s, b] = await sy({action:
 console.log(JSON.stringify(["sync locks after wrong PINs", lockedAt, (await sy({action: "load", name: "sajeev", pin: "1234"}))[0]]));
 console.log(JSON.stringify(["pin stored hashed", !db.prepare("SELECT pin FROM sync").get().pin.includes("1234")]));
 console.log(JSON.stringify(["sync delete (other name)", (await sy({action: "save", name: "friend1", pin: "4321", data: "{}"}))[0], (await sy({action: "delete", name: "friend1", pin: "4321"}))[1], (await sy({action: "load", name: "friend1", pin: "4321"}))[0]]));
+{ // a large progress copy (many finished mocks) is accepted up to SYNC_MAX (524288 characters); a bigger one is refused, and the client says so and keeps it locally
+  const big = n => JSON.stringify({v: 5, pad: "x".repeat(n - 16)}), [s1] = await sy({action: "save", name: "bigcopy", pin: "2468", data: big(524288), ts: 100}, "6.6.6.1"), [s2, b2] = await sy({action: "save", name: "bigcopy2", pin: "2468", data: big(524289), ts: 100}, "6.6.6.2");
+  const [s3, b3] = await sy({action: "load", name: "bigcopy", pin: "2468"}, "6.6.6.3");
+  console.log(JSON.stringify(["sync large copy", s1, "too large", s2, b2.error, "loads back whole", s3, b3.data && b3.data.length, "(expect 200, 400 bad_data, 200 524288)"]));
+  if (!(s1 === 200 && s2 === 400 && b2.error === "bad_data" && s3 === 200 && b3.data.length === 524288)) { console.log("FAIL sync size limit"); process.exitCode = 1; } }
 
 // Explain-my-mistake thumbs feedback (Q1 ranking; CBADE is not the key, which the explain tests cover in depth)
 const xf = async body => { const r = await worker.fetch(new Request("https://x.dev/api/explain-feedback", {method: "POST", body: JSON.stringify(body), headers: {"CF-Connecting-IP": "4.4.4.4"}}), env, ctx); return [r.status, await r.json()]; };

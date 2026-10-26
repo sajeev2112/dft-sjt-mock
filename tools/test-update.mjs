@@ -11,7 +11,7 @@ const fn = src.match(/^function updateMayReload\(f\)\{.*\}$/m);
 check("updateMayReload is a one-line function in app.js", !!fn);
 const may = fn ? vm.runInNewContext(`(${fn[0]})`) : () => null;
 const quiet = {view: "results", exam: false, mock: false, timer: false, building: false, typing: false, feedback: false, dialog: false};
-for (const view of ["results", "guide", "settings"]) check(`reloads on a quiet ${view} screen`, may({...quiet, view}) === true);
+for (const view of ["mocks", "results", "guide", "settings"]) check(`reloads on a quiet ${view} screen`, may({...quiet, view}) === true);
 check("never reloads in Practice, even with nothing answered", may({...quiet, view: "practice"}) === false);
 for (const k of ["exam", "mock", "timer", "building", "typing", "feedback", "dialog"]) check(`no reload when ${k}`, may({...quiet, [k]: true}) === false);
 check("no reload on an unknown view", may({...quiet, view: "elsewhere"}) === false);
