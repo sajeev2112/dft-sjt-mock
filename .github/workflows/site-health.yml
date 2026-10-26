@@ -31,7 +31,7 @@ jobs:
           fetch() { curl -sS -L --max-time 20 --retry 2 --retry-delay 10 -o body.txt -w '%{http_code}' "$1" || true; }
 
           code=$(fetch "$SITE/")
-          if [ "$code" != "200" ] || ! grep -q "DFT SJT Mock Paper" body.txt; then add "Main site returned HTTP $code or the wrong page"; fi
+          if [ "$code" != "200" ] || ! grep -q "DFT SJT Mock Question Bank" body.txt; then add "Main site returned HTTP $code or the wrong page"; fi
 
           code=$(fetch "$SITE/app.js")
           [ "$code" = "200" ] || add "App script (app.js) returned HTTP $code"
