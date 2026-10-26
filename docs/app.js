@@ -9,7 +9,8 @@ const PAPERS = {
   p5:{name:"Paper 5 · Advanced", from:128, to:160, note:"harder than the live test"},
   p6:{name:"Paper 6 · Advanced", from:160, to:192, note:"harder than the live test"},
   p7:{name:"Paper 7 · Advanced", from:192, to:224, note:"harder than the live test"},
-  p8:{name:"Paper 8 · Expert", from:224, to:256, note:"the hardest set: harder than Paper 7"}
+  p8:{name:"Paper 8 · Expert", from:224, to:256, note:"the hardest set: harder than Paper 7"},
+  p9:{name:"Paper 9 · Expert", from:256, to:288, note:"themed: raising concerns, priorities, probity, confidentiality, safeguarding"}
 };
 const PAPER_IDS = Object.keys(PAPERS).filter(id => Q.length >= PAPERS[id].to);
 const PACE = 112.5; // seconds per item at live-test pace (105 min / 56)
@@ -31,7 +32,7 @@ function shuffle(a){ a = a.slice(); for (let i = a.length - 1; i > 0; i--) { con
 // ---------- state ----------
 const STORE = "dft-sjt-mock-v5", V4 = "dft-sjt-mock-v4";
 function newSet(extra){ return Object.assign({ans:{}, chk:{}, marked:false, el:0, cur:0, mode:"practice", logged:false}, extra || {}); }
-function fresh(){ return {v:5, ts:0, cid:uid(), share:true, view:"practice", setId:"p1", sets:{p1:newSet(), p2:newSet(), p3:newSet(), p4:newSet(), p5:newSet(), p6:newSet(), p7:newSet(), p8:newSet(), custom:null}, att:{}, days:{}, hist:[], sent:{}, outbox:[], fb:{}, flags:{}, plan:null, mocks:[]}; }
+function fresh(){ return {v:5, ts:0, cid:uid(), share:true, view:"practice", setId:"p1", sets:{p1:newSet(), p2:newSet(), p3:newSet(), p4:newSet(), p5:newSet(), p6:newSet(), p7:newSet(), p8:newSet(), p9:newSet(), custom:null}, att:{}, days:{}, hist:[], sent:{}, outbox:[], fb:{}, flags:{}, plan:null, mocks:[]}; }
 let S = fresh();
 // Rebuilds state from untrusted JSON (localStorage, IndexedDB or a pasted progress code),
 // keeping only well-formed values so nothing odd can reach the page or crash rendering.
@@ -1622,7 +1623,7 @@ window.addEventListener("online", flushMockEvents);
 // always open there, answered or not), the exam screen or a running mock, and never with a clock running, a form, a
 // confirmation, a drag, the Sync panel or a study plan being written. Takes plain facts so tools/test-update.mjs can check it.
 function updateMayReload(f){ return ["results", "guide", "settings"].includes(f.view) && !f.exam && !f.mock && !f.timer && !f.building && !f.typing && !f.feedback && !f.dialog; }
-const BUILD = "127c5a3dc8"; // this page's build version, set by tools/build.js
+const BUILD = "d4f94d8b98"; // this page's build version, set by tools/build.js
 if ("serviceWorker" in navigator && location.protocol !== "file:") {
   // A new version installs in the background. On a quiet screen (Results, Guide, Settings) the page reloads once so
   // visitors see it straight away; anywhere else a banner lets them choose, and the update is applied the next time they
