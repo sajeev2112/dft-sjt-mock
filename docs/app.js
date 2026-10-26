@@ -127,11 +127,11 @@ function mergeState(mine, other){
     for (const f of ["qt", "qs"]) if (y[f]) { x[f] = x[f] || {}; for (const k of Object.keys(y[f])) x[f][k] = Math.max(x[f][k] || 0, y[f][k]); }
     x.el = Math.max(x.el, y.el); x.logged = x.logged || y.logged;
     if (y.marked && !x.marked) { x.marked = true; x.mode = y.mode; }
-    if (y.list) { x.started = x.started || y.started; x.left = x.left || y.left; }
+    if (y.list) { x.started = x.started || y.started; x.left = x.left || y.left; for (const i of y.list) if (!x.list.includes(i)) x.list.push(i); } // a rolling mistakes quiz may have grown differently in each copy
   };
   for (const id of Object.keys(PAPERS)) { join(m.sets[id], ol.sets[id]); m.sets[id].cur = a.sets[id].cur; }
   const xc = nw.sets.custom, yc = ol.sets.custom; let gone = null;
-  if (xc && yc && xc.created === yc.created) { join(xc, yc); xc.cur = a.sets.custom.cur; }
+  if (xc && yc && xc.created === yc.created) { join(xc, yc); xc.cur = Math.max(0, xc.list.indexOf(a.sets.custom.list[a.sets.custom.cur])); } // same question this copy was on
   else if (yc && (!xc || yc.created > xc.created)) { m.sets.custom = yc; gone = xc; } // the more recently built quiz stays current
   else gone = yc;
   const mocks = new Map();
@@ -212,7 +212,7 @@ function applyPlace(clock){
   if (!clock || !(Date.now() - num(p.at, 1e14) < 120000)) return; // a running clock carries over a reload, not a visit days later
   if (p.run && !isMock(set)) timerOn = true;
   if (p.paused && !isMock(set)) autoPausedSet = p.setId;
-  if (p.summary && isMock(set) && set.marked) ui.summary = true;
+  if (p.summary && (isMock(set) || set.kind === "mistakes") && set.marked) ui.summary = true;
 }
 // The copy in localStorage, if another tab has saved it since this tab last read or wrote it.
 function unseenCopy(){
@@ -221,10 +221,10 @@ function unseenCopy(){
 // Puts another copy into S, keeping this tab's view, set and question. Sets are updated in place, so code holding the
 // current set (a drag handler) keeps working on the live copy.
 function takeCopy(n){
-  const view = S.view, setId = S.setId, cur = S.sets[setId] && S.sets[setId].cur;
+  const view = S.view, setId = S.setId, cur = S.sets[setId] && S.sets[setId].cur, onQ = setId === "custom" && S.sets.custom ? S.sets.custom.list[cur] : null;
   for (const id of Object.keys(n.sets)) { const x = S.sets[id], y = n.sets[id]; if (x && y && (id !== "custom" || x.created === y.created)) { for (const k of Object.keys(x)) delete x[k]; n.sets[id] = Object.assign(x, y); } }
   Object.assign(S, n); S.view = view;
-  if (S.sets[setId]) { S.setId = setId; S.sets[setId].cur = cur; }
+  if (S.sets[setId]) { S.setId = setId; S.sets[setId].cur = cur; if (onQ != null && S.sets.custom.list.indexOf(onQ) >= 0) S.sets.custom.cur = S.sets.custom.list.indexOf(onQ); } // a quiz list may have grown in another tab
 }
 // A tab that was asleep, hidden or in the back/forward cache may have missed other tabs' saves. When it wakes (and on
 // every save another tab makes), take a newer saved copy so this tab never writes its older one over it.
@@ -470,7 +470,7 @@ function renderTabs(){
     return `<button type="button" class="ptab" role="tab" data-act="set" data-id="${id}" aria-selected="${S.setId === id}">${P.name}<small>${done}/${list.length}</small></button>`;
   }).join("");
   const c = S.sets.custom;
-  if (c) { const done = c.list.filter(qi => complete(c, qi)).length; h += `<button type="button" class="ptab quiz" role="tab" data-act="set" data-id="custom" aria-selected="${S.setId === "custom"}">${esc(c.name)}<small>${done}/${c.list.length}</small></button>`; }
+  if (c) { const done = c.list.filter(qi => complete(c, qi)).length, total = c.list.length + (rolling(c) ? nextBatch(mistakesList(), c.list, Q.length).length : 0); h += `<button type="button" class="ptab quiz" role="tab" data-act="set" data-id="custom" aria-selected="${S.setId === "custom"}">${esc(c.name)}<small>${done}/${total}</small></button>`; }
   document.getElementById("ptabs").innerHTML = h;
   document.getElementById("newquiz").setAttribute("aria-pressed", String(ui.building));
 }
@@ -493,7 +493,7 @@ function renderGrid(){
     const arch = (from, lower) => { let a = ""; for (let k = from; k < from + 16; k++) { if (k === from + 8) a += '<span class="mid" aria-hidden="true"></span>'; a += cellHtml(set, list[k], k, lower); } return a; };
     h = `<div class="arch">${arch(0, false)}</div><div class="occl" aria-hidden="true"></div><div class="arch">${arch(16, true)}</div>`;
   } else {
-    title.textContent = `${setName(S.setId)} · ${list.length} questions`;
+    title.textContent = rolling(set) ? `${setName(S.setId)} · ${list.length} so far · oldest mistakes first` : `${setName(S.setId)} · ${list.length} questions`;
     h = `<div class="flat">${list.map((qi, k) => cellHtml(set, qi, k, false)).join("")}</div>`;
   }
   document.getElementById("grid").innerHTML = h;
@@ -532,12 +532,14 @@ function renderCard(){
   if (mockLive(set) && window.Exam && Exam.open()) return; // exam overlay (exam.js): a running timed mock is always shown full-screen
   if (isMock(set) && !set.started && !set.marked) { card.innerHTML = mockIntroHtml(set); destroyDrag(); animateCard("intro"); return; }
   if (isMock(set) && set.marked && ui.summary) { card.innerHTML = mockSummaryHtml(set); destroyDrag(); animateCard("summary"); return; }
+  if (set.kind === "mistakes" && set.marked && ui.summary) { card.innerHTML = rollSummaryHtml(set); destroyDrag(); animateCard("summary"); return; }
   const list = curList(), k = set.cur, qi = curQi(), q = Q[qi], a = set.ans[qi], rev = revealed(set, qi), rank = isRank(q);
   const word = q.t === "consider" ? "important" : "appropriate";
   const where = S.setId === "custom" ? ` <span class="qfrom">· Paper ${q.p}, question ${localNum(q)}</span>` : "";
+  const roll = rolling(set), nleft = roll ? rollLeft() : 0, more = roll && upNext(set, 1).length > 0; // a rolling quiz has no fixed length
   let h = ui0.rewritten ? `<div class="notice"><b>The questions have been rewritten to be harder.</b> Every option is now plausible, so your earlier answers have been cleared. Your progress chart and visit history are kept. <button type="button" class="btn small" data-act="dismiss-notice">OK</button></div>` : "";
   if (mockLive(set)) h += mockBarHtml(set);
-  h += `<div class="qhead"><span class="qnum" tabindex="-1">Question ${k + 1} of ${list.length}${where}</span><div class="chips"><span class="chip type">${TYPES[q.t]}</span><span class="chip">${DOMAINS[q.d]}</span>${q.p >= 8 ? `<span class="chip hard" title="Paper 8 is the hardest set: harder than the Advanced papers and the live test">Expert</span>` : q.p >= 4 ? `<span class="chip hard" title="Papers 4 to 7 are deliberately harder than the live test">Advanced</span>` : ""}` +
+  h += `<div class="qhead"><span class="qnum" tabindex="-1">Question ${k + 1}${roll ? ` · ${nleft} mistake${nleft === 1 ? "" : "s"} left` : ` of ${list.length}`}${where}</span><div class="chips"><span class="chip type">${TYPES[q.t]}</span><span class="chip">${DOMAINS[q.d]}</span>${q.p >= 8 ? `<span class="chip hard" title="Paper 8 is the hardest set: harder than the Advanced papers and the live test">Expert</span>` : q.p >= 4 ? `<span class="chip hard" title="Papers 4 to 7 are deliberately harder than the live test">Advanced</span>` : ""}` +
     `<button type="button" class="flagbtn" data-act="flag" aria-pressed="${flagged(qi)}" title="Flag this question to come back to (shortcut: F)">${FLAG}<span>${flagged(qi) ? "Flagged" : "Flag"}</span></button></div></div>`;
   h += `<p class="scenario">${rev ? markPhrases(q.s, qi) : q.s}</p><p class="instr">${PROMPTS[q.t]}</p>`;
   if (!rev) {
@@ -586,7 +588,10 @@ function renderCard(){
   h += `<div class="actions"><div class="act-l"><button type="button" class="btn" data-act="prev"${k === 0 ? " disabled" : ""}>Previous</button><button type="button" class="btn flagbig nd-only" data-act="flag" aria-pressed="${flagged(qi)}">${FLAG}<span>${flagged(qi) ? "Flagged for review" : "Flag for review"}</span></button></div><div class="act-r">`;
   if (set.mode === "practice" && rev) h += `<button type="button" class="btn" data-act="retry">Try again</button>`;
   if (set.mode === "practice" && !rev) h += `<button type="button" class="btn primary" data-act="check"${complete(set, qi) ? "" : " disabled"}>Check answer</button>`;
-  h += `<button type="button" class="btn${rev || set.mode === "exam" ? " primary" : ""}" data-act="next"${k === list.length - 1 ? " disabled" : ""}>Next</button></div></div>`;
+  if (roll && list.some(i => started(set, i) || set.chk[i]) && (more || k < list.length - 1)) h += `<button type="button" class="btn" data-act="finish-roll">Finish for now</button>`;
+  if (roll && k === list.length - 1 && !more) h += `<button type="button" class="btn${rev || set.mode === "exam" ? " primary" : ""}" data-act="next"${list.some(i => started(set, i) || set.chk[i]) ? "" : " disabled"}>Finish</button></div></div>`;
+  else h += `<button type="button" class="btn${rev || set.mode === "exam" ? " primary" : ""}" data-act="next"${k === list.length - 1 && !roll ? " disabled" : ""}>Next</button></div></div>`;
+  if (roll && k === list.length - 1 && !more && rev) h += `<p class="hint">${qScore(set, qi).got < qScore(set, qi).max ? "No other mistakes are waiting, so this one comes back in your next round." : "That was the last mistake waiting."} Press Finish to see how this round went.</p>`;
   if (set.mode === "practice" && !rev && !complete(set, qi) && !rank) h += `<p class="hint">Choose three options, then check your answer.</p>`;
   if (set.mode === "exam" && !rev) h += `<p class="hint">Exam mode: your answers are saved and the whole set is marked when you press Mark.</p>`;
   card.innerHTML = h;
@@ -683,7 +688,7 @@ function mockSummaryHtml(set){
   h += `<div><h3 class="bsub">By theme</h3><div class="doms">` + Object.keys(thm).sort((a, b) => thm[a][0] / thm[a][1] - thm[b][0] / thm[b][1]).map(g => bar(`<a href="#guide-${g}">${THEMES[g]}</a>`, thm[g][0], thm[g][1], ` <small class="muted">${thm[g][2]}</small>`)).join("") + `</div></div></div>`;
   h += `<div class="actions"><button type="button" class="btn" data-act="build" data-kind="mock">New timed mock</button><div class="act-r">` +
     (nf ? `<button type="button" class="btn" data-act="review-flagged">Review ${nf} flagged</button>` : "") +
-    (mistakesList().length ? `<button type="button" class="btn" data-act="build" data-kind="mistakes">Quiz my ${Math.min(20, mistakesList().length)} mistakes</button>` : "") + `<button type="button" class="btn" data-act="review-q" data-k="${weak[0] ? weak[0].k : 0}">Review weakest</button><button type="button" class="btn primary" data-act="review">Review all answers</button></div></div>`;
+    (mistakesList().length ? `<button type="button" class="btn" data-act="build" data-kind="mistakes">Practise my mistakes</button>` : "") + `<button type="button" class="btn" data-act="review-q" data-k="${weak[0] ? weak[0].k : 0}">Review weakest</button><button type="button" class="btn primary" data-act="review">Review all answers</button></div></div>`;
   return h;
 }
 function timeUp(){
@@ -743,8 +748,66 @@ function initDrag(){
 }
 
 // ---------- quiz builder ----------
-// every question whose latest attempt lost marks, most recent first
-function mistakesList(){ return Q.map((_, i) => i).filter(i => { const x = lastAtt(i); return x && x.g < x.m; }).sort((x, y) => lastAtt(y).t - lastAtt(x).t); }
+// The order "Practise my mistakes" brings questions back in: oldest mistakes first, so what you got wrong long ago comes
+// back before what you got wrong today. A mistake is a question whose latest attempt lost marks (g < m); full marks clear
+// it until a later attempt loses marks again. Mistakes are grouped by whole days since that attempt, longest ago first;
+// within the same day, the bigger share of marks lost comes first, then the question wrong on more of its saved attempts,
+// then the earlier attempt. The last 24 hours come last and strictly in the order they happened, so a question just got
+// wrong again goes to the very bottom, behind every older mistake. Ties go to the lower question number. A missing time
+// counts as long ago and a missing maximum as 20, as normalise() does.
+// Pure: att is S.att ({question index: [{g, m, t}, ...]}), now is a time in ms. Tested by tools/test-mistakes.mjs.
+function mistakeOrder(att, now){
+  const out = [], lost = a => { const m = Number(a && a.m) || 20; return (m - (Number(a && a.g) || 0)) / m; };
+  for (const k of Object.keys(att || {})) {
+    const l = att[k], qi = Number(k);
+    if (!Array.isArray(l) || !l.length || !Number.isInteger(qi) || qi < 0) continue;
+    const x = l[l.length - 1], t = Number(x && x.t) || 0;
+    if (!(lost(x) > 0)) continue;
+    out.push({qi, day: Math.max(0, Math.floor((now - t) / 86400000)), lost: lost(x), wrong: l.filter(a => lost(a) > 0).length, t});
+  }
+  return out.sort((a, b) => b.day - a.day || (a.day ? b.lost - a.lost || b.wrong - a.wrong : 0) || a.t - b.t || a.qi - b.qi).map(x => x.qi);
+}
+// The next n questions from that order that aren't already waiting in the quiz (list). Questions in "again" (already
+// answered in this quiz and still a mistake) may come round again. Pure.
+function nextBatch(order, list, n, again){ const ok = new Set(again || []), have = new Set(list.filter(i => !ok.has(i))); return order.filter(i => !have.has(i)).slice(0, n); }
+function mistakesList(){ return mistakeOrder(S.att, Date.now()).filter(isQi); }
+// A "My mistakes" quiz rolls: it starts with the ROLL most-due mistakes and tops itself up with the next ones when you
+// reach the end, until you finish or none are left. One answered with full marks is no longer a mistake, so it doesn't
+// come back; one that still lost marks comes round again in the same quiz, after the older ones (never straight away:
+// the question on screen is not repeated next). An older fixed one (up to 20) tops up the same way.
+const ROLL = 5;
+const rolling = set => !!set && set.kind === "mistakes" && Array.isArray(set.list) && !set.marked;
+const rollLeft = () => mistakesList().length; // every mistake still to get right, the one on screen included
+function upNext(set, n){ const here = set.list[set.cur]; return nextBatch(mistakesList(), set.list, n, set.list.filter(i => set.chk[i] && i !== here)); }
+// Adds the next mistakes to the end of the quiz. One coming round again moves from its earlier place to the end, cleared
+// to answer afresh (its earlier attempt stays in Results); the place stays on the same question.
+function topUp(set){
+  const add = upNext(set, ROLL); if (!add.length) return 0;
+  const here = set.list[set.cur], moved = new Set(add);
+  set.list = set.list.filter(i => !moved.has(i)).concat(add);
+  for (const i of add) { delete set.ans[i]; delete set.chk[i]; if (set.qs) delete set.qs[i]; }
+  set.cur = Math.max(0, set.list.indexOf(here));
+  return add.length;
+}
+// "Finish for now": questions not started leave the queue, what was answered is marked, and the round's summary shows.
+function finishRoll(){
+  const set = curSet(); if (!rolling(set)) return;
+  const keep = set.list.filter(qi => started(set, qi) || set.chk[qi]); if (!keep.length) return;
+  const qi = set.list[set.cur]; set.list = keep; set.cur = Math.max(0, keep.indexOf(qi));
+  ui.summary = true; markSet(); scrollToCard(); focusCard();
+}
+function rollSummaryHtml(set){
+  const list = curList(), rows = list.map((qi, k) => ({qi, k, s: qScore(set, qi)}));
+  let got = 0, max = 0; rows.forEach(r => { got += r.s.got; max += r.s.max; });
+  const fixed = rows.filter(r => r.s.got === r.s.max).length, still = rows.length - fixed, nm = mistakesList().length, pl = n => n === 1 ? "" : "s";
+  let h = `<h2 class="bh" tabindex="-1">Mistakes round finished</h2><div class="mhero"><div class="mring">${ringSvg(max ? got / max : 0, 132, 12, band(got, max || 1))}<div class="mrc"><b>${pct(got, max)}%</b><span>${got} / ${max}</span></div></div>` +
+    `<div class="mside"><p class="mverdict">You revisited ${rows.length} mistake${pl(rows.length)}: ${fixed} now got full marks${still ? `, and ${still} still lost marks, so ${still === 1 ? "it comes" : "they come"} back in a later round, after older mistakes` : ""}.</p>` +
+    `<p class="muted">${nm ? `${nm} mistake${pl(nm)} waiting, oldest first.` : "No mistakes waiting. Well done: every question’s latest attempt got full marks."}</p></div></div>`;
+  h += `<h3 class="bsub">This round</h3><div class="mweak">` + rows.map(w => { const q = Q[w.qi]; return `<button type="button" class="mwrow" data-act="review-q" data-k="${w.k}"><span class="pill ${band(w.s.got, w.s.max)}">${w.s.got}/${w.s.max}</span><span class="mwt"><b>Question ${w.k + 1} · ${THEMES[q.g]}</b><span>${esc(q.s.replace(/<[^>]+>/g, "").slice(0, 110))}…</span></span><span class="mwgo" aria-hidden="true">→</span></button>`; }).join("") + `</div>`;
+  h += `<div class="actions"><button type="button" class="btn" data-act="view" data-v="results">Results</button><div class="act-r"><button type="button" class="btn${nm ? "" : " primary"}" data-act="review">Review answers</button>` +
+    (nm ? `<button type="button" class="btn primary" data-act="build" data-kind="mistakes">Practise my mistakes</button>` : "") + `</div></div>`;
+  return h;
+}
 function weakList(){ return Q.map((_, i) => i).filter(i => { const a = lastAtt(i); return a && a.g / a.m < 0.7; }).sort((x, y) => { const a = lastAtt(x), b = lastAtt(y); return a.g / a.m - b.g / b.m; }); }
 function pickFresh(pool, n){
   const unseen = shuffle(pool.filter(i => !S.att[i])), seen = shuffle(pool.filter(i => S.att[i]));
@@ -757,7 +820,7 @@ function builderHtml(){
   h += `<button type="button" class="bcard" data-act="build" data-kind="quick"><b>Quick 10</b><span>10 random questions from all papers, unseen ones first. Practice mode.</span></button>`;
   h += `<button type="button" class="bcard" data-act="build" data-kind="mock"><b>Timed mock · 56 in 105 min</b><span>Random questions from every paper in the live test’s mix, with a countdown, flags and a summary at the end.</span></button>`;
   h += `<button type="button" class="bcard" data-act="build" data-kind="weak"${weak ? "" : " disabled"}><b>Weak spots</b><span>${weak ? `Up to 20 of the ${weak} questions you last scored under 70% on, lowest first.` : "Nothing yet: questions you score under 70% on will appear here."}</span></button>`;
-  h += `<button type="button" class="bcard" data-act="build" data-kind="mistakes"${mist ? "" : " disabled"}><b>My mistakes</b><span>${mist ? `${mist > 20 ? `Up to 20 of the ${mist} questions` : `The ${mist} question${mist === 1 ? "" : "s"}`} where your latest attempt lost marks, most recent first.` : "Nothing yet: questions where you lose marks will appear here."}</span></button>`;
+  h += `<button type="button" class="bcard" data-act="build" data-kind="mistakes"${mist ? "" : " disabled"}><b>Practise my mistakes</b><span>${mist ? `${mist} mistake${mist === 1 ? "" : "s"} waiting (questions where your latest attempt lost marks). Oldest mistakes first, so what you got wrong long ago comes back before what you got wrong today. ${ROLL} at a time, topped up as you go; stop whenever you like.` : "Nothing yet: questions where you lose marks will appear here."}</span></button>`;
   const nf = Object.keys(S.flags).length;
   h += `<button type="button" class="bcard" data-act="build" data-kind="flagged"${nf ? "" : " disabled"}><b>Flagged questions</b><span>${nf ? `The ${nf} question${nf === 1 ? "" : "s"} you’ve flagged to come back to. Practice mode.` : "Nothing flagged yet: use the flag on any question to collect it here."}</span></button>`;
   h += `</div><h3 class="bsub">Focus on an area</h3><div class="chips wrap">` + Object.keys(DOMAINS).map(d => `<button type="button" class="chipbtn" data-act="build" data-kind="area" data-arg="${d}">${DOMAINS[d]}</button>`).join("") + `</div>`;
@@ -773,6 +836,11 @@ function archiveMock(){
 const mockKept = c => !!c && ((S.sets.custom && S.sets.custom.created === c && S.sets.custom.marked) || (S.mocks || []).some(m => m.created === c));
 function buildQuiz(kind, arg){
   const c0 = S.sets.custom;
+  if (kind === "mistakes" && rolling(c0)) { // a mistakes round already going: carry on with it (it tops itself up) rather than replace it
+    if (c0.cur >= c0.list.length - 1 && revealed(c0, c0.list[c0.cur]) && topUp(c0)) c0.cur++; // topUp keeps the place on this question
+    S.setId = "custom"; S.view = "practice"; ui.building = false; ui.warn = false; ui.summary = false; timerOn = false; autoPausedSet = null;
+    save(); location.hash = "practice"; render(); scrollToCard(); return;
+  }
   if (c0 && !c0.marked && !c0.logged) {
     const done = c0.list.filter(i => started(c0, i)).length;
     if ((done || (isMock(c0) && c0.started)) && !confirm(`Start a new quiz? Your unfinished “${c0.name}” (${done} of ${c0.list.length} answered) will be replaced. Questions you’ve already checked stay in Results.`)) return;
@@ -786,7 +854,7 @@ function buildQuiz(kind, arg){
   }
   else if (kind === "flagged") { list = Object.keys(S.flags).map(Number).filter(isQi).sort((x, y) => x - y); name = "Flagged questions"; }
   else if (kind === "weak") { list = weakList().slice(0, 20); name = "Weak spots"; }
-  else if (kind === "mistakes") { list = mistakesList().slice(0, 20); name = "My mistakes"; }
+  else if (kind === "mistakes") { list = nextBatch(mistakesList(), [], ROLL); name = "My mistakes"; } // rolling: tops up as you go
   else if (kind === "area") { list = shuffle(pickFresh(all.filter(i => Q[i].d === arg), 12)); name = DOMAINS[arg]; }
   else if (kind === "theme") { list = shuffle(all.filter(i => Q[i].g === arg)); name = THEMES[arg]; }
   if (!list.length) return;
@@ -813,10 +881,11 @@ function renderPanelRaw(){
     : `<div><p class="plabel">Mode · ${esc(name)}</p><div class="seg" role="group" aria-label="Mode">
     <button type="button" data-act="mode" data-mode="practice" aria-pressed="${set.mode === "practice"}"${set.marked ? " disabled" : ""}>Practice</button>
     <button type="button" data-act="mode" data-mode="exam" aria-pressed="${set.mode === "exam"}"${set.marked ? " disabled" : ""}>Exam</button></div>
-    <p class="muted">${set.mode === "practice" ? "See the key and reasoning after each question." : "No feedback until you mark the whole set."}</p></div>`;
+    <p class="muted">${set.mode === "practice" ? "See the key and reasoning after each question." : "No feedback until you mark the whole set."}</p>${set.kind === "mistakes" && set.marked && !ui.summary ? `<button type="button" class="btn small" data-act="summary">View summary</button>` : ""}</div>`;
   h += `<div><p class="plabel">Score</p>`;
-  if (nrev) h += `<div class="big">${got}<small> / ${max} · ${pct(got, max)}%</small></div><p class="muted">${nrev} of ${list.length} marked · ${nans} answered</p>`;
-  else h += `<div class="big">—</div><p class="muted">${nans} of ${list.length} answered. ${set.mode === "practice" ? "Check an answer to see your score." : "Mark the set to see your score."}</p>`;
+  const nleft = rolling(set) ? rollLeft() : -1, waiting = nleft >= 0 ? ` · ${nleft} mistake${nleft === 1 ? "" : "s"} left` : ""; // a rolling quiz has no fixed length
+  if (nrev) h += `<div class="big">${got}<small> / ${max} · ${pct(got, max)}%</small></div><p class="muted">${nleft >= 0 ? `${nrev} marked${waiting}` : `${nrev} of ${list.length} marked · ${nans} answered`}</p>`;
+  else h += `<div class="big">—</div><p class="muted">${nleft >= 0 ? `${nans} answered${waiting}.` : `${nans} of ${list.length} answered.`} ${set.mode === "practice" ? "Check an answer to see your score." : "Mark the set to see your score."}</p>`;
   h += `</div>`;
   if (nrev) {
     h += '<div class="doms">' + Object.keys(DOMAINS).map(d => { const [g, m] = dom[d]; return `<div class="dom"><span>${DOMAINS[d]}</span><span>${m ? pct(g, m) + "%" : "–"}</span><div class="bar"><i style="width:${pct(g, m)}%"></i></div></div>`; }).join("") + '</div>';
@@ -873,7 +942,7 @@ function renderResults(){
   if (weakest.length && !(window.StudyPlan && StudyPlan.enough())) { // the study plan below shows these, with the same buttons, once there are enough answers
     h += `<div class="callout"><p class="xhead">Your weakest themes</p>` + weakest.map(t => `<div class="wrow"><span><b>${THEMES[t]}</b> · ${pct(byG[t].g, byG[t].m)}% over ${byG[t].n} question${byG[t].n === 1 ? "" : "s"}</span><span class="row"><a class="btn small" href="#guide-${t}">Read playbook</a><button type="button" class="btn small primary" data-act="build" data-kind="theme" data-arg="${t}">Practise</button></span></div>`).join("") + `</div>`;
   }
-  { const nm = mistakesList().length; if (nm && !(window.StudyPlan && StudyPlan.enough())) h += `<div class="callout"><p class="xhead">My mistakes</p><div class="wrow"><span>${nm} question${nm === 1 ? "" : "s"} where your latest attempt lost marks.</span><button type="button" class="btn small primary" data-act="build" data-kind="mistakes">Quiz my ${Math.min(20, nm)}</button></div></div>`; }
+  { const nm = mistakesList().length; if (nm && !(window.StudyPlan && StudyPlan.enough())) h += `<div class="callout"><p class="xhead">My mistakes</p><div class="wrow"><span>${nm} mistake${nm === 1 ? "" : "s"} waiting (questions where your latest attempt lost marks), oldest first.</span><button type="button" class="btn small primary" data-act="build" data-kind="mistakes">Practise my mistakes</button></div></div>`; }
   if (window.StudyPlan) h += StudyPlan.html();
   h += "<!--rs-->" + activityHtml();
   h += `<h3 class="bsub">Progress over time</h3>` + progressChart();
@@ -1172,7 +1241,10 @@ document.addEventListener("click", async e => {
     }
     case "go": go(+b.dataset.k); focusCard(); break;
     case "prev": go(set.cur - 1); focusCard(); break;
-    case "next": go(set.cur + 1); focusCard(); break;
+    case "next":
+      if (rolling(set) && set.cur >= curList().length - 1) { if (!topUp(set)) { finishRoll(); break; } save(); } // the end of a rolling quiz: bring in the next mistakes, or finish
+      go(set.cur + 1); focusCard(); break;
+    case "finish-roll": finishRoll(); break;
     case "mv": {
       const a = ansOf(set, qi), o = +b.dataset.o, d = +b.dataset.d, pos = a.ord.indexOf(o), np = pos + d;
       if (np < 0 || np > 4) return;
@@ -1191,7 +1263,9 @@ document.addEventListener("click", async e => {
     }
     case "check":
       if (!complete(set, qi)) return;
-      set.chk[qi] = true; addAttempt(S, set, qi); logSetIfDone(S.setId);
+      set.chk[qi] = true; addAttempt(S, set, qi);
+      if (rolling(set) && set.cur === curList().length - 1) topUp(set); // the last one queued: bring in the next mistakes so Next carries on
+      logSetIfDone(S.setId);
       if (timerOn && !isMock(set)) { timerOn = false; autoPausedSet = S.setId; announce("Timer paused while you read the answer."); }
       save(); render(); flush();
       { const sc = qScore(set, qi); announce(`${sc.got} out of ${sc.max} marks. The correct answer is shown below the explanations.`); }
@@ -1623,7 +1697,7 @@ window.addEventListener("online", flushMockEvents);
 // always open there, answered or not), the exam screen or a running mock, and never with a clock running, a form, a
 // confirmation, a drag, the Sync panel or a study plan being written. Takes plain facts so tools/test-update.mjs can check it.
 function updateMayReload(f){ return ["results", "guide", "settings"].includes(f.view) && !f.exam && !f.mock && !f.timer && !f.building && !f.typing && !f.feedback && !f.dialog; }
-const BUILD = "d4f94d8b98"; // this page's build version, set by tools/build.js
+const BUILD = "cb4e97ce4d"; // this page's build version, set by tools/build.js
 if ("serviceWorker" in navigator && location.protocol !== "file:") {
   // A new version installs in the background. On a quiet screen (Results, Guide, Settings) the page reloads once so
   // visitors see it straight away; anywhere else a banner lets them choose, and the update is applied the next time they
