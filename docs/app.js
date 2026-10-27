@@ -1899,8 +1899,15 @@ window.addEventListener("error", e => {
   if (!e.filename || !/\/(app|questions|guide|sw)\.js/.test(e.filename)) return; // ignore extensions and third-party scripts
   reportError(`${e.message} @ ${e.filename.split("/").pop()}:${e.lineno}`);
 });
+// A rejection thrown by a visitor's own browser extension (for example a Safari web extension failing with SFErrorDomain) is not a site bug.
+function foreignRejection(r){
+  const text = String(r && (r.message || r) || ""), st = String(r && r.stack || "");
+  if (/sendNativeMessage|SFErrorDomain|(?:chrome|moz|safari|safari-web)-extension:/i.test(text + " " + st)) return true;
+  return !!st && !/\/(app|questions|guide|exam|design|explain|studyplan|sw)\.js/.test(st); // has a stack, but none of it is our code
+}
 window.addEventListener("unhandledrejection", e => {
   const r = e.reason; if (r && r.name === "TypeError" && /fetch|network|load failed/i.test(r.message)) return; // offline, not a bug
+  if (foreignRejection(r)) return;
   reportError("Unhandled: " + (r && r.message || r));
 });
 function countVisit(){
@@ -1918,7 +1925,7 @@ window.addEventListener("online", flushMockEvents);
 // always open there, answered or not), the exam screen or a running mock, and never with a clock running, a form, a
 // confirmation, a drag, the Sync panel or a study plan being written. Takes plain facts so tools/test-update.mjs can check it.
 function updateMayReload(f){ return ["mocks", "results", "guide", "settings"].includes(f.view) && !f.exam && !f.mock && !f.timer && !f.building && !f.typing && !f.feedback && !f.dialog; }
-const BUILD = "4f34f9fb7e"; // this page's build version, set by tools/build.js
+const BUILD = "56fd34f4d5"; // this page's build version, set by tools/build.js
 if ("serviceWorker" in navigator && location.protocol !== "file:") {
   // A new version installs in the background. On a quiet screen (Results, Guide, Settings) the page reloads once so
   // visitors see it straight away; anywhere else a banner lets them choose, and the update is applied the next time they
