@@ -613,9 +613,11 @@
   });
 
   // ---------- open / close ----------
+  // The title bar names the mock as the Mock exams tab does (mockLabel in app.js): "Mock 1 - ... - Unofficial Practice".
+  function titleText(){ const m = mock(), lab = m && m.mockNo && typeof mockLabel === "function" ? mockLabel(m.mockNo) + " - " : ""; return lab + TITLE + " - Unofficial Practice"; }
   function build(){
     root = document.createElement("div"); root.id = "exam"; root.setAttribute("lang", "en-GB");
-    root.innerHTML = `<div class="ex-frame" id="ex-frame"><header class="ex-title"><div class="ex-ttl">${escH(TITLE)} - Unofficial Practice</div><div class="ex-tc" id="ex-tc"></div></header>` +
+    root.innerHTML = `<div class="ex-frame" id="ex-frame"><header class="ex-title"><div class="ex-ttl" id="ex-ttl">${escH(titleText())}</div><div class="ex-tc" id="ex-tc"></div></header>` +
       `<div class="ex-tool" id="ex-tool"></div><main class="ex-main" id="ex-main" tabindex="-1" aria-label="Exam content"></main><nav class="ex-nav" id="ex-nav" aria-label="Exam navigation"></nav></div>` +
       `<div class="ex-sr" id="ex-live" aria-live="polite" aria-atomic="true"></div><div id="ex-layer" class="ex-layer" hidden></div>`;
     root.addEventListener("click", onClick); root.addEventListener("change", onChange);

@@ -82,17 +82,19 @@
     // hero stats
     if (typeof S !== "undefined" && typeof Q !== "undefined") {
       const ids = Object.keys(S.att || {}); let g = 0, m = 0;
+      const bank = typeof PRACTICE !== "undefined" ? PRACTICE.length : Q.length, done = typeof mockOnly === "function" ? ids.filter(i => !mockOnly(+i)).length : ids.length; // the practice bank: brand-new mock questions are not counted here
+      const nFlags = typeof flagList === "function" ? flagList().length : Object.keys(S.flags || {}).length;
       ids.forEach(i => { const a = S.att[i]; const l = a && a[a.length - 1]; if (l) { g += l.g; m += l.m; } });
       const dayKey = d => d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
       const days = S.days || {}; let streak = 0; const d = new Date();
       if (!(days[dayKey(d)] && days[dayKey(d)].n)) d.setDate(d.getDate() - 1); // a streak can still be alive if you practised yesterday
       while (days[dayKey(d)] && days[dayKey(d)].n) { streak++; d.setDate(d.getDate() - 1); }
       if (!stats.firstChild) stats.innerHTML = `<div class="nd-stat acc"><b data-k="ans">0</b><span>Questions done</span></div><div class="nd-stat"><b data-k="avg">0%</b><span>Average score</span></div><div class="nd-stat"><b data-k="streak">0</b><span>Day streak</span></div><button type="button" class="nd-stat nd-statbtn" data-act="build" data-kind="flagged" title="Practise your flagged questions"><b data-k="flag">0</b><span>Flagged</span></button>`;
-      countTo(stats.querySelector('[data-k="ans"]'), ids.length, v => `${v}/${Q.length}`);
+      countTo(stats.querySelector('[data-k="ans"]'), done, v => `${v}/${bank}`);
       countTo(stats.querySelector('[data-k="avg"]'), m ? Math.round(g / m * 100) : 0, v => `${v}%`);
       countTo(stats.querySelector('[data-k="streak"]'), streak, v => `${v}`);
-      countTo(stats.querySelector('[data-k="flag"]'), Object.keys(S.flags || {}).length, v => `${v}`);
-      const nfl = Object.keys(S.flags || {}).length, fb = stats.querySelector(".nd-statbtn");
+      countTo(stats.querySelector('[data-k="flag"]'), nFlags, v => `${v}`);
+      const nfl = nFlags, fb = stats.querySelector(".nd-statbtn");
       fb.disabled = !nfl; fb.querySelector("span").textContent = nfl ? "Flagged →" : "Flagged";
       fb.title = nfl ? "Practise your flagged questions" : "Flag questions to collect them here";
     }
@@ -102,15 +104,16 @@
       const c = S.sets.custom, live = c && c.kind === "mock" && c.limit && !c.marked;
       const lastMock = (S.hist || []).filter(h => /mock/i.test(h.name)).slice(-1)[0];
       const left = live ? Math.max(0, c.limit - c.el) : 0, mm = String(Math.floor(left / 60)).padStart(2, "0") + ":" + String(Math.floor(left % 60)).padStart(2, "0");
-      const nx = typeof nextMock === "function" ? nextMock() : 0, which = live ? c.name : nx; // the numbered mock papers (app.js)
+      const nx = typeof nextMock === "function" ? nextMock() : 0, name = typeof quizName === "function" ? quizName(c) : (c && c.name), which = live ? name : nx; // the numbered mock papers (app.js)
+      const label = n => typeof mockLabel === "function" ? mockLabel(n) : "Mock " + n, howMany = typeof mockCountWord === "function" ? mockCountWord() : "five";
       const sig = [live, live && c.started, Math.floor(left / 60), lastMock && lastMock.t, which].join("|");
       if (cta.dataset.sig !== sig) {
         cta.dataset.sig = sig;
         cta.innerHTML = `<div class="nd-cta-ico" aria-hidden="true"><svg viewBox="0 0 24 24" width="26" height="26"><circle cx="12" cy="13" r="8" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 9v4l2.6 1.6M9.5 2.8h5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></div>` +
-          `<div class="nd-cta-txt"><b>${live ? (c.started ? esc(c.name) + " in progress" : esc(c.name) + " is ready") : "Timed mock exams"}</b><span>${live && c.started ? `${mm} left · ${c.list.filter(i => complete(c, i)).length}/${c.list.length} answered` : (live ? "56 questions · 105 minutes · marked like the real test" : nx ? `Five fixed papers of 56 questions in 105 minutes · next up: Mock ${nx}` : "All five mocks taken · retake any of them")}${!live && lastMock ? ` · last time ${Math.round(lastMock.g / lastMock.m * 100)}%` : ""}</span></div>` +
+          `<div class="nd-cta-txt"><b>${live ? (c.started ? esc(name) + " in progress" : esc(name) + " is ready") : "Timed mock exams"}</b><span>${live && c.started ? `${mm} left · ${c.list.filter(i => complete(c, i)).length}/${c.list.length} answered` : (live ? "56 questions · 105 minutes · marked like the real test" : nx ? `${howMany.charAt(0).toUpperCase() + howMany.slice(1)} fixed papers of 56 questions in 105 minutes · next up: ${label(nx)}` : `All ${howMany} mocks taken · retake any of them`)}${!live && lastMock ? ` · last time ${Math.round(lastMock.g / lastMock.m * 100)}%` : ""}</span></div>` +
           `<button type="button" class="btn primary nd-cta-btn" data-act="mock-quick">${live ? (c.started ? "Resume mock" : "Start the clock") : "Open Mock exams"}</button>`;
       }
-      const nf = Object.keys(S.flags || {}).length;
+      const nf = typeof flagList === "function" ? flagList().length : Object.keys(S.flags || {}).length;
       revFlag.hidden = !nf; const rf = `⚑ Review flagged <small>${nf}</small>`; if (revFlag.innerHTML !== rf) revFlag.innerHTML = rf;
       const nm = (typeof mistakesList === "function") ? mistakesList().length : 0; revMis.hidden = !nm; const rm = `↻ My mistakes <small>${nm}</small>`; if (revMis.innerHTML !== rm) revMis.innerHTML = rm;
     }

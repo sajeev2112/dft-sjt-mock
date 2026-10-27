@@ -827,6 +827,10 @@ html.nd .nd-revmis small{background:var(--bad)}
 .mst{font:600 0.6875rem var(--mono); letter-spacing:.04em; text-transform:uppercase; padding:3px 8px; border-radius:999px; background:var(--surface-2); color:var(--ink-3)}
 .mst.done{background:var(--good-soft); color:var(--good)}
 .mst.live{background:var(--accent-soft); color:var(--accent)}
+/* the brand-new mock (mock-only questions): its card badge and the chip on its questions */
+.mnew{font:600 0.6875rem var(--mono); letter-spacing:.04em; text-transform:uppercase; padding:2px 8px; border-radius:999px; background:var(--accent-soft); color:var(--accent); border:1px solid var(--accent)}
+.mnewcard{border-color:color-mix(in srgb, var(--accent) 55%, var(--line))}
+.chip.newq{background:var(--good-soft); color:var(--good)}
 .mxatts{list-style:none; margin:8px 0 0; padding:0; display:grid; gap:8px}
 .mxa{display:grid; grid-template-columns:minmax(0, 1fr) auto auto; gap:4px 12px; align-items:center; padding:10px 12px; border:1px solid var(--line); border-radius:12px; background:var(--surface)}
 .mxa.best{border-color:color-mix(in srgb, var(--good) 55%, var(--line))}

@@ -114,3 +114,21 @@ console.log(JSON.stringify(["sync delete (other name)", (await sy({action: "save
 const xf = async body => { const r = await worker.fetch(new Request("https://x.dev/api/explain-feedback", {method: "POST", body: JSON.stringify(body), headers: {"CF-Connecting-IP": "4.4.4.4"}}), env, ctx); return [r.status, await r.json()]; };
 console.log(JSON.stringify(["explain feedback stored", (await xf({client: "client-aaaa1", q: 1, answer: "EDCBA", rating: -1}))[1], db.prepare("SELECT q, a, rating FROM explain_feedback").all()]));
 console.log(JSON.stringify(["explain feedback bad rating / question", (await xf({client: "client-aaaa1", q: 1, answer: "EDCBA", rating: 2}))[0], (await xf({client: "client-aaaa1", q: 0, answer: "EDCBA", rating: 1}))[0]]));
+
+// Question numbers above today's bank: the Worker works by absolute question number from QTYPES (synced by tools/build.js),
+// so the brand-new mock's questions (289-344, 37 ranking-type then 19 best-three) work as soon as they are added. Checked on a
+// temporary copy of src/ whose QTYPES has 56 more entries (nothing in the project is changed).
+{
+  const os = await import("node:os"), path = await import("node:path");
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "dft-worker-"));
+  for (const f of fs.readdirSync(new URL("../src/", import.meta.url))) fs.copyFileSync(new URL("../src/" + f, import.meta.url), path.join(dir, f));
+  const more = QT + "r".repeat(37) + "b".repeat(19), first = QT.length + 1, last = more.length;
+  fs.writeFileSync(path.join(dir, "worker.js"), fs.readFileSync(path.join(dir, "worker.js"), "utf8").replace(/QTYPES = "[rb]*"/, `QTYPES = "${more}"`));
+  const w2 = (await import(path.join(dir, "worker.js"))).default;
+  const c2 = async (method, p, body) => { const r = await w2.fetch(new Request("https://x.dev" + p, {method, body: body && JSON.stringify(body), headers: {"CF-Connecting-IP": "3.3.3.3"}}), env, ctx); return [r.status, await r.json().catch(() => null)]; };
+  const [ps, pb] = await c2("POST", "/api/answers", {client: "newmock-aaaa1", items: [{q: first, a: "01234"}, {q: last, a: "017"}, {q: last + 1, a: "01234"}]});
+  const [s1, b1] = await c2("GET", "/api/stats?q=" + first), [s2, b2] = await c2("GET", "/api/stats?q=" + last), [s3] = await c2("GET", "/api/stats?q=" + (last + 1));
+  console.log(JSON.stringify(["questions above " + QT.length, "post", ps, pb, "stats q" + first, s1, b1 && b1.type, b1 && b1.n, "stats q" + last, s2, b2 && b2.type, b2 && b2.n, "q" + (last + 1), s3, "(expect stored 2, r 1, b 1, 400)"]));
+  if (!(ps === 200 && pb.stored === 2 && s1 === 200 && b1.type === "r" && b1.n === 1 && s2 === 200 && b2.type === "b" && b2.n === 1 && s3 === 400)) { console.log("FAIL question numbers above the current bank"); process.exitCode = 1; }
+  fs.rmSync(dir, {recursive: true, force: true});
+}

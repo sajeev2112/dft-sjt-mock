@@ -46,7 +46,7 @@ const p10 = Q.concat(Array.from({length: 32}, (_, k) => ({n: 289 + k, p: 10, t: 
 check("adding a Paper 10 later does not reshuffle Mocks 1-5", J(T.mockPapers(p10)) === J(P));
 const fp = P.flat().reduce((h, i, k) => (Math.imul(h, 31) + i * (k + 7)) >>> 0, 7);
 check(`the papers match the published version (fingerprint ${fp}; if the question data was changed on purpose, update it here)`, fp === 3993367294);
-const out = Q.map((_, i) => i).filter(i => !P.flat().includes(i));
+const out = Q.map((_, i) => i).filter(i => Q[i].p >= 1 && !P.flat().includes(i)); // practice questions only: mock-only questions are in no paper
 check("what sits out: 1 ranking-type and 7 best-three", out.length === 8 && out.filter(i => Q[i].t === "best3").length === 7);
 
 const rows = [], spread = (label, f, vals) => { let w = 0; for (const v of vals) { const c = P.map(l => l.filter(i => f(Q[i]) === v).length); w = Math.max(w, Math.max(...c) - Math.min(...c)); rows.push([label + " " + v, ...c, Math.max(...c) - Math.min(...c)]); } return w; };

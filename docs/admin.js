@@ -152,7 +152,7 @@ function render(){
   h += `<details class="datatoggle" id="allq"${allOpen ? " open" : ""}><summary>Show every question (${Q.length})</summary><div class="qtools"><input type="search" id="qsearch" placeholder="Search by paper, question number, topic or status" aria-label="Search questions" value="${esc(qFilter)}"><button class="btn small" type="button" id="csv-q">Download question stats (CSV)</button><button class="btn small" type="button" id="csv-c">Download comments (CSV)</button><span class="dmeta" id="qcount" aria-live="polite"></span></div><div class="tscroll"><table class="rtable"><thead><tr><th>Question</th><th>Scenario</th><th>Answers</th><th>Average score</th><th>Agree on the top</th><th>Status</th></tr></thead><tbody>${qs.map(qRow).join("")}</tbody></table></div></details></section>`;
   h += `<section class="card"><h2 class="bh">“I disagree” comments</h2>`;
   const comments = data.feedback.filter(f => f.comment);
-  h += comments.length ? `<div class="comments">${comments.map(f => { const q = Q[f.q - 1]; return `<div class="cmt"><div class="cm">${new Date(f.t).toLocaleDateString("en-GB", {day: "numeric", month: "short"})} · ${q ? `Paper ${q.p}, question ${q.n - (q.p - 1) * 32} · ${esc(q.a)}` : "Question " + esc(f.q)}</div>${esc(f.comment)}</div>`; }).join("")}</div>`
+  h += comments.length ? `<div class="comments">${comments.map(f => { const q = Q[f.q - 1]; return `<div class="cmt"><div class="cm">${new Date(f.t).toLocaleDateString("en-GB", {day: "numeric", month: "short"})} · ${q ? `${paperOf(q)}, question ${localOf(q)} · ${esc(q.a)}` : "Question " + esc(f.q)}</div>${esc(f.comment)}</div>`; }).join("")}</div>`
     : `<p class="empty">No written comments yet${data.feedback.length ? ` (${data.feedback.length} disagreement${data.feedback.length === 1 ? "" : "s"} without a comment)` : ""}.</p>`;
   h += `</section><section class="card" id="errs"><h2 class="bh">Recent errors</h2>`;
   const groups = errorGroups();
@@ -204,7 +204,11 @@ function watchAlerts(){
 }
 
 // ---------- extra sections ----------
-const qLabel = q => `Paper ${q.p}, Q${q.n - (q.p - 1) * 32}`;
+// Mock-only questions (mk: 1, the brand-new mock) are in no paper: they are labelled "New mock, Qn" (n = 1 to 56 in the order written).
+const MK0 = Q.findIndex(q => q.mk);
+const paperOf = q => q.mk ? "New mock" : "Paper " + q.p, localOf = q => q.mk ? q.n - MK0 : q.n - (q.p - 1) * 32;
+const qLabel = q => `${paperOf(q)}, Q${localOf(q)}`;
+const groupName = k => +k === 0 ? "New mock" : "Paper " + k; // by-paper tables group mock-only questions (p = 0) on their own
 const rate = o => o && o.n ? pct(o.back, o.n) + "%" : "–";
 const rateSub = (o, d) => o && o.n ? `${fmtN(o.back)} of ${fmtN(o.n)} people first seen ${d}+ days ago came back within ${d} days` : `Not enough history yet (needs people first seen ${d}+ days ago)`;
 function weekStart(day){ const d = new Date(day + "T12:00:00Z"), dow = (d.getUTCDay() + 6) % 7; return new Date(d - dow * 864e5).toISOString().slice(0, 10); }
@@ -251,7 +255,7 @@ function timeCard(qs){
       <div class="tile"><span class="tl">Ranking questions</span><span class="tv">${rank.length ? fmtSec(mean(rank)) : "–"}</span><span class="sub2">${fmtN(cnt(rank))} timed answers</span></div>
       <div class="tile"><span class="tl">Choose-three questions</span><span class="tv">${best.length ? fmtSec(mean(best)) : "–"}</span><span class="sub2">${fmtN(cnt(best))} timed answers</span></div></div>
     ${rows.length ? `<p class="plabel">Slowest questions</p>${slow.length ? tbl(["Question", "Scenario", "Timed answers", "Average time"], slow.map(r => `<tr><td>${qLabel(r.x.q)}</td><td>${esc(r.x.q.a)}</td><td>${fmtN(r.t.n)}</td><td>${fmtSec(r.t.avg)}</td></tr>`).join("")) : `<p class="empty">Questions need ${MIN_N}+ timed answers to be listed.</p>`}
-    <p class="plabel">By paper</p>${tbl(["Paper", "Timed answers", "Average time"], Object.keys(papers).map(k => `<tr><td>Paper ${k}</td><td>${fmtN(cnt(papers[k]))}</td><td>${fmtSec(mean(papers[k]))}</td></tr>`).join(""))}` : `<p class="empty">No timings yet. They arrive when people use the practice timer and have anonymous sharing on.</p>`}
+    <p class="plabel">By paper</p>${tbl(["Paper", "Timed answers", "Average time"], Object.keys(papers).map(k => `<tr><td>${groupName(k)}</td><td>${fmtN(cnt(papers[k]))}</td><td>${fmtSec(mean(papers[k]))}</td></tr>`).join(""))}` : `<p class="empty">No timings yet. They arrive when people use the practice timer and have anonymous sharing on.</p>`}
     <p class="muted">The live test allows about ${fmtSec(105 * 60 / 56)} per question. Times come from the practice timer (it pauses on Check answer), first attempts only; anything over 15 minutes is ignored.</p></section>`;
 }
 function aiCard(){
@@ -287,7 +291,7 @@ function rankCard(qs){
   return `<section class="card"><h2 class="bh">Question rankings</h2>
     <div class="rcols"><div><p class="plabel" style="margin-top:0">Hardest questions</p><p class="muted">Lowest average score against the key. Only questions with ${MIN_N}+ answers.</p>${hardest.length ? tbl(["Question", "Scenario", "Answers", "Average score"], hardest.map(x => row(x, `<td>${fmtN(x.n)}</td><td>${Math.round(x.avg * 100)}%</td>`)).join("")) : `<p class="empty">Not enough answers yet.</p>`}
     </div><div><p class="plabel" style="margin-top:0">Most answered</p>${popular.length ? tbl(["Question", "Scenario", "Answers", "Average score"], popular.map(x => row(x, `<td>${fmtN(x.n)}</td><td>${x.n >= MIN_N ? Math.round(x.avg * 100) + "%" : "–"}</td>`)).join("")) : `<p class="empty">No answers yet.</p>`}
-    </div><div><p class="plabel" style="margin-top:0">By paper</p>${tbl(["Paper", "Answers", "Average score", "Keys to recheck"], Object.keys(papers).map(k => { const p = papers[k]; return `<tr><td>Paper ${k}</td><td>${fmtN(p.n)}</td><td>${p.n ? Math.round(p.sum / p.n * 100) + "%" : "–"}</td><td>${p.recheck}</td></tr>`; }).join(""))}</div></div></section>`;
+    </div><div><p class="plabel" style="margin-top:0">By paper</p>${tbl(["Paper", "Answers", "Average score", "Keys to recheck"], Object.keys(papers).map(k => { const p = papers[k]; return `<tr><td>${groupName(k)}</td><td>${fmtN(p.n)}</td><td>${p.n ? Math.round(p.sum / p.n * 100) + "%" : "–"}</td><td>${p.recheck}</td></tr>`; }).join(""))}</div></div></section>`;
 }
 
 // ---------- search and downloads ----------
@@ -304,20 +308,20 @@ function download(name, rows){
 function exportQuestions(){
   const votes = Object.fromEntries(((data.ai || {}).votes || []).map(v => [v.q, v])), tms = Object.fromEntries((data.times || []).map(t => [t.q, t]));
   download("dft-sjt-question-stats.csv", [["Question", "Paper", "Question in paper", "Scenario", "Answers", "Average score %", "Agree on the top %", "Status", "AI thumbs up", "AI thumbs down", "Timed answers", "Average seconds"]].concat(
-    analyse().map(x => [x.i + 1, x.q.p, x.q.n - (x.q.p - 1) * 32, x.q.a, x.n, x.n ? Math.round(x.avg * 100) : "", x.n ? Math.round(x.agree * 100) : "", FLAG_TEXT[x.flag], (votes[x.i + 1] || {}).up || 0, (votes[x.i + 1] || {}).down || 0, (tms[x.i + 1] || {}).n || 0, tms[x.i + 1] ? Math.round(tms[x.i + 1].avg) : ""])));
+    analyse().map(x => [x.i + 1, x.q.mk ? "New mock" : x.q.p, localOf(x.q), x.q.a, x.n, x.n ? Math.round(x.avg * 100) : "", x.n ? Math.round(x.agree * 100) : "", FLAG_TEXT[x.flag], (votes[x.i + 1] || {}).up || 0, (votes[x.i + 1] || {}).down || 0, (tms[x.i + 1] || {}).n || 0, tms[x.i + 1] ? Math.round(tms[x.i + 1].avg) : ""])));
 }
 function exportComments(){
   download("dft-sjt-disagree-comments.csv", [["Date", "Question", "Paper", "Question in paper", "Scenario", "Comment"]].concat(
-    data.feedback.map(f => { const q = Q[f.q - 1]; return [new Date(f.t).toISOString().slice(0, 10), f.q, q ? q.p : "", q ? q.n - (q.p - 1) * 32 : "", q ? q.a : "", f.comment || ""]; })));
+    data.feedback.map(f => { const q = Q[f.q - 1]; return [new Date(f.t).toISOString().slice(0, 10), f.q, q ? (q.mk ? "New mock" : q.p) : "", q ? localOf(q) : "", q ? q.a : "", f.comment || ""]; })));
 }
 function dataTable(pts, ...cols){
   return `<div class="tscroll"><table class="rtable"><thead><tr><th>Day</th>${cols.map(c => `<th>${c[0]}</th>`).join("")}</tr></thead><tbody>${pts.slice().reverse().map(p => `<tr><td>${dayLabel(p.day)}</td>${cols.map(c => `<td>${fmtN(c[1](p))}</td>`).join("")}</tr>`).join("")}</tbody></table></div>`;
 }
 const FLAG_TEXT = {recheck: "Recheck", watch: "Watch", ok: "OK", few: "Too few answers"};
 function qRow(x){
-  const q = x.q, local = q.n - (q.p - 1) * 32;
+  const q = x.q;
   const text = `${qLabel(q)} ${q.a} ${FLAG_TEXT[x.flag]} q${x.i + 1}`.toLowerCase();
-  let h = `<tr class="qrow" data-q="${x.i}" data-text="${esc(text)}" tabindex="0" aria-expanded="${openQ === x.i}"><td>Paper ${q.p}, Q${local}</td><td>${esc(q.a)}</td><td>${fmtN(x.n)}</td><td>${x.n ? Math.round(x.avg * 100) + "%" : "–"}</td><td>${x.n ? Math.round(x.agree * 100) + "%" : "–"}</td><td><span class="flag ${x.flag}">${FLAG_TEXT[x.flag]}</span></td></tr>`;
+  let h = `<tr class="qrow" data-q="${x.i}" data-text="${esc(text)}" tabindex="0" aria-expanded="${openQ === x.i}"><td>${qLabel(q)}</td><td>${esc(q.a)}</td><td>${fmtN(x.n)}</td><td>${x.n ? Math.round(x.avg * 100) + "%" : "–"}</td><td>${x.n ? Math.round(x.agree * 100) + "%" : "–"}</td><td><span class="flag ${x.flag}">${FLAG_TEXT[x.flag]}</span></td></tr>`;
   if (openQ === x.i) h += `<tr class="qdetail"><td colspan="6">${detail(x)}</td></tr>`;
   return h;
 }
