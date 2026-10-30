@@ -6,6 +6,7 @@
 //   POST /api/visit     one anonymous visit per page load (private visitor stats, read in the D1 console)
 //   POST /api/error     a browser error report (message only)
 //   POST /api/mock      a timed mock started or finished (random run number only; feeds the dashboard's completion rate)
+//   GET  /api/mock-stats?no=N  how everyone scored on numbered mock N, or practice paper N - 100 (first attempts, percentages only; for the Progress page)
 //   POST /api/sync      save, load or delete progress under a username + PIN (optional cross-device sync; no accounts)
 //   POST /api/explain   "Explain my mistake" (Beta): AI explanation of a wrong answer, checked against the key (see explain.js)
 //   POST /api/study-plan  "Study plan" (Beta): an AI-written revision plan from the trainee's own statistics (numbers and codes only; see studyplan.js)
@@ -28,6 +29,7 @@ const CORS_ORIGINS = ["https://sajeev2112.github.io"];
 // Hourly limits per network and endpoint. Generous enough for a whole class on shared Wi-Fi.
 const LIMITS = {answers: 3000, feedback: 100, visit: 600, error: 20, admin: 60, sync: 600, create: 20, explain: 40, explainfb: 60, mock: 120, plan: 12};
 const MIN_STATS = 3;
+const MIN_MOCK = 10; // first attempts needed before a mock's spread of scores is shown
 
 let schemaReady = false;
 const SCHEMA = [
@@ -47,6 +49,7 @@ const SCHEMA = [
   "CREATE TABLE IF NOT EXISTS explain_feedback (client TEXT NOT NULL, q INTEGER NOT NULL, a TEXT NOT NULL, rating INTEGER NOT NULL, t INTEGER NOT NULL, PRIMARY KEY (client, q, a))",
   "CREATE TABLE IF NOT EXISTS answer_times (client TEXT NOT NULL, q INTEGER NOT NULL, s INTEGER NOT NULL, PRIMARY KEY (client, q))",
   "CREATE TABLE IF NOT EXISTS mock_runs (client TEXT NOT NULL, run INTEGER NOT NULL, mode TEXT NOT NULL, started INTEGER NOT NULL, ended INTEGER, status TEXT, PRIMARY KEY (client, run))",
+  "CREATE TABLE IF NOT EXISTS mock_scores (client TEXT NOT NULL, no INTEGER NOT NULL, p INTEGER NOT NULL, t INTEGER NOT NULL, PRIMARY KEY (client, no))",
   "CREATE TABLE IF NOT EXISTS answer_counts (q INTEGER NOT NULL, a TEXT NOT NULL, c INTEGER NOT NULL, PRIMARY KEY (q, a))",
   "CREATE TRIGGER IF NOT EXISTS answers_v2_count AFTER INSERT ON answers_v2 BEGIN INSERT INTO answer_counts (q, a, c) VALUES (NEW.q, NEW.a, 1) ON CONFLICT (q, a) DO UPDATE SET c = c + 1; END"
 ];
@@ -75,6 +78,7 @@ export default {
       if (url.pathname === "/api/feedback" && request.method === "POST") return await feedback(request, env, ctx, cors);
       if (url.pathname === "/api/visit" && request.method === "POST") return await visit(request, env, ctx, cors);
       if (url.pathname === "/api/error" && request.method === "POST") return await clientError(request, env, ctx, cors);
+      if (url.pathname === "/api/mock-stats" && request.method === "GET") return await mockStats(url, env, cors);
       if (url.pathname === "/api/mock" && request.method === "POST") return await mockEvent(request, env, ctx, cors);
       if (url.pathname === "/api/health" && request.method === "GET") return await health(env, cors);
       if (url.pathname === "/api/sync" && request.method === "POST") return await sync(request, env, ctx, cors);
@@ -151,10 +155,29 @@ async function mockEvent(request, env, ctx, cors) {
   if (!(await allow(request, env, ctx, 1, "mock"))) return json({error: "rate_limited"}, 429, cors);
   if (body.event === "start")
     await env.DB.prepare("INSERT INTO mock_runs (client, run, mode, started) VALUES (?, ?, ?, ?) ON CONFLICT (client, run) DO UPDATE SET started = excluded.started, ended = NULL, status = NULL, mode = excluded.mode").bind(body.client, run, mode, when).run();
-  else if (body.event === "finish" || body.event === "expired")
+  else if (body.event === "finish" || body.event === "expired") {
     await env.DB.prepare("INSERT INTO mock_runs (client, run, mode, started, ended, status) VALUES (?, ?, ?, ?, ?, ?) ON CONFLICT (client, run) DO UPDATE SET ended = excluded.ended, status = excluded.status").bind(body.client, run, mode, when, when, body.event).run();
-  else return json({error: "bad_request"}, 400, cors);
+    // a numbered mock's score (a whole percentage): only each person's first finished attempt is kept, so retakes don't count twice
+    const no = Number(body.no), p = Number(body.p);
+    if (Number.isInteger(no) && no >= 1 && no <= 99 && Number.isInteger(p) && p >= 0 && p <= 100)
+      await env.DB.prepare("INSERT OR IGNORE INTO mock_scores (client, no, p, t) VALUES (?, ?, ?, ?)").bind(body.client, no, p, when).run();
+  } else if (body.event === "paper") { // a practice paper's first complete attempt (number 100 + paper); kept in mock_scores, not a mock run
+    const no = Number(body.no), p = Number(body.p);
+    if (!(Number.isInteger(no) && no >= 101 && no <= 199 && Number.isInteger(p) && p >= 0 && p <= 100)) return json({error: "bad_request"}, 400, cors);
+    await env.DB.prepare("INSERT OR IGNORE INTO mock_scores (client, no, p, t) VALUES (?, ?, ?, ?)").bind(body.client, no, p, when).run();
+  } else return json({error: "bad_request"}, 400, cors);
   return json({ok: true}, 200, cors);
+}
+
+// How everyone scored on numbered mock N (or practice paper N - 100): how many people's first attempts at each whole percentage (dist[p]), once
+// there are at least MIN_MOCK of them; before that only the count. Read-only; the page works out where your score sits.
+async function mockStats(url, env, cors) {
+  const no = Number(url.searchParams.get("no"));
+  if (!Number.isInteger(no) || no < 1 || no > 199) return json({error: "bad_mock"}, 400, cors);
+  const rows = (await env.DB.prepare("SELECT p, COUNT(*) AS c FROM mock_scores WHERE no = ? GROUP BY p").bind(no).all()).results;
+  const n = rows.reduce((t, r) => t + r.c, 0), out = {no, n, min: MIN_MOCK};
+  if (n >= MIN_MOCK) { out.dist = Array(101).fill(0); for (const r of rows) out.dist[r.p] = r.c; }
+  return json(out, 200, {...cors, "Cache-Control": "public, max-age=300"});
 }
 
 async function feedback(request, env, ctx, cors) {

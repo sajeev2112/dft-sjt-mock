@@ -35,7 +35,7 @@ function shuffle(a){ a = a.slice(); for (let i = a.length - 1; i > 0; i--) { con
 // ---------- state ----------
 const STORE = "dft-sjt-mock-v5", V4 = "dft-sjt-mock-v4";
 function newSet(extra){ return Object.assign({ans:{}, chk:{}, marked:false, el:0, cur:0, mode:"practice", logged:false}, extra || {}); }
-function fresh(){ return {v:5, ts:0, cid:uid(), share:true, view:"practice", setId:"p1", sets:{p1:newSet(), p2:newSet(), p3:newSet(), p4:newSet(), p5:newSet(), p6:newSet(), p7:newSet(), p8:newSet(), p9:newSet(), custom:null}, att:{}, days:{}, hist:[], sent:{}, outbox:[], fb:{}, flags:{}, plan:null, mocks:[]}; }
+function fresh(){ return {v:5, ts:0, cid:uid(), share:true, view:"practice", setId:"p1", sets:{p1:newSet(), p2:newSet(), p3:newSet(), p4:newSet(), p5:newSet(), p6:newSet(), p7:newSet(), p8:newSet(), p9:newSet(), custom:null}, att:{}, days:{}, hist:[], sent:{}, outbox:[], fb:{}, flags:{}, plan:null, mocks:[], exam:""}; }
 let S = fresh();
 // Rebuilds state from untrusted JSON (localStorage, IndexedDB or a pasted progress code),
 // keeping only well-formed values so nothing odd can reach the page or crash rendering.
@@ -134,6 +134,7 @@ function normalise(o){
   for (const k of Object.keys(o.flags || {})) { const i = +k; if (isQi(i) && o.flags[k]) s.flags[i] = 1; }
   s.outbox = (Array.isArray(o.outbox) ? o.outbox : []).filter(x => x && Number.isInteger(x.q) && x.q >= 1 && x.q <= Q.length && typeof x.a === "string" && /^[0-7]{3,5}$/.test(x.a)).slice(-300);
   s.plan = cleanPlan(o.plan);
+  s.exam = typeof o.exam === "string" && /^\d{4}-\d{2}-\d{2}$/.test(o.exam) ? o.exam : ""; // your SJT date (Progress), synced with the rest
   return s;
 }
 // The AI study plan is personal to you, so it is saved with your progress (and goes to your Sync account with it).
@@ -195,6 +196,7 @@ function mergeState(mine, other){
   const ob = new Set(nw.outbox.map(x => x.q + ":" + x.a));
   m.outbox = [...ol.outbox.filter(x => !ob.has(x.q + ":" + x.a)), ...nw.outbox].slice(-300);
   if (ol.plan && (!nw.plan || ol.plan.at > nw.plan.at)) m.plan = ol.plan;
+  if (!m.exam) m.exam = ol.exam; // the newer copy's exam date, or the older one's if the newer has none
   m.cid = a.cid; m.view = a.view; m.setId = m.sets[a.setId] ? a.setId : "p1";
   return m;
 }
@@ -404,6 +406,7 @@ function mockEvent(ev, set, mode){
   if (!S.share || location.protocol === "file:" || !set || !set.created) return;
   const e = {client:S.cid, run:set.created, event:ev, mode: mode || (window.Exam && Exam.isOpen() ? "exam" : "plain"), at:Date.now()};
   if (set.mockNo) e.no = set.mockNo; // which numbered mock (the server ignores fields it doesn't use)
+  if (set.mockNo && ev !== "start") { let g = 0, m = 0; set.list.forEach(qi => { const x = qScore(set, qi); g += x.got; m += x.max; }); e.p = pct(g, m); } // the score as a percentage, for "better than X% of people who sat this mock"
   mockQ.push(e);
   if (mockQ.length > 20) mockQ.shift();
   saveMockQ(); flushMockEvents();
@@ -414,8 +417,14 @@ function logSetIfDone(id){
   if (!list.every(qi => revealed(set, qi))) return;
   let g = 0, m = 0, n = 0;
   list.forEach(qi => { if (started(set, qi)) { const s = qScore(set, qi); g += s.got; n++; } m += isRank(Q[qi]) ? 20 : 12; });
+  const first = PAPERS[id] && n === list.length && firstFull(S.hist, setName(id), list.length) == null; // the first time every question of this paper is answered
   S.hist.push({t:Date.now(), name:setName(id), g, m, n, total:list.length, mode:set.mode, c: isMock(set) ? set.created : 0});
   set.logged = true;
+  if (first && S.share && location.protocol !== "file:") { // for "better than X% of people" on Progress: the score only, queued and sent like a mock event
+    mockQ.push({client: S.cid, run: Date.now(), event: "paper", no: PAPER_BASE + PAPER_IDS.indexOf(id) + 1, p: pct(g, m), at: Date.now()});
+    if (mockQ.length > 20) mockQ.shift();
+    saveMockQ(); flushMockEvents();
+  }
 }
 
 // ---------- community stats ----------
@@ -476,10 +485,11 @@ let installPrompt = null;
 window.addEventListener("beforeinstallprompt", e => { e.preventDefault(); installPrompt = e; if (S.view === "settings") render(); });
 
 // ---------- rendering: shell ----------
-function render(){
+// noPanel: skip rebuilding the side panel (moving a ranking option changes nothing it shows until the answer is checked).
+function render(noPanel){
   // a mock whose time ran out while paused or on another device is marked as soon as it is shown
   if (S.view === "practice" && !ui.building) { const st = curSet(); if (mockLive(st) && left(st) <= 0) { timeUp(); return; } }
-  keepFocus(renderAll);
+  keepFocus(() => renderAll(noPanel));
   centerStrips();
 }
 // On phones the paper tabs and the question numbers are single scrolling rows; keep the current one in the middle of the row.
@@ -506,10 +516,10 @@ function keepFocus(fn){
   if (!t && box) { const nb = document.getElementById(box.id); t = nb && (nb.querySelector(".confirm button, [role=alert], .bh, .qnum") || nb); if (t && t === nb && !nb.hasAttribute("tabindex")) nb.setAttribute("tabindex", "-1"); }
   if (t && t.offsetParent !== null) t.focus({preventScroll: true});
 }
-function renderAll(){
+function renderAll(noPanel){
   document.querySelectorAll("[data-view-panel]").forEach(el => el.hidden = el.dataset.viewPanel !== S.view);
   document.querySelectorAll(".views [data-v]").forEach(b => b.setAttribute("aria-current", b.dataset.v === S.view ? "page" : "false"));
-  if (S.view === "practice") { renderTabs(); renderGrid(); renderCard(); renderPanelRaw(); }
+  if (S.view === "practice") { renderTabs(); renderGrid(); renderCard(); if (!noPanel) renderPanelRaw(); }
   else if (S.view === "mocks") renderMocks();
   else if (S.view === "results") renderResults();
   else if (S.view === "guide") renderGuide();
@@ -557,7 +567,7 @@ function renderGrid(){
     return;
   }
   document.getElementById("resetrow").innerHTML = ui.confirmReset
-    ? `<div class="confirm"><span>Clear the answers and timer for ${esc(name)}? Your Results history is kept.</span><div class="row"><button type="button" class="btn small danger" data-act="reset-yes">Clear ${esc(name)}</button><button type="button" class="btn small" data-act="reset-no">Cancel</button></div></div>`
+    ? `<div class="confirm"><span>Clear the answers and timer for ${esc(name)}? Your Progress history is kept.</span><div class="row"><button type="button" class="btn small danger" data-act="reset-yes">Clear ${esc(name)}</button><button type="button" class="btn small" data-act="reset-no">Cancel</button></div></div>`
     : `<button type="button" class="resetlink" data-act="reset">Reset ${esc(name)}</button>`;
 }
 
@@ -677,7 +687,7 @@ function animateCard(sig, k = 0, rev = false){
 }
 function countUp(el){
   const m = el && el.textContent.match(/^(\d+) \/ (\d+)/); if (!m) return;
-  const end = +m[1], max = m[2], t0 = performance.now(), dur = 650;
+  const end = +m[1], max = m[2], t0 = performance.now(), dur = 300;
   const step = t => { const p = Math.min(1, (t - t0) / dur), e = 1 - Math.pow(1 - p, 3); el.textContent = `${Math.round(end * e)} / ${max} marks`; if (p < 1) requestAnimationFrame(step); };
   el.textContent = `0 / ${max} marks`; requestAnimationFrame(step);
 }
@@ -801,7 +811,8 @@ function initDrag(){
       if (!wasSet) { document.querySelector("#card .setrow")?.remove(); const chk = document.querySelector('#card [data-act="check"]'); if (chk) chk.disabled = false; }
       if (!calm() && evt.item && before !== a.ord.join("")) { evt.item.classList.remove("settled"); void evt.item.offsetWidth; evt.item.classList.add("settled"); buzz(10); }
       announce(`Option ${L[+evt.item.dataset.o]} moved to position ${evt.newIndex + 1}.`);
-      renderGrid(); renderPanel(); renderTabs();
+      renderGrid(); renderTabs();
+      if (!wasSet && set.mode !== "practice") renderPanel(); // the panel only counts answers; in practice it waits for Check
     }
   });
   // A press on the grip picks the row up at once; anywhere else waits for the short hold.
@@ -870,7 +881,7 @@ function rollSummaryHtml(set){
     `<div class="mside"><p class="mverdict">You revisited ${rows.length} mistake${pl(rows.length)}: ${fixed} now got full marks${still ? `, and ${still} still lost marks, so ${still === 1 ? "it comes" : "they come"} back in a later round, after older mistakes` : ""}.</p>` +
     `<p class="muted">${nm ? `${nm} mistake${pl(nm)} waiting, oldest first.` : "No mistakes waiting. Well done: every question’s latest attempt got full marks."}</p></div></div>`;
   h += `<h3 class="bsub">This round</h3><div class="mweak">` + rows.map(w => { const q = Q[w.qi]; return `<button type="button" class="mwrow" data-act="review-q" data-k="${w.k}"><span class="pill ${band(w.s.got, w.s.max)}">${w.s.got}/${w.s.max}</span><span class="mwt"><b>Question ${w.k + 1} · ${THEMES[q.g]}</b><span>${esc(q.s.replace(/<[^>]+>/g, "").slice(0, 110))}…</span></span><span class="mwgo" aria-hidden="true">→</span></button>`; }).join("") + `</div>`;
-  h += `<div class="actions"><button type="button" class="btn" data-act="view" data-v="results">Results</button><div class="act-r"><button type="button" class="btn${nm ? "" : " primary"}" data-act="review">Review answers</button>` +
+  h += `<div class="actions"><button type="button" class="btn" data-act="view" data-v="results">Progress</button><div class="act-r"><button type="button" class="btn${nm ? "" : " primary"}" data-act="review">Review answers</button>` +
     (nm ? `<button type="button" class="btn primary" data-act="build" data-kind="mistakes">Practise my mistakes</button>` : "") + `</div></div>`;
   return h;
 }
@@ -989,7 +1000,7 @@ function mockCardsHtml(){
 function builderHtml(){
   const weak = weakList().length, mist = mistakesList().length, c = S.sets.custom;
   const themeCounts = {}; PRACTICE.forEach(i => themeCounts[Q[i].g] = (themeCounts[Q[i].g] || 0) + 1);
-  let h = `<h2 class="bh">Build a quiz</h2><p class="muted">${c ? `Starting a new quiz replaces “${esc(c.name)}”. Your scores so far are kept in Results.` : "Pick a format. Your scores are saved in Results."}</p><div class="bgrid">`;
+  let h = `<h2 class="bh">Build a quiz</h2><p class="muted">${c ? `Starting a new quiz replaces “${esc(c.name)}”. Your scores so far are kept in Progress.` : "Pick a format. Your scores are saved in Progress."}</p><div class="bgrid">`;
   h += `<button type="button" class="bcard" data-act="build" data-kind="quick"><b>Quick 10</b><span>10 random questions from all papers, unseen ones first. Practice mode.</span></button>`;
   h += `<button type="button" class="bcard" data-act="build" data-kind="weak"${weak ? "" : " disabled"}><b>Weak spots</b><span>${weak ? `Up to 20 of the ${weak} questions you last scored under 70% on, lowest first.` : "Nothing yet: questions you score under 70% on will appear here."}</span></button>`;
   h += `<button type="button" class="bcard" data-act="build" data-kind="mistakes"${mist ? "" : " disabled"}><b>Practise my mistakes</b><span>${mist ? `${mist} mistake${mist === 1 ? "" : "s"} waiting (questions where your latest attempt lost marks). Oldest mistakes first, so what you got wrong long ago comes back before what you got wrong today. ${ROLL} at a time, topped up as you go; stop whenever you like.` : "Nothing yet: questions where you lose marks will appear here."}</span></button>`;
@@ -1033,7 +1044,7 @@ function buildQuiz(kind, arg){
   }
   if (c0 && !c0.marked && !c0.logged) {
     const done = c0.list.filter(i => started(c0, i)).length;
-    if ((done || (isMock(c0) && c0.started)) && !confirm(`Start a new quiz? Your unfinished “${quizName(c0)}” (${done} of ${c0.list.length} answered) will be replaced. Questions you’ve already checked stay in Results.`)) return;
+    if ((done || (isMock(c0) && c0.started)) && !confirm(`Start a new quiz? Your unfinished “${quizName(c0)}” (${done} of ${c0.list.length} answered) will be replaced. Questions you’ve already checked stay in Progress.`)) return;
   }
   const all = PRACTICE; // practice quizzes never pick a mock-only question
   let list = [], name = "", mode = "practice";
@@ -1097,41 +1108,147 @@ function renderPanelRaw(){
   h += storageOk
     ? `<p class="saved">✓ Progress saved on this device. It stays when you come back in this browser.</p>`
     : `<p class="saved warn">This browser isn’t saving progress (it may be a private window). Use a normal window, or copy a progress code in Settings.</p>`;
-  h += `<p class="note">These are original, unofficial questions modelled on the official DFT practice papers and on GDC guidance. The keys are reasoned judgements, not official answers. Where yours differ in the middle ranks, compare the reasoning, and use “I disagree” to flag keys you think are wrong.</p>`;
   const panel = document.getElementById("panel"), sig = `${S.setId}:${nrev}:${got}`;
   panel.innerHTML = h;
   if (panel.dataset.sig !== sig && !calm()) { panel.classList.remove("anim"); void panel.offsetWidth; panel.classList.add("anim"); }
   panel.dataset.sig = sig;
 }
 
-// ---------- results ----------
+// ---------- progress (the Results page, renamed) ----------
+// Pure helpers for the Progress page: no page state, tested by tools/test-progress.mjs.
+// Whole days from day to the exam date, both "YYYY-MM-DD" (0 on the day, negative once it has passed); null without a date.
+function daysLeft(exam, day){
+  const t = x => /^\d{4}-\d{2}-\d{2}$/.test(x || "") ? Date.UTC(+x.slice(0, 4), +x.slice(5, 7) - 1, +x.slice(8, 10)) : NaN;
+  const n = Math.round((t(exam) - t(day)) / 864e5); return Number.isFinite(n) ? n : null;
+}
+// Today's target, simple enough to explain on the page. o: mocksLeft (numbered mocks not yet taken), since (whole days since
+// the last mock taken before today; Infinity if none), mistakes (waiting), unseen (practice questions never answered).
+// The days up to the eve of the exam share out what is left: the untaken mocks evenly spaced (a mock day is the mock plus
+// mistakes), and the mistakes and the unseen questions each spread evenly, rounded up to fives, 5 to 30 a day. The eve is
+// a light day (up to 10 mistakes); exam day has none. null without a date or once it has passed.
+function dailyGoal(left, o){
+  if (left == null || left < 0) return null;
+  const g = {mock: false, mistakes: 0, fresh: 0}; if (left === 0) return g;
+  if (left === 1) { g.mistakes = Math.min(o.mistakes || 0, 10); return g; }
+  const days = left - 1, share = n => n > 0 ? Math.min(n, Math.max(5, Math.min(30, Math.ceil(n / days / 5) * 5))) : 0;
+  g.mock = o.mocksLeft > 0 && o.since >= Math.max(1, Math.floor(days / o.mocksLeft));
+  g.mistakes = share(o.mistakes || 0);
+  if (!g.mock) g.fresh = share(o.unseen || 0);
+  return g;
+}
+// The goal in one line: "12 days left: 1 mock + 15 mistakes today".
+function goalText(left, g){
+  if (left == null) return "";
+  if (left < 0) return "Your exam date has passed.";
+  if (left === 0) return "It’s exam day: no practice today. Good luck!";
+  const s = (n, w) => `${n} ${w}${n === 1 ? "" : "s"}`;
+  const parts = [g.mock ? "1 mock" : "", g.mistakes ? s(g.mistakes, "mistake") : "", g.fresh ? s(g.fresh, "new question") : ""].filter(Boolean);
+  if (left === 1) return `1 day left: ${parts.length ? "just " + parts.join(" + ") + ", then rest" : "rest and skim your playbooks"}.`;
+  return `${s(left, "day")} left: ${parts.length ? parts.join(" + ") + " today" : "retake your weakest mock or do a Quick 10 today"}.`;
+}
+// Accuracy per theme from your latest attempt at each question: {theme: {g, m, n answered, total}}. ok(i) says which
+// questions count (practice ones, or a mock-only one once answered, as everywhere else).
+function themeAccuracy(att, bank, themes, ok){
+  const out = {}; Object.keys(themes).forEach(t => out[t] = {g: 0, m: 0, n: 0, total: 0});
+  bank.forEach((q, i) => { const x = out[q.g]; if (!x || !ok(i)) return; x.total++; const l = att[i], a = l && l.length ? l[l.length - 1] : null; if (a && a.m) { x.g += a.g; x.m += a.m; x.n++; } });
+  return out;
+}
+// The theme with the lowest share of marks among those with at least min answered (the first such in theme order on a tie); null if none.
+function weakestTheme(acc, min = 3){ let w = null; for (const t of Object.keys(acc)) { const x = acc[t]; if (x.n >= min && x.m && (!w || x.g / x.m < acc[w].g / acc[w].m)) w = t; } return w; }
+// Share of people (whole %, rounded down) whose first attempt scored below p. dist[v] = people who scored v%. null if nobody.
+function percentile(dist, p){
+  if (!Array.isArray(dist)) return null; let n = 0, below = 0;
+  dist.forEach((c, v) => { c = Number(c) > 0 ? Number(c) : 0; n += c; if (v < p) below += c; });
+  return n ? Math.floor(below / n * 100) : null;
+}
+// Practice papers are compared the same way as the mocks, as number PAPER_BASE + n (Paper 3 is 103; mocks are 1 to 99).
+const PAPER_BASE = 100;
+// Your first complete attempt at a set (every question answered), as a whole percentage, from the Completed sets history; null if none.
+// Only complete first attempts are compared, so a partly done or repeated paper is never ranked.
+function firstFull(hist, name, total){ const h = (hist || []).find(x => x && x.name === name && x.total === total && x.n === total && x.m > 0); return h ? Math.round(h.g / h.m * 100) : null; }
+// How everyone scored on each numbered mock (GET /api/mock-stats), fetched once a visit; offline it is simply left out.
+const peers = {};
+function loadPeers(no){
+  const x = peers[no]; if (x && (x.state !== "off" || Date.now() - x.at < 60000)) return;
+  peers[no] = {state: "loading"};
+  fetch(API + "/api/mock-stats?no=" + no).then(r => r.ok ? r.json() : null).catch(() => null).then(d => {
+    peers[no] = d && Number.isInteger(d.n) ? {state: "ok", data: d, fresh: true} : {state: "off", at: Date.now()};
+    if (S.view === "results") keepFocus(renderResults);
+  });
+}
+// "Better than X% of people" for score p on mock (or paper) number no; "" while loading or offline.
+function peerLine(no, p){
+  loadPeers(no); const st = peers[no], d = st && st.state === "ok" ? st.data : null, pc = d && d.dist ? percentile(d.dist, p) : null;
+  return !d ? "" : pc != null ? `Better than <b>${pc}%</b> of people` : `Not enough results yet to compare`;
+}
+let goalMemo = null; // today's target stays put as you work through it (worked out once per day and exam date)
+function todayHtml(){
+  const day = today(), left = daysLeft(S.exam, day), done = S.days[day] ? S.days[day].n : 0;
+  const mockDay = r => dkey(new Date(r.created)), mocksToday = (S.mocks || []).filter(r => mockDay(r) === day).length;
+  let h = `<div class="pgoal"><p class="xhead">Today</p>`;
+  if (left != null && left >= 0) {
+    const key = day + "|" + S.exam;
+    if (!goalMemo || goalMemo.key !== key) {
+      const before = (S.mocks || []).filter(r => r.mockNo && mockDay(r) < day), last = before.length ? Math.max(...before.map(r => r.created)) : 0;
+      goalMemo = {key, g: dailyGoal(left, {mocksLeft: MOCK_ORDER.filter(n => !before.some(r => r.mockNo === n)).length, since: last ? daysLeft(day, mockDay({created: last})) : Infinity,
+        mistakes: mistakesList().length, unseen: PRACTICE.filter(i => !S.att[i]).length})};
+    }
+    const g = goalMemo.g, target = g.mistakes + g.fresh, met = left > 0 && done >= target && (!g.mock || mocksToday);
+    h += `<p class="pgline">${esc(goalText(left, g))}</p>`;
+    if (left > 0) h += `<p class="muted">So far today: ${done} question${done === 1 ? "" : "s"} answered${mocksToday ? ` · ${mocksToday} mock${mocksToday === 1 ? "" : "s"} done` : ""}${met ? " · <b>goal met ✓</b>" : ""}</p>`;
+    const nx = nextMock(), btns = [g.mock && nx && !mocksToday ? `<button type="button" class="btn small primary" data-act="build" data-kind="mock" data-arg="${nx}">Start ${esc(mockLabel(nx))}</button>` : "",
+      g.mistakes && mistakesList().length ? `<button type="button" class="btn small${g.mock ? "" : " primary"}" data-act="build" data-kind="mistakes">Practise my mistakes</button>` : "",
+      g.fresh ? `<button type="button" class="btn small" data-act="build" data-kind="quick">Quick 10</button>` : ""].filter(Boolean);
+    if (btns.length && !met) h += `<div class="row">${btns.join("")}</div>`;
+  } else {
+    const nm = mistakesList().length;
+    h += `<p class="pgline">${left == null ? "Set your SJT date for a daily target and countdown." : esc(goalText(left, null))}</p>`;
+    if (nm) h += `<div class="wrow"><span class="muted">${nm} mistake${nm === 1 ? "" : "s"} waiting (questions where your latest attempt lost marks), oldest first.</span><button type="button" class="btn small" data-act="build" data-kind="mistakes">Practise my mistakes</button></div>`;
+  }
+  h += `<div class="pgdate"><label for="examdate">Your SJT date</label><input type="date" id="examdate" value="${esc(S.exam)}" min="${day}">${S.exam ? `<button type="button" class="btn small" data-act="exam-clear">Clear</button>` : ""}</div>`;
+  if (left != null && left > 1) h += `<details class="pghow"><summary>How is this worked out?</summary><p class="muted">The days before the eve of your exam share out what’s left: mocks you haven’t taken are spaced evenly (a mock day is the mock plus mistakes), and your mistakes and never-answered questions are spread evenly, in fives, 5 to 30 a day. The day before the exam is a light day. The streak counts days in a row with at least one answer.</p></details>`;
+  return h + `</div>`;
+}
+function themesHtml(acc){
+  const ts = Object.keys(THEMES), w = weakestTheme(acc), r = t => acc[t].m ? acc[t].g / acc[t].m : 2;
+  let h = `<h3 class="bsub">By theme</h3><div class="doms pgthemes">` + ts.slice().sort((a, b) => r(a) - r(b)).map(t => { const x = acc[t];
+    return `<div class="dom${t === w ? " weak" : ""}"><span><a href="#guide-${t}">${THEMES[t]}</a> <small class="muted">${x.n}/${x.total}</small>${t === w ? ` <b class="pgbadge">Weakest</b>` : ""}</span><span>${x.n ? pct(x.g, x.m) + "%" : "–"}</span><div class="bar" role="img" aria-label="${THEMES[t]}: ${x.n ? pct(x.g, x.m) + "% over " + x.n + " answered" : "not answered yet"}"><i style="width:${pct(x.g, x.m)}%"></i></div></div>`; }).join("") + `</div>`;
+  h += w ? `<div class="row pgdrill"><button type="button" class="btn primary" data-act="build" data-kind="theme" data-arg="${w}">Drill my weakest theme: ${THEMES[w]}</button><a class="btn" href="#guide-${w}">Read its playbook</a></div>`
+    : `<p class="muted">Answer at least 3 questions in a theme to find your weakest.</p>`;
+  return h;
+}
+// Your first attempt at each numbered mock against everyone's first attempts (first, so retakes don't flatter anyone).
+function peersHtml(){
+  const taken = MOCK_ORDER.map(n => ({n, a: mockAttempts(n)})).filter(x => x.a.length);
+  let h = `<h3 class="bsub">Mock exams</h3>`;
+  if (!taken.length) return h + `<div class="wrow"><span class="muted">Finish a mock to see how your score compares with everyone who sat it.</span><button type="button" class="btn small" data-act="view" data-v="mocks">Open Mock exams</button></div>`;
+  h += `<ul class="pgmocks">` + taken.map(({n, a}) => {
+    const first = a[0], best = a.reduce((b, x) => x.p > b.p ? x : b, first), vs = peerLine(n, first.p);
+    return `<li><span><b>${mockLabel(n)}</b> · first attempt <span class="pill ${band(first.got, first.max || 1)}">${first.p}%</span>${a.length > 1 ? ` · best ${best.p}%` : ""}</span>${vs ? `<span class="muted${peers[n].fresh ? " pg-new" : ""}">${vs}</span>` : peers[n].state === "loading" ? `<span class="muted" aria-hidden="true">&nbsp;</span>` : ""}</li>`; }).join("") + `</ul>`;
+  taken.forEach(({n}) => { delete peers[n].fresh; }); // the line fades in once, when it arrives (it holds its space while loading)
+  return h + `<div class="row"><button type="button" class="btn small" data-act="view" data-v="mocks">Open Mock exams</button></div>`;
+}
 function renderResults(){
   const el = document.getElementById("view-results");
   const answered = Q.map((_, i) => i).filter(i => lastAtt(i)), nNew = answered.filter(mockOnly).length; // nNew: brand-new mock questions answered, shown beside the practice total
   let g = 0, m = 0; answered.forEach(i => { const a = lastAtt(i); g += a.g; m += a.m; });
+  const st = streaks(), left = daysLeft(S.exam, today());
+  let h = `<div class="card"><h2 class="bh" tabindex="-1">Progress</h2><div class="tiles pgtiles">
+    <div class="tile"><span class="tl">Exam in</span><span class="tv">${left == null ? "–" : left < 0 ? "Passed" : left === 0 ? "Today" : `${left}<small> day${left === 1 ? "" : "s"}</small>`}</span></div>
+    <div class="tile"><span class="tl">Answered</span><span class="tv">${answered.length - nNew}<small> / ${PRACTICE.length}${nNew ? ` · +${nNew} brand-new` : ""}</small></span></div>
+    <div class="tile"><span class="tl">Average score</span><span class="tv">${answered.length ? pct(g, m) + "%" : "–"}</span></div>
+    <div class="tile"><span class="tl">Day streak</span><span class="tv">${st.cur}<small> · best ${st.best}</small></span></div></div>`;
+  h += todayHtml();
   if (!answered.length) {
-    el.innerHTML = `<div class="card"><h2 class="bh">Results</h2><p>You haven’t marked any questions yet. Check an answer in practice mode, or mark a set in exam mode, and your results will build up here.</p><div class="actions"><button type="button" class="btn primary" data-act="view" data-v="practice">Start practising</button></div></div>`;
+    el.innerHTML = h + `<p>You haven’t marked any questions yet. Check an answer in practice mode, or mark a set in exam mode, and your progress builds up here.</p><div class="actions"><button type="button" class="btn primary" data-act="view" data-v="practice">Start practising</button></div></div>`;
     return;
   }
-  const byD = {}, byG = {};
+  const byD = {}, byG = themeAccuracy(S.att, Q, THEMES, forPractice); // a mock-only question counts once answered
   Object.keys(DOMAINS).forEach(d => byD[d] = {g:0, m:0, n:0, total:0});
-  Object.keys(THEMES).forEach(t => byG[t] = {g:0, m:0, n:0, total:0});
-  Q.forEach((q, i) => { if (!forPractice(i)) return; /* a mock-only question counts here once answered */ byD[q.d].total++; byG[q.g].total++; const a = lastAtt(i); if (a) { byD[q.d].g += a.g; byD[q.d].m += a.m; byD[q.d].n++; byG[q.g].g += a.g; byG[q.g].m += a.m; byG[q.g].n++; } });
+  Q.forEach((q, i) => { if (!forPractice(i)) return; byD[q.d].total++; const a = lastAtt(i); if (a) { byD[q.d].g += a.g; byD[q.d].m += a.m; byD[q.d].n++; } });
   const themesSorted = Object.keys(THEMES).filter(t => byG[t].n).sort((x, y) => byG[x].g / byG[x].m - byG[y].g / byG[y].m);
-  const weakest = themesSorted.filter(t => byG[t].n >= 2).slice(0, 3);
-  const bestD = Object.keys(DOMAINS).filter(d => byD[d].n).sort((x, y) => byD[y].g / byD[y].m - byD[x].g / byD[x].m)[0];
-
-  let h = `<div class="card"><h2 class="bh">Results</h2><p class="muted">Based on your latest attempt at each question.</p><div class="tiles">
-    <div class="tile"><span class="tl">Questions answered</span><span class="tv">${answered.length - nNew}<small> / ${PRACTICE.length}${nNew ? ` · +${nNew} brand-new` : ""}</small></span></div>
-    <div class="tile"><span class="tl">Average score</span><span class="tv">${pct(g, m)}%</span></div>
-    <div class="tile"><span class="tl">Strongest area</span><span class="tv sm">${bestD ? DOMAINS[bestD] : "–"}</span></div>
-    <div class="tile"><span class="tl">Completed sets</span><span class="tv">${S.hist.length}</span></div></div>`;
-  if (weakest.length && !(window.StudyPlan && StudyPlan.enough())) { // the study plan below shows these, with the same buttons, once there are enough answers
-    h += `<div class="callout"><p class="xhead">Your weakest themes</p>` + weakest.map(t => `<div class="wrow"><span><b>${THEMES[t]}</b> · ${pct(byG[t].g, byG[t].m)}% over ${byG[t].n} question${byG[t].n === 1 ? "" : "s"}</span><span class="row"><a class="btn small" href="#guide-${t}">Read playbook</a><button type="button" class="btn small primary" data-act="build" data-kind="theme" data-arg="${t}">Practise</button></span></div>`).join("") + `</div>`;
-  }
-  { const nm = mistakesList().length; if (nm && !(window.StudyPlan && StudyPlan.enough())) h += `<div class="callout"><p class="xhead">My mistakes</p><div class="wrow"><span>${nm} mistake${nm === 1 ? "" : "s"} waiting (questions where your latest attempt lost marks), oldest first.</span><button type="button" class="btn small primary" data-act="build" data-kind="mistakes">Practise my mistakes</button></div></div>`; }
-  h += mockLineHtml();
-  if (window.StudyPlan) h += StudyPlan.html();
+  h += themesHtml(byG) + peersHtml();
+  if (window.StudyPlan) h += `<details class="rdet" data-k="studyplan"${ui.rdet.studyplan ? " open" : ""}><summary>Study plan</summary><div class="rdet-b">${StudyPlan.html()}</div></details>`;
   h += "<!--rs-->" + activityHtml();
   h += `<h3 class="bsub">Progress over time</h3>` + progressChart();
   h += `<h3 class="bsub">By area</h3><div class="doms wide">` + Object.keys(DOMAINS).map(d => { const x = byD[d]; return `<div class="dom"><span>${DOMAINS[d]} <small class="muted">${x.n}/${x.total}</small></span><span>${x.n ? pct(x.g, x.m) + "%" : "–"}</span><div class="bar"><i style="width:${pct(x.g, x.m)}%"></i></div></div>`; }).join("") + `</div>`;
@@ -1147,11 +1264,12 @@ function renderResults(){
       h += `<p class="plabel">Slowest questions</p>` + slow.map(x => `<div class="wrow"><span><b>Q${x.i + 1}</b> · ${esc(THEMES[Q[x.i].g] || "")}</span><span>${mm(x.s)} · ${pct(x.g, x.m)}%</span>${mockOnly(x.i) ? "" : `<button type="button" class="btn small" data-act="open-q" data-qi="${x.i}">Open</button>`}</div>`).join(""); // a brand-new mock question has no paper to open it in
     }
   }
-  h += `<h3 class="bsub">By theme</h3><div class="tscroll"><table class="rtable rt-theme"><thead><tr><th>Theme</th><th>Answered</th><th>Average</th><th></th></tr></thead><tbody>`;
+  h += `<h3 class="bsub">All themes</h3><div class="tscroll"><table class="rtable rt-theme"><thead><tr><th>Theme</th><th>Answered</th><th>Average</th><th></th></tr></thead><tbody>`;
   const themeOrder = themesSorted.concat(Object.keys(THEMES).filter(t => !byG[t].n));
   themeOrder.forEach(t => { const x = byG[t]; h += `<tr><td><a href="#guide-${t}">${THEMES[t]}</a></td><td>${x.n}/${x.total}</td><td>${x.n ? `<span class="pill ${band(x.g, x.m)}">${pct(x.g, x.m)}%</span>` : "–"}</td><td><button type="button" class="btn small" data-act="build" data-kind="theme" data-arg="${t}">Practise</button></td></tr>`; });
   h += `</tbody></table></div>`;
-  h += `<h3 class="bsub">By paper</h3><div class="doms wide">` + PAPER_IDS.map(id => { const P = PAPERS[id]; let pg = 0, pm = 0, n = 0; range(P.from, P.to).forEach(i => { const a = lastAtt(i); if (a) { pg += a.g; pm += a.m; n++; } }); return `<div class="dom"><span>${P.name} <small class="muted">${n}/32</small></span><span>${n ? pct(pg, pm) + "%" : "–"}</span><div class="bar"><i style="width:${pct(pg, pm)}%"></i></div></div>`; }).join("") + `</div>`;
+  h += `<h3 class="bsub">By paper</h3><div class="doms wide">` + PAPER_IDS.map(id => { const P = PAPERS[id]; let pg = 0, pm = 0, n = 0; range(P.from, P.to).forEach(i => { const a = lastAtt(i); if (a) { pg += a.g; pm += a.m; n++; } }); const ff = firstFull(S.hist, P.name, P.to - P.from), vs = ff == null ? "" : peerLine(PAPER_BASE + PAPER_IDS.indexOf(id) + 1, ff); // compared on your first complete attempt only
+    return `<div class="dom"><span>${P.name} <small class="muted">${n}/32</small></span><span>${n ? pct(pg, pm) + "%" : "–"}</span><div class="bar"><i style="width:${pct(pg, pm)}%"></i></div>${ff == null ? "" : `<small class="muted pgvs">First full attempt ${ff}%${vs ? " · " + vs : ""}</small>`}</div>`; }).join("") + `</div>`;
   if (S.hist.length) {
     h += `<h3 class="bsub">Completed sets</h3><div class="tscroll"><table class="rtable rt-hist"><thead><tr><th>Date</th><th>Set</th><th>Mode</th><th>Score</th></tr></thead><tbody>`;
     const claimed = new Set(S.hist.filter(x => x.c).map(x => x.c));
@@ -1180,18 +1298,12 @@ function renderMocks(){
       `<button type="button" class="btn small" data-act="mock-open" data-c="${a.r.created}" aria-label="Review ${name}${n ? `, attempt ${nth[a.r.created]}` : ""}, ${dayLabel(a.r.created)}">Review</button></li>`; }).join("") + `</ol>`;
   el.innerHTML = h + `</div>`;
 }
-// Results keeps only a short line about the mocks, with a way to the Mock exams tab.
-function mockLineHtml(){
-  const all = S.mocks || []; if (!all.length) return "";
-  const best = all.map(r => ({r, s: attemptScore(r)})).reduce((b, x) => !b || x.s.p > b.s.p ? x : b, null);
-  return `<div class="callout"><div class="wrow"><span><b>Mock exams</b> · ${all.length} mock${all.length === 1 ? "" : "s"} completed · best ${best.s.p}% (${best.r.mockNo ? mockLabel(best.r.mockNo) : "earlier random mock"})</span><button type="button" class="btn small" data-act="view" data-v="mocks">Open Mock exams</button></div></div>`;
-}
-// The Results page keeps the main story on top (your numbers, the study plan, progress, areas) and tucks the long reference tables into
+// The Progress page keeps the key numbers on top (your numbers, today's target, themes, mocks) and tucks everything else into
 // collapsible sections, so it reads as a short page. Each section starts with an <h3 class="bsub"> heading; open/closed is remembered.
 function tidyResults(h){
   const [head, tail] = h.split("<!--rs-->"); if (tail == null) return h;
   const parts = tail.split('<h3 class="bsub">').filter(Boolean).map(p => { const i = p.indexOf("</h3>"); return {title: p.slice(0, i), body: p.slice(i + 5)}; });
-  const keep = ["Progress over time", "By area"], order = ["By theme", "By paper", "Time per question", "Activity", "Completed sets"];
+  const keep = [], order = ["Progress over time", "By area", "Activity", "Time per question", "All themes", "By paper", "Completed sets"];
   const shown = keep.map(t => parts.find(x => x.title === t)).filter(Boolean), folded = order.map(t => parts.find(x => x.title === t)).filter(Boolean);
   const k = t => t.toLowerCase().replace(/[^a-z]+/g, "");
   return head + shown.map(x => `<h3 class="bsub">${x.title}</h3>${x.body}`).join("") +
@@ -1254,7 +1366,7 @@ function renderGuide(){
   const el = document.getElementById("view-guide");
   if (el.dataset.ready) return;
   let toc = GUIDE.map(g => `<a href="#guide-${g.id}">${g.title}</a>`).join("") + `<a href="#guide-standards">GDC Standards</a><a href="#guide-guidance">Other guidance</a><a href="#guide-themes">Theme playbooks</a>`;
-  let h = `<div class="card guide"><h2 class="bh">Pattern guide</h2><p class="muted">The logic behind the keys, drawn from the official DFT practice papers, GDC guidance and hundreds of practice items.</p><div class="gwrap"><nav class="toc gside" aria-label="Guide contents">${toc}</nav><div class="gbody">`;
+  let h = `<div class="card guide"><h2 class="bh">Pattern guide</h2><p class="muted">The logic behind the keys, drawn from the official DFT practice papers, GDC guidance and hundreds of practice items.</p><p class="muted">New here? <button type="button" class="tourlink" data-act="tour">Take the tour</button> for a one-minute look round the site.</p><div class="gwrap"><nav class="toc gside" aria-label="Guide contents">${toc}</nav><div class="gbody">`;
   GUIDE.forEach(g => { h += `<section class="gsec" id="guide-${g.id}"><h3>${g.title}</h3>${g.html}</section>`; });
   h += standardsHtml();
   h += `<section class="gsec" id="guide-themes"><h3>Theme playbooks</h3><p>Every question belongs to one of these themes. The “Pattern” box after each question links to its playbook.</p><nav class="toc">${Object.keys(THEMES).map(t => `<a href="#guide-${t}">${THEMES[t]}</a>`).join("")}</nav></section>`;
@@ -1308,6 +1420,7 @@ function renderSettingsRaw(){
   const standalone = window.matchMedia && window.matchMedia("(display-mode: standalone)").matches;
   let h = `<div class="card"><h2 class="bh">Settings</h2>`;
   h += `<section class="sset"><h3>How your progress is saved</h3><p class="muted">Your answers, scores and settings are saved automatically in this browser, with a backup copy, so they’re still here when you come back. There’s no account, and nothing leaves your device apart from anonymous answers for the community stats. Progress can be lost if you clear your browsing data, use a private window, or (in Safari) don’t visit for 7 days. Adding the site to your home screen avoids the Safari limit. To carry on across devices automatically, use <b>Sync</b> in the top bar: pick a username and PIN, and your progress saves to the site’s server and loads on any device with the same pair.</p></section>`;
+  h += `<section class="sset"><h3>Welcome tour</h3><p class="muted">A one-minute look round the main screens: where to practise, the mock exams, your progress and Sync.</p><div class="row"><button type="button" class="btn small" data-act="tour">Take the tour</button></div></section>`;
   const snaps = snapshots();
   if (snaps.length) h += `<section class="sset"><h3>Copies replaced by Sync</h3><p class="muted">When you chose to replace one copy of your progress with another, the replaced copy was kept here for ${KEEP_DAYS} days in case it was the wrong choice. Restoring one makes it this device’s progress (and, with Sync on, your other devices’); the progress it replaces is kept here too.</p><ul>` +
     snaps.slice().reverse().map(x => `<li>${snapLabel(x)}: ${snapCount(x)} questions answered, replaced ${ago(x.at)} <button type="button" class="btn small" data-act="snap-restore" data-k="${x.at}">Restore this copy</button></li>`).join("") + `</ul></section>`;
@@ -1386,6 +1499,7 @@ function fromHash(){
     renderCiteBack();
     return;
   }
+  if (h === "progress") h = "results"; // the Progress page is the old Results view, so #results links still land on it
   if (!h || ["practice", "mocks", "results", "settings"].includes(h)) {
     S.view = h || "practice"; persistAsIs(); render();
     const o = ui.citeFrom; ui.citeFrom = null;
@@ -1420,6 +1534,7 @@ document.addEventListener("click", async e => {
     case "skip": if (S.view !== "practice") location.hash = "practice"; setTimeout(() => { scrollToCard(); focusCard(); }, 0); break;
     case "dismiss-notice": ui0.rewritten = false; render(); break;
     case "view": if (location.hash === "#" + b.dataset.v) fromHash(); else location.hash = b.dataset.v; break;
+    case "tour": startTour(); break;
     case "set": S.setId = b.dataset.id; ui.building = false; ui.summary = false; ui.warn = false; ui.confirmMark = ui.confirmReset = false; timerOn = false; autoPausedSet = null; persistAsIs(); render(); document.querySelector(`#ptabs [data-id="${b.dataset.id}"]`)?.focus({preventScroll: true}); break;
     case "new": ui.building = !ui.building; render(); scrollToCard(); break;
     case "cancel-build": ui.building = false; render(); break;
@@ -1433,6 +1548,7 @@ document.addEventListener("click", async e => {
     case "mock-start": if (window.Exam && Exam.open()) break; // exam overlay (exam.js): its Ready To Begin dialog starts the clock
       set.started = true; set.el = 0; delete set.qt; timerOn = true; ui.warned = {}; save(); mockEvent("start", set, "plain"); render(); focusCard(); announce(`Mock started. You have ${Math.round(set.limit / 60)} minutes.`); break;
     case "summary": ui.summary = true; render(); scrollToCard(); break;
+    case "exam-clear": S.exam = ""; save(); render(); document.getElementById("examdate")?.focus({preventScroll: true}); break;
     case "mock-open": {
       const created = +b.dataset.c, cur = S.sets.custom;
       const m = cur && cur.created === created && cur.marked ? cur : unpackMock((S.mocks || []).find(x => x.created === created));
@@ -1464,7 +1580,7 @@ document.addEventListener("click", async e => {
       const a = ansOf(set, qi), o = +b.dataset.o, d = +b.dataset.d, pos = a.ord.indexOf(o), np = pos + d;
       if (np < 0 || np > 4) return;
       const before = rankPositions();
-      [a.ord[pos], a.ord[np]] = [a.ord[np], a.ord[pos]]; a.set = true; save(); render(); glide(before); announce(`Option ${L[o]} moved to position ${np + 1}.`);
+      const wasSet = a.set; [a.ord[pos], a.ord[np]] = [a.ord[np], a.ord[pos]]; a.set = true; save(); render(set.mode === "practice" || wasSet); glide(before); announce(`Option ${L[o]} moved to position ${np + 1}.`);
       const f = document.getElementById(`mv-${qi}-${o}-${d < 0 ? "up" : "down"}`), alt = document.getElementById(`mv-${qi}-${o}-${d < 0 ? "down" : "up"}`);
       (f && !f.disabled ? f : alt)?.focus();
       break;
@@ -1541,6 +1657,7 @@ document.addEventListener("click", async e => {
 });
 document.addEventListener("change", e => {
   if (e.target.id === "share") { S.share = e.target.checked; save(); if (S.share) flush(); }
+  if (e.target.id === "examdate") { const v = e.target.value; if (!v || /^\d{4}-\d{2}-\d{2}$/.test(v)) { S.exam = v; save(); render(); } }
 });
 function refreshStats(qi){ keepFocus(() => { const box = document.getElementById("stats-" + qi); if (box) box.outerHTML = statsHtml(qi); }); }
 function markSet(){
@@ -1925,15 +2042,114 @@ window.addEventListener("online", flushMockEvents);
 // always open there, answered or not), the exam screen or a running mock, and never with a clock running, a form, a
 // confirmation, a drag, the Sync panel or a study plan being written. Takes plain facts so tools/test-update.mjs can check it.
 function updateMayReload(f){ return ["mocks", "results", "guide", "settings"].includes(f.view) && !f.exam && !f.mock && !f.timer && !f.building && !f.typing && !f.feedback && !f.dialog; }
-const BUILD = "56fd34f4d5"; // this page's build version, set by tools/build.js
+const BUILD = "f6ac049549"; // this page's build version, set by tools/build.js
+// What's on screen right now, for updateMayReload and the welcome tour (an open tour counts as a dialog).
+const quietFacts = () => { const c = S.sets.custom; return {view: S.view, exam: !!(window.Exam && Exam.isOpen()), mock: !!c && mockLive(c) && !c.left, timer: timerOn, building: ui.building,
+  typing: busyTyping() || !!(document.getElementById("code-in") || {}).value || !!ui.code, feedback: ui.fbOpen != null, dialog: !!syncUi.conflict || !!document.querySelector(".dragging, .confirm, .sp-go:disabled, .tour")}; };
+
+// ---------- welcome tour ----------
+// A short look round the real screens, shown once to everyone (new and existing visitors), and again from Settings or the
+// Guide. "Seen" is kept only in this browser (never in synced progress); without storage it never starts by itself. It moves
+// between tabs without touching the address bar, so it adds no history, can't set off an update reload and saves nothing.
+const TOUR_KEY = "dft-tour";
+const tourTab = v => [`.views [data-v="${v}"]`, `.nd-tabbar [data-v="${v}"]`]; // top tabs, or the bottom bar on a phone
+const TOUR = [
+  {v: "practice", at: tourTab("practice"), t: "Welcome! Start in Practice", b: "Nine papers of practice questions, plus quick quizzes by area or theme. Answer a question, press Check answer, and you’ll see the key and the reasoning."},
+  {v: "practice", at: [".nd-revmis:not([hidden])", "#newquiz"], t: "My mistakes", b: "Questions you lose marks on collect in My mistakes, a rolling quiz with the oldest first. After a wrong answer, Explain my mistake (Beta) gives a short AI explanation of where it went wrong."},
+  {v: "mocks", at: tourTab("mocks"), t: "Mock exams", b: "Fixed, timed 56-question papers marked like the real test. Every attempt you finish is kept here."},
+  {v: "results", at: [".pgoal"], t: "Progress and your exam countdown", b: "Your scores by theme and how your mocks compare with everyone else’s. Add your SJT date here for a countdown and a daily target."},
+  {v: "guide", at: tourTab("guide"), t: "Guide", b: "How the answers are keyed, a playbook for each theme, and the GDC Standards in plain English."},
+  {v: "settings", at: tourTab("settings"), t: "Settings", b: "Move your progress to another device, install the app, choose a colour, or take this tour again."},
+  {v: null, at: ["#syncbtn"], t: "Sync", b: "Pick a username and PIN to carry your progress between your phone and laptop. No email needed."}
+];
+// true / false, or null when this browser won't store anything (then the tour only opens when asked for).
+function tourSeen(){ try { return localStorage.getItem(TOUR_KEY) === "1"; } catch(e) { return null; } }
+// Starts by itself only if not seen, never over the update banner, and only on a quiet screen: one where an update may
+// reload, or Practice with nothing under way (no quiz, no exam-mode paper, no half-answered question).
+function tourMayStart(f){ return f.seen === false && !f.update && (updateMayReload(f) || f.view === "practice" && f.idle && updateMayReload({...f, view: "results"})); }
+function tourFacts(){ const set = curSet(), qi = curQi(); return {...quietFacts(), seen: tourSeen(), update: !!document.getElementById("update-bar"), idle: S.setId !== "custom" && set.mode !== "exam" && (!started(set, qi) || revealed(set, qi))}; }
+let tour = null; // {i, from: where you were, el: the overlay}
+function startTour(){
+  if (tour) return;
+  tour = {i: 0, from: {view: S.view, y: window.scrollY, cite: ui.citeFrom, focus: document.activeElement}};
+  document.querySelectorAll(".nd-tip").forEach(t => t.remove()); // the Sync tip bubble: the tour covers Sync
+  const el = tour.el = document.createElement("div"); el.className = "tour";
+  el.innerHTML = `<div class="tour-ring" aria-hidden="true"></div><div class="tour-card" role="dialog" aria-modal="true" aria-labelledby="tour-t" aria-describedby="tour-b" tabindex="-1">` +
+    `<div aria-live="polite"><p class="tour-n"></p><h2 class="tour-t" id="tour-t"></h2><p class="tour-b" id="tour-b"></p></div>` +
+    `<div class="tour-btns"><button type="button" class="btn small tour-skip">Skip tour</button><span><button type="button" class="btn small tour-back">Back</button><button type="button" class="btn small primary tour-next">Next</button></span></div></div>`;
+  el.querySelector(".tour-skip").onclick = () => endTour();
+  el.querySelector(".tour-back").onclick = () => tourStep(tour.i - 1);
+  el.querySelector(".tour-next").onclick = () => tour.i < TOUR.length - 1 ? tourStep(tour.i + 1) : endTour();
+  el.addEventListener("keydown", e => {
+    const k = e.key, card = el.querySelector(".tour-card");
+    if (k === "Escape") endTour();
+    else if (k === "ArrowRight") el.querySelector(".tour-next").click();
+    else if (k === "ArrowLeft") tourStep(tour.i - 1);
+    else if (k === "Tab") { // focus stays in the card
+      const b = [...card.querySelectorAll("button:not([hidden])")], i = b.indexOf(document.activeElement);
+      b[i < 0 ? 0 : (i + (e.shiftKey ? b.length - 1 : 1)) % b.length].focus();
+    }
+    else return;
+    e.preventDefault(); e.stopPropagation();
+  });
+  [...document.body.children].forEach(c => { if (!c.inert && c.tagName !== "SCRIPT") { c.inert = true; c.dataset.tourInert = "1"; } }); // the page behind can't be reached
+  document.body.appendChild(el);
+  window.addEventListener("resize", tourPlace); window.addEventListener("scroll", tourPlace, {passive: true});
+  tourStep(0);
+}
+function tourStep(i){
+  if (!tour || i < 0 || i >= TOUR.length) return;
+  const s = TOUR[tour.i = i], el = tour.el;
+  if (s.v && s.v !== S.view) { S.view = s.v; render(); window.scrollTo({top: 0, behavior: "instant"}); }
+  el.querySelector(".tour-n").textContent = `Step ${i + 1} of ${TOUR.length}`;
+  el.querySelector(".tour-t").textContent = s.t; el.querySelector(".tour-b").textContent = s.b;
+  el.querySelector(".tour-back").hidden = !i;
+  el.querySelector(".tour-next").textContent = i === TOUR.length - 1 ? "Done" : "Next";
+  const t = tourTarget(s); if (t && getComputedStyle(t).position !== "fixed" && !t.closest(".top")) t.scrollIntoView({block: "center", behavior: "instant"});
+  tourPlace(); setTimeout(tourPlace, 350); // again once a new tab has slid into place
+  el.querySelector(".tour-next").focus({preventScroll: true});
+}
+// The first of a step's elements that's showing (the top tabs on a computer, the bottom bar on a phone).
+function tourTarget(s){ for (const q of s.at) { const t = document.querySelector(q); if (t && t.getClientRects().length) return t; } return null; }
+// Rings the element and puts the card below it, or above it if there's no room, kept 16px inside the screen.
+function tourPlace(){
+  if (!tour) return;
+  const ring = tour.el.querySelector(".tour-ring"), card = tour.el.querySelector(".tour-card"), t = tourTarget(TOUR[tour.i]);
+  const vw = document.documentElement.clientWidth, vh = window.innerHeight, w = card.offsetWidth, h = card.offsetHeight;
+  ring.hidden = !t;
+  if (!t) { card.style.left = (vw - w) / 2 + "px"; card.style.top = Math.max(16, (vh - h) / 2) + "px"; return; }
+  const r = t.getBoundingClientRect(), p = 6, top = Math.max(r.top - p, 4), bottom = Math.min(r.bottom + p, vh - 4);
+  Object.assign(ring.style, {left: r.left - p + "px", top: top + "px", width: r.width + 2 * p + "px", height: Math.max(0, bottom - top) + "px"});
+  const below = bottom + 12, above = top - 12 - h;
+  card.style.top = (below + h <= vh - 16 ? below : above >= 16 ? above : Math.max(16, vh - h - 16)) + "px";
+  card.style.left = Math.min(Math.max(16, r.left + r.width / 2 - w / 2), vw - w - 16) + "px";
+}
+// Finished or skipped: never auto-start again, and put you back where you were.
+function endTour(){
+  if (!tour) return;
+  const f = tour.from; tour.el.remove(); tour = null;
+  try { localStorage.setItem(TOUR_KEY, "1"); } catch(e) {}
+  window.removeEventListener("resize", tourPlace); window.removeEventListener("scroll", tourPlace);
+  document.querySelectorAll("[data-tour-inert]").forEach(c => { c.inert = false; delete c.dataset.tourInert; });
+  if (S.view !== f.view) { S.view = f.view; ui.citeFrom = f.cite; persistAsIs(); render(); renderCiteBack(); } // as a tab press would, without a new history entry
+  window.scrollTo({top: f.y, behavior: "instant"});
+  const back = f.focus && f.focus.isConnected && f.focus !== document.body ? f.focus : document.querySelector(`[data-act="tour"]`);
+  if (back && back.getClientRects().length) back.focus({preventScroll: true});
+}
+// First visit after this release: let the page settle, then wait for a quiet, visible screen.
+if (tourSeen() === false) {
+  const wait = setInterval(() => {
+    if (tour || tourSeen() !== false) { clearInterval(wait); return; }
+    if (document.visibilityState === "visible" && tourMayStart(tourFacts())) { clearInterval(wait); startTour(); }
+  }, 2500);
+}
+
 if ("serviceWorker" in navigator && location.protocol !== "file:") {
   // A new version installs in the background. On a quiet screen (Results, Guide, Settings) the page reloads once so
   // visitors see it straight away; anywhere else a banner lets them choose, and the update is applied the next time they
   // open a quiet screen. The reload never marks progress as changed, so Sync can't mistake it for new answers.
   let reloading = false, swReg = null, lastCheck = Date.now(), updateWaiting = false, newest = "", dismissed = "";
   const markUpdateReload = () => { try { sessionStorage.setItem("dft-update-reload", "1"); } catch (e) {} };
-  const quietFacts = () => { const c = S.sets.custom; return {view: S.view, exam: !!(window.Exam && Exam.isOpen()), mock: !!c && mockLive(c) && !c.left, timer: timerOn, building: ui.building,
-    typing: busyTyping() || !!(document.getElementById("code-in") || {}).value || !!ui.code, feedback: ui.fbOpen != null, dialog: !!syncUi.conflict || !!document.querySelector(".dragging, .confirm, .sp-go:disabled")}; };
   const reloadNow = () => { reloading = true; markUpdateReload(); keepUnsaved(); location.reload(); };
   const reloadIfQuiet = () => { if (updateWaiting && !reloading && updateMayReload(quietFacts())) { reloadNow(); return true; } return false; };
   const showUpdateBar = () => {

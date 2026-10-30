@@ -11,7 +11,7 @@ An unofficial practice site for the UK Dental Foundation Training (DFT) Situatio
 - Quick 10 quizzes, and weak-spot, area and theme quizzes
 - Gentle animations between questions and on reveals, switched off for anyone who prefers reduced motion
 - A modern design layer (`design.css`, `design.js`): glass header with a sliding nav pill and theme toggle, progress tiles, a timed-mock card, score rings and gauges, smoother drag-to-rank, a prominent Flag for review button, and a one-time tip explaining Sync
-- Results by area and by theme, your weakest themes, and progress over time
+- A Progress page: SJT-date countdown with a daily target and streak, accuracy by theme with a "Drill my weakest theme" button, how your mock scores compare with everyone who sat them, plus results by area, progress over time and every completed set
 - A built-in pattern guide with a playbook for each of the 12 themes
 - Community stats that show how everyone else answered, plus an "I disagree with this key" button
 - Works offline and can be installed on a phone. Progress codes move your progress between devices

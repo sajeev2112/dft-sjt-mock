@@ -36,17 +36,17 @@ const withNew = items => bankSrc.replace("const Q = [", "const RW_M1 = " + J(ite
 function app(bankText){
   const els = {};
   const ctx = {console, crypto: globalThis.crypto, location: {protocol: "https:", hostname: "example.org", hash: ""}, window: {addEventListener(){}, matchMedia: null},
-    document: {querySelector: () => null, querySelectorAll: () => [], addEventListener(){}, getElementById: id => els[id] || (els[id] = {innerHTML: "", id})}, confirm: () => true, TextEncoder, TextDecoder};
+    document: {querySelector: () => null, querySelectorAll: () => [], addEventListener(){}, getElementById: id => els[id] || (els[id] = {innerHTML: "", id})}, confirm: () => true, TextEncoder, TextDecoder, fetch: () => Promise.reject(new Error("offline"))};
   vm.createContext(ctx);
   vm.runInContext(bankText, ctx);
   vm.runInContext(cut('"use strict";', "const ui0") + cut("// ---------- set helpers ----------", "// ---------- recording attempts") +
     cut("// ---------- timed mock ----------", "function timeUp(){") + cut("function mistakeOrder(att, now){", "// ---------- side panel") +
-    cut("// ---------- results ----------", "// ---------- guide ----------") + `
+    cut("// ---------- progress (the Results page, renamed) ----------", "// ---------- guide ----------") + `
     var ui = {rdet: {}, warned: {}, summary: false}, timerOn = false, autoPausedSet = null, saved = 0, PLAYBOOKS = {};
     function save(){ saved++; } function render(){} function scrollToCard(){} function markSet(){} function focusCard(){} function announce(){}
     function addAttemptFor(qi, g, m, t){ (S.att[qi] = S.att[qi] || []).push({g, m, t: t || Date.now()}); }
     globalThis.T = {Q, DOMAINS, THEMES, PAPER_IDS, PAPERS, mockPapers, newMockPaper, NEW_LIST, NEW_MOCK, MOCK_ORDER, mockLabel, mockNoOf, mockCountWord, PRACTICE, forPractice, flagList,
-      mockPaperList, nextMock, buildQuiz, builderHtml, renderResults, renderMocks, mockCardsHtml, mockLineHtml, mockSummaryHtml, quizName, setName, histName, weakList, mistakesList,
+      mockPaperList, nextMock, buildQuiz, builderHtml, renderResults, renderMocks, mockCardsHtml, peersHtml, mockSummaryHtml, quizName, setName, histName, weakList, mistakesList,
       normalise, mergeState, fresh, newSet, packMock, unpackMock, addMocks, addAttemptFor, get S(){ return S; }, set S(v){ S = v; }};`, ctx);
   ctx.T.els = els; return ctx.T;
 }
@@ -101,7 +101,7 @@ check("...its card (the fixed paper it was) shows Completed under Mock 3", /data
 const u = N.unpackMock(N.S.mocks[0]);
 check("...review summary heading, Retake and quiz name all say Mock 3 (the stored name 'Mock 2' is never shown)", N.quizName(u) === "Mock 3" && (N.S.sets.custom = u, N.S.setId = "custom", /Mock 3 complete/.test(N.mockSummaryHtml(u)) && /Retake Mock 3/.test(N.mockSummaryHtml(u)) && !/Mock 2/.test(N.mockSummaryHtml(u))));
 N.S.sets.custom = null; N.S.setId = "p1";
-check("...Results line names it Mock 3", /\(Mock 3\)/.test(N.mockLineHtml()));
+check("...the Progress page's mock list names it Mock 3", /<b>Mock 3<\/b> · first attempt/.test(N.peersHtml()));
 N.renderResults(); const rh = N.els["view-results"].innerHTML;
 check("...Completed sets row shows Mock 3, not its stored 'Mock 2'", /<td>Mock 3 <button[^>]*data-act="mock-open"/.test(rh) && !/<td>Mock 2/.test(rh));
 check("...a row whose mock isn't kept falls back to its stored name", N.histName({name: "Timed mock"}, 0) === "Timed mock");

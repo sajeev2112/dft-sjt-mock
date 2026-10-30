@@ -43,6 +43,11 @@
     if (getComputedStyle(b).position === "static") b.style.position = "relative";
     b.style.overflow = "hidden"; b.appendChild(d); setTimeout(() => d.remove(), 600);
   });
+  // a folded section the visitor opens fades in (CSS: details.nd-open); re-drawn open sections don't replay it
+  document.addEventListener("click", e => {
+    const s = e.target.closest("summary"), d = s && s.parentElement;
+    if (d && d.tagName === "DETAILS") d.classList.toggle("nd-open", !d.open && !reduce());
+  });
 
   // ---------- helpers ----------
   const ring = (cls, size, stroke, frac, color) => {
@@ -53,7 +58,7 @@
   const countTo = (el, to, fmt) => {
     const from = +(el.dataset.v || 0); el.dataset.v = to;
     if (reduce() || from === to || document.hidden) { el.textContent = fmt(to); return; }
-    const t0 = performance.now(), dur = 700;
+    const t0 = performance.now(), dur = 300;
     const step = t => { const p = Math.min(1, (t - t0) / dur), e = 1 - Math.pow(1 - p, 3); el.textContent = fmt(Math.round(from + (to - from) * e)); if (p < 1) requestAnimationFrame(step); };
     requestAnimationFrame(step);
   };
@@ -277,7 +282,7 @@
     settings: '<circle cx="12" cy="12" r="3"/><path d="M12 3v2.5M12 18.5V21M3 12h2.5M18.5 12H21M5.6 5.6l1.8 1.8M16.6 16.6l1.8 1.8M5.6 18.4l1.8-1.8M16.6 7.4l1.8-1.8" />'
   };
   const tabbar = document.createElement("nav"); tabbar.className = "nd-tabbar nd-only"; tabbar.setAttribute("aria-label", "Sections");
-  const LABEL = {practice: "Practice", mocks: "Mock exams", results: "Results", guide: "Guide", settings: "Settings"};
+  const LABEL = {practice: "Practice", mocks: "Mock exams", results: "Progress", guide: "Guide", settings: "Settings"};
   tabbar.innerHTML = ["practice", "mocks", "results", "guide", "settings"].map(v => `<button type="button" data-act="view" data-v="${v}"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${ICONS[v]}</svg><span>${LABEL[v]}</span></button>`).join("");
   document.body.appendChild(tabbar);
 

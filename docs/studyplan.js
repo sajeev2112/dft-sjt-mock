@@ -1,4 +1,4 @@
-// "Study plan" on the Results page: patterns in your own mistakes, worked out here in the browser from your saved answers,
+// "Study plan" on the Progress page: patterns in your own mistakes, worked out here in the browser from your saved answers,
 // plus an optional AI write-up (Beta). Loaded BEFORE app.js; it reads the app's globals (S, Q, L, lastAtt, ...) only inside functions.
 // The statistics never leave this device unless you press the AI button, and then only numbers and codes are sent (no answers, no name).
 (function(){

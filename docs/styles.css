@@ -202,6 +202,7 @@ h1{font:600 clamp(1.75rem,4.2vw,2.375rem)/1.08 var(--serif); margin:8px 0 8px; t
 .flat{display:grid; grid-template-columns:repeat(auto-fill, minmax(38px, 1fr)); gap:6px}
 .qfrom{font-weight:500; color:var(--ink-3)}
 .foot{margin-top:32px; font-size:0.7812rem; color:var(--ink-3)}
+.foot .note{margin-bottom:8px}
 .foot a,.note a,.gsec a,.rtable a,.muted a{color:var(--accent)}
 .row{display:flex; gap:8px; flex-wrap:wrap; align-items:center}
 .btn{text-decoration:none; display:inline-flex; align-items:center; justify-content:center}
@@ -404,36 +405,36 @@ textarea:focus{border-color:var(--accent)}
 /* motion: only when the visitor hasn't asked for reduced motion */
 @media (prefers-reduced-motion: no-preference){
   html{scroll-behavior:smooth}
-  @keyframes q-next{from{opacity:0; transform:translateX(22px)}to{opacity:1; transform:none}}
-  @keyframes q-prev{from{opacity:0; transform:translateX(-22px)}to{opacity:1; transform:none}}
-  @keyframes fade-up{from{opacity:0; transform:translateY(10px)}to{opacity:1; transform:none}}
+  @keyframes q-next{from{opacity:0; transform:translateX(14px)}to{opacity:1; transform:none}}
+  @keyframes q-prev{from{opacity:0; transform:translateX(-14px)}to{opacity:1; transform:none}}
+  @keyframes fade-up{from{opacity:0; transform:translateY(6px)}to{opacity:1; transform:none}}
   @keyframes fade-in{from{opacity:0}to{opacity:1}}
-  @keyframes pop{0%{transform:scale(1)}40%{transform:scale(1.18)}100%{transform:scale(1)}}
+  @keyframes pop{0%{transform:scale(1)}40%{transform:scale(1.12)}100%{transform:scale(1)}}
   @keyframes grow{from{transform:scaleX(0)}to{transform:scaleX(1)}}
   @keyframes wave{0%{transform:rotate(0)}30%{transform:rotate(-14deg)}60%{transform:rotate(8deg)}100%{transform:rotate(0)}}
   @keyframes ping{0%{box-shadow:0 0 0 0 color-mix(in srgb, var(--near) 55%, transparent)}100%{box-shadow:0 0 0 14px transparent}}
   @keyframes tick{0%,100%{opacity:1}50%{opacity:.55}}
 
-  [data-view-panel]:not([hidden]){animation:fade-in .28s ease-out}
-  .card.in-next{animation:q-next .32s cubic-bezier(.2,.8,.2,1)}
-  .card.in-prev{animation:q-prev .32s cubic-bezier(.2,.8,.2,1)}
-  .card.in-fade{animation:fade-up .3s cubic-bezier(.2,.8,.2,1)}
-  .card.in-reveal .xhead{animation:fade-in .25s ease-out both}
-  .card.in-reveal .xitem{animation:fade-up .38s cubic-bezier(.2,.8,.2,1) both; animation-delay:calc(var(--i, 0) * 55ms)}
-  .card.in-reveal .result{animation:fade-up .45s cubic-bezier(.2,.8,.2,1) both; animation-delay:.32s}
-  .card.in-reveal .crow{animation:fade-up .35s cubic-bezier(.2,.8,.2,1) both; animation-delay:.5s}
-  .card.in-fade .bcard{animation:fade-up .35s cubic-bezier(.2,.8,.2,1) both}
-  .card.in-fade .bcard:nth-child(2){animation-delay:.05s}
-  .card.in-fade .bcard:nth-child(3){animation-delay:.1s}
-  .card.in-fade .bcard:nth-child(4){animation-delay:.15s}
-  .card.in-fade .bar i, .panel.anim .bar i{transform-origin:left; animation:grow .7s cubic-bezier(.2,.8,.2,1) both; animation-delay:.15s}
-  .card.in-fade .sumtop{animation:fade-up .4s cubic-bezier(.2,.8,.2,1) both}
-  .panel.anim .big{animation:fade-up .35s cubic-bezier(.2,.8,.2,1)}
-  .pick.popped .letter{animation:pop .28s cubic-bezier(.2,.8,.2,1)}
+  [data-view-panel]:not([hidden]){animation:fade-in .18s ease-out}
+  .card.in-next{animation:q-next .2s cubic-bezier(.2,.8,.2,1)}
+  .card.in-prev{animation:q-prev .2s cubic-bezier(.2,.8,.2,1)}
+  .card.in-fade{animation:fade-up .2s cubic-bezier(.2,.8,.2,1)}
+  .card.in-reveal .xhead{animation:fade-in .16s ease-out both}
+  .card.in-reveal .xitem{animation:fade-up .22s cubic-bezier(.2,.8,.2,1) both; animation-delay:calc(var(--i, 0) * 30ms)}
+  .card.in-reveal .result{animation:fade-up .22s cubic-bezier(.2,.8,.2,1) both; animation-delay:.1s}
+  .card.in-reveal .crow{animation:fade-up .2s cubic-bezier(.2,.8,.2,1) both; animation-delay:.12s}
+  .card.in-fade .bcard{animation:fade-up .22s cubic-bezier(.2,.8,.2,1) both}
+  .card.in-fade .bcard:nth-child(2){animation-delay:.03s}
+  .card.in-fade .bcard:nth-child(3){animation-delay:.06s}
+  .card.in-fade .bcard:nth-child(4){animation-delay:.09s}
+  .card.in-fade .bar i, .panel.anim .bar i{transform-origin:left; animation:grow .3s cubic-bezier(.2,.8,.2,1) both; animation-delay:.05s}
+  .card.in-fade .sumtop{animation:fade-up .22s cubic-bezier(.2,.8,.2,1) both}
+  .panel.anim .big{animation:fade-up .22s cubic-bezier(.2,.8,.2,1)}
+  .pick.popped .letter{animation:pop .2s cubic-bezier(.2,.8,.2,1)}
   .flagbtn.waved svg{transform-origin:3px 14px; animation:wave .45s ease-out}
   .mockbar.ping{animation:ping .9s ease-out 2}
   .mockbar.crit .mt{animation:tick 1s steps(2, jump-none) infinite}
-  .syncpanel:not([hidden]){animation:fade-up .28s cubic-bezier(.2,.8,.2,1)}
+  .syncpanel:not([hidden]){animation:fade-up .2s cubic-bezier(.2,.8,.2,1)}
 
   .btn,.ptab,.views button,.seg button,.chipbtn,.bcard,.opt,.ritem,.mvb,.fchip,.flagbtn,.cell{transition:background-color .18s, border-color .18s, color .18s, box-shadow .18s, transform .12s}
   .btn:active:not(:disabled),.ptab:active,.chipbtn:active,.bcard:active:not(:disabled),.fchip:active,.flagbtn:active{transform:scale(.97)}
@@ -441,5 +442,12 @@ textarea:focus{border-color:var(--accent)}
   .cell:hover{transform:translateY(-1px)}
   .cell.cur{transition:outline-offset .18s}
   .bcard:hover:not(:disabled){box-shadow:0 6px 18px rgba(16,40,36,.10)}
+  /* folded sections open with a short fade (closing stays instant); late lines and the update bar fade in */
+  @keyframes fold-in{from{opacity:0; transform:translateY(-4px)}to{opacity:1; transform:none}}
+  @keyframes bar-in{from{opacity:0; transform:translate(-50%, 10px)}to{opacity:1; transform:translate(-50%, 0)}}
+  details.nd-open[open]>:not(summary){animation:fold-in .18s ease-out}
+  .pgmocks .pg-new{animation:fade-in .18s ease-out}
+  #update-bar{animation:bar-in .2s cubic-bezier(.2,.8,.2,1)}
+  .mwrow:active{transform:scale(.99)}
 }
 @media (prefers-reduced-motion: reduce){ *,*::before,*::after{animation:none!important; transition:none!important; scroll-behavior:auto!important} }
