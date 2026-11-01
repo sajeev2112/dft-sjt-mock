@@ -85,6 +85,15 @@ Q.forEach((q, i) => {
   q.o.forEach(([t], j) => { if (GIVEAWAY.test(t)) warnings.push(`Q${i + 1} option ${"ABCDEFGH"[j]}: giveaway wording “${t.match(GIVEAWAY)[0]}”`); });
 });
 if (warnings.length) console.warn(`${warnings.length} difficulty warning(s):\n  ` + warnings.join("\n  "));
+// Stem-support check (warnings only): options that rely on something the scenario never mentions (see tools/stem-support.js).
+// Fix the stem, or after review add the question to tools/stem-support-allow.json.
+{
+  const {stemSupport, describe} = require("./stem-support.js");
+  let allow = {};
+  try { allow = JSON.parse(read("tools/stem-support-allow.json")); } catch (e) { console.warn("tools/stem-support-allow.json is missing or unreadable; checking without it"); }
+  const found = stemSupport(Q, allow);
+  if (found.length) console.warn(`${found.length} stem-support warning(s) (fix the stem or review and add to tools/stem-support-allow.json):\n  ` + found.map(describe).join("\n  "));
+}
 
 // Questions as the site displays them (options shuffled, keys in displayed letters), for "Explain my mistake".
 const bank = Q.map(q => ({t: q.t, s: q.s.replace(/<[^>]+>/g, ""), o: q.o.map(o => [o[0], o[1]]), k: q.k, tk: q.tk}));

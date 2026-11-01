@@ -5712,7 +5712,7 @@ const RW_5_4 = [
   "g": "T",
   "a": "Interpreter adding her own views",
   "k": "ABC",
-  "s": "You are five months into DFT. Through a professional interpreter booked by the practice, you are discussing root canal treatment or extraction of a painful LL6 with Mr Tran, 58. You notice her replies to him run much longer than your questions. When you ask, she says she has told him extraction is cheaper and that she would have the tooth out herself. You have no way of checking what she says to him. Mr Tran has not yet signed anything. His daughter is waiting in reception, and the interpreting agency’s telephone line can supply another interpreter within ten minutes.",
+  "s": "You are five months into DFT. Through a professional interpreter booked by the practice, you are discussing root canal treatment or extraction of a painful LL6 with Mr Tran, 58. You notice her replies to him run much longer than your questions. When you ask, she says she has told him extraction is cheaper and that she would have the tooth out herself. You have no way of checking what she says to him. Mr Tran says he is leaning towards extraction. He has not yet signed anything. His daughter is waiting in reception, and the interpreting agency’s telephone line can supply another interpreter within ten minutes.",
   "o": [
    [
     "Pause and switch to the agency’s telephone interpreter, explaining to Mr Tran that you want the decision to be his own.",
@@ -6327,7 +6327,7 @@ const RW_6_2 = [
   "g": "H",
   "a": "Pregnant, rostered on sedation list",
   "k": "BDAEC",
-  "s": "You are five months into DFT and nine weeks pregnant; only your GP knows, and you had planned to tell work after your 12-week scan. At 10am you see that your ES, Dr Marcus Hale, who owns the practice and employs you, has rostered you to assist all afternoon on his inhalation sedation list: six children from 1:30pm in Surgery 3. That surgery’s active scavenging unit was reported faulty a fortnight ago, and the room relies on an open window. Dr Hale is free at 12:30pm. The practice manager, Sandra Kemp, is on site; she arranges the nurses’ rota but not your training sessions.",
+  "s": "You are five months into DFT and nine weeks pregnant; only your GP knows, and you had planned to tell work after your 12-week scan. At 10am you see that your ES, Dr Marcus Hale, who owns the practice and employs you, has rostered you to assist all afternoon on his inhalation sedation list: six children from 1:30pm in Surgery 3. That surgery’s active scavenging unit was reported faulty a fortnight ago, and the room relies on an open window. Dr Hale is free at 12:30pm. Another FD also works at the practice. The practice manager, Sandra Kemp, is on site; she arranges the nurses’ rota but not your training sessions.",
   "o": [
    [
     "Ask the other FD to swap this afternoon’s session with you, keeping your reason private until after your scan so the news stays confidential for now.",
@@ -6478,11 +6478,11 @@ const RW_6_2 = [
     "Seeking advice is reasonable, but it skips both Lorraine and a supportive ES who could resolve this locally. It still keeps the matter proportionate and private, so it outranks E (GDC raising concerns guidance)."
    ],
    [
-    "Report Lorraine’s conduct to the GDC, as criticising a registrant’s work in front of patients risks undermining confidence in the profession.",
+    "Ask reception to book your examinations into shorter slots for now, so that your figures improve and the main source of friction is removed.",
     "Cutting examination time to improve your figures compromises patient care, since at your stage you need that time to examine thoroughly, and it puts a practice target above patients. It is the only option that harms them, so it ranks below E (Std 1.7.1, 1.4.2)."
    ],
    [
-    "Ask reception to book your examinations into shorter slots for now, so that your figures improve and the main source of friction is removed.",
+    "Report Lorraine’s conduct to the GDC, as criticising a registrant’s work in front of patients risks undermining confidence in the profession.",
     "Her remarks are unprofessional, but this is a workplace grievance for the employer, not a GDC matter, and reporting her skips the local routes that should come first. It still outranks D because it doesn’t harm patients (GDC raising concerns guidance; Std 8.2.5)."
    ]
   ],
@@ -9605,7 +9605,7 @@ const RW_9_1 = [
   "g": "R",
   "a": "Observation chart that cannot fit",
   "k": "ECABD",
-  "s": "Month 10, hospital week, maxillofacial ward. Mr Dean had an abscess drained this morning and needs hourly observations. He was with you in radiology from 1:45pm to 2:50pm. His chart shows normal observations at 2:00pm, signed by his nurse, Ms Hill. Nobody has checked him since; he feels fine. Ms Hill is on her break until 3:05pm; the nurse in charge is at the desk. Your registrar is in theatre until 4pm, and you are due in clinic at 3:15pm. The entry may be a slip of the time, or something else.",
+  "s": "Month 10, hospital week, maxillofacial ward. Mr Dean had an abscess drained this morning and needs hourly observations. He was with you in radiology from 1:45pm to 2:50pm. His chart shows normal observations at 2:00pm, signed by his nurse, Ms Hill. Nobody has checked him since; he feels fine. Ms Hill is on her break until 3:05pm; the nurse in charge is at the desk. Your registrar is in theatre all afternoon, and you are due in clinic at 3:15pm. The entry may be a slip of the time, or something else.",
   "o": [
    [
     "Take Mr Dean’s observations yourself and record them, then tell your registrar about the 2:00pm entry when he leaves theatre.",
@@ -9713,7 +9713,7 @@ const RW_9_1 = [
   "g": "R",
   "a": "Concern ignored twice: next step",
   "k": "BDEAC",
-  "s": "Month 10, a mixed practice. In month 4 you told the owner there is no defibrillator and most emergency training has lapsed. He said he would ‘get onto it’. In month 7 you raised it again in writing; he said one was ‘on order’ and the pharmacy nearby has one. There is still none and no training is booked. The pharmacy closes at 6pm; evening sessions run until 8pm. The owner is also your ES and signs your final review in seven weeks. A nurse says the last practice manager ‘left after raising things’.",
+  "s": "Month 10, a mixed practice. Months ago you told the owner there is no defibrillator and most emergency training has lapsed. He said he would ‘get onto it’. When you raised it again in writing, he said one was ‘on order’ and the pharmacy nearby has one. There is still none and no training is booked. The pharmacy closes before the evening sessions end. The owner is also your ES and signs your final review. A nurse says the last practice manager ‘left after raising things’.",
   "o": [
    [
     "Which outside body fits a concern about a practice’s emergency arrangements: the NHS commissioner or the CQC, rather than the GDC first.",
@@ -9845,7 +9845,7 @@ const RW_9_1 = [
   "g": "P",
   "a": "Two seniors, one walk-in",
   "k": "CEDBA",
-  "s": "Month 9, a community clinic. The clinical lead, your ES, has told you to run your list and leave walk-ins to the senior dentist. 10:40: he brings you Mr Reid with jaw swelling from LR8, trismus and fever of 38.3°C. ‘I’m in a GA assessment until 12. Take him; I’ll square it with her.’ He told your nurse it hurts to swallow; to you he says it is ‘just sore’. Your 11:00 patient, who has dementia, had two visits cancelled; her transport leaves at 11:45. The lead is in a meeting but reads messages.",
+  "s": "Month 9, a community clinic. The clinical lead, your ES, has told you to run your list and leave walk-ins to the senior dentist. At 10:40 the senior dentist brings you Mr Reid with jaw swelling from LR8, trismus and fever of 38.3°C. ‘I’m in a GA assessment. Take him; I’ll square it with the lead.’ Mr Reid told your nurse it hurts to swallow; to you he says it is ‘just sore’. Your 11:00 patient, who has dementia, had two visits cancelled; her transport leaves at 11:45. The lead is in a meeting but reads messages.",
   "o": [
    [
     "See your 11:00 patient as booked so her transport is kept, and ask your nurse to recheck Mr Reid’s temperature and swallowing until 11:30.",
@@ -9883,7 +9883,7 @@ const RW_9_2 = [
   "g": "P",
   "a": "Unsent urgent cancer referral",
   "k": "CAEBD",
-  "s": "Month 6, an NHS practice, 8:40am. You find that the urgent suspected-cancer referral you wrote 11 days ago for Mr Banks is still a draft; it was never sent. His tongue ulcer had not healed in five weeks. You told him he would be seen within two weeks and noted that the referral was sent. 8:45: the receptionist says Mr Banks is phoning about his appointment; she planned to say ‘these things take a while’. Your list starts at 9:00 and is full until 1pm. The practice manager runs the referral system.",
+  "s": "Month 6, an NHS practice, before your list. You find that the urgent suspected-cancer referral you wrote 11 days ago for Mr Banks is still a draft; it was never sent. His tongue ulcer had not healed in five weeks. You told him he would be seen within two weeks and noted that the referral was sent. Then the receptionist says Mr Banks is phoning about his appointment; she planned to say ‘these things take a while’. Your list is full from 9:00 until 1pm. The practice manager runs the referral system.",
   "o": [
    [
     "Have reception say you will ring Mr Banks at lunchtime, then submit the referral before 9:00 and add a dated correction to your note.",
@@ -9919,7 +9919,7 @@ const RW_9_2 = [
   "g": "P",
   "a": "Anticoagulated bleed mid-procedure",
   "k": "EACBD",
-  "s": "Month 4, a mixed practice. 2:35pm: you are ten minutes into root canal treatment on UL6, with the access cavity open and canals not yet found; the appointment runs until 3:15. Your ES is out until 4pm; the associate is mid-extraction. 2:40: Mrs Moss, who takes apixaban and whose LR4 you took out at 11am, is back: the socket is ‘oozing’ despite an hour on gauze. 2:46: your nurse reports she has soaked two pads with fresh blood, feels light-headed and looks very pale. Her husband asks whether to drive her to hospital.",
+  "s": "Month 4, a mixed practice. You are partway through root canal treatment on UL6, with the access cavity open and canals not yet found; the appointment runs until 3:15. Your ES is out until 4pm; the associate is mid-extraction. Mrs Moss, who takes apixaban and whose LR4 you took out this morning, is back: the socket is ‘oozing’ despite an hour on gauze. At 2:46 your nurse reports that Mrs Moss has soaked two pads with fresh blood, feels light-headed and looks very pale. Her husband asks whether to drive her to hospital.",
   "o": [
    [
     "Ask reception to give Mrs Moss fresh gauze while you find the canals and dress UL6, then assess her in about ten minutes.",
@@ -9955,7 +9955,7 @@ const RW_9_2 = [
   "g": "P",
   "a": "Carer asks to go first",
   "k": "BCEAD",
-  "s": "Month 10, an urgent care centre, 11:20am. Two patients share a triage category; your slots are 11:30 and 11:50. Next is Aisha, 16, whose LR6 pain kept her awake. Her mother told the nurse she ‘was burning up’; Aisha says she only felt a bit hot, with no swelling. Mr Pike, who arrived later with molar pain, stops you: ‘My wife has advanced MS and can’t use the phone. Her sitter leaves at noon. If I’m not seen first, she’ll be alone for half an hour.’ Aisha’s mother hears. Policy is triage order.",
+  "s": "Month 10, an urgent care centre. Two patients share a triage category; your slots are 11:30 and 11:50. Next is Aisha, 16, whose LR6 pain kept her awake. Her mother told the nurse she ‘was burning up’; Aisha says she only felt a bit hot, with no swelling. Mr Pike, who arrived later with molar pain, stops you: ‘My wife has advanced MS and can’t use the phone. Her sitter leaves at noon. If I’m not seen first, she’ll be alone for half an hour.’ Aisha’s mother hears. Policy is triage order.",
   "o": [
    [
     "The fairness of moving Aisha back after she was triaged first, and how any change would be explained to her and her mother.",
@@ -9991,7 +9991,7 @@ const RW_9_2 = [
   "g": "P",
   "a": "Sole dentist, trainee nurse afternoon",
   "k": "BEF",
-  "s": "Month 7, an NHS practice in a corporate group, 1:40pm. With your ES away and the associate off ill, you are the only dentist. At 3pm the qualified nurse leaves for a long-booked hospital appointment, leaving Kofi, an apprentice two months in, and the receptionist, trained in emergencies last month. Your list: 2pm denture review; 2:30 Mr Burke’s extraction, twice postponed for anxiety; 3:15 and 3:45 emergencies. Mr Burke arrives early ‘to get it over with’. The manager says Kofi will be fine; he has never assisted an extraction or done emergency training.",
+  "s": "Month 7, an NHS practice in a corporate group, 1:40pm. With your ES away and the associate off ill, you are the only dentist. At 3pm the qualified nurse leaves for a long-booked hospital appointment, leaving Kofi, an apprentice two months in, and the receptionist, trained in emergencies last month. Your list: 2pm denture review, then Mr Burke’s extraction, twice postponed for anxiety; 3:15 and 3:45 emergencies. Mr Burke arrives early ‘to get it over with’. The manager says Kofi will be fine; he has never assisted an extraction or done emergency training.",
   "o": [
    [
     "Ask the qualified nurse whether she could move her hospital appointment or stay until 4pm, to cover both emergency slots.",
@@ -10087,7 +10087,7 @@ const RW_9_2 = [
   "g": "I",
   "a": "Op notes for unseen operations",
   "k": "DBAEC",
-  "s": "Month 9, a DFT hospital post in OMFS. Four day cases are waiting to go home before the unit closes at 6pm. The registrar operated while you were in clinic and is now scrubbed for a 90-minute emergency. The consultant is in her office downstairs. He asks you to write the op notes from the template and sign them. One count sheet lists a drain the template omits. Through a nurse you tell him you did not see the operations and a drain is listed. Reply: ‘Add the drain, sign them, I’ll check tomorrow.’",
+  "s": "Month 9, a DFT hospital post in OMFS. Four day cases are waiting to go home before the unit closes at 6pm; their discharge letters need the op notes. The registrar operated while you were in clinic and is now scrubbed in theatre for a long emergency. The consultant is in her office downstairs. He asks you to write the op notes from the template and sign them. One count sheet lists a drain the template omits. Through a nurse you tell him you did not see the operations and a drain is listed. Reply: ‘Add the drain, sign them, I’ll check tomorrow.’",
   "o": [
    [
     "Tell the ward sister the discharges must wait until the registrar is out of theatre, and note in each record that the op note is awaited.",
@@ -10159,7 +10159,7 @@ const RW_9_2 = [
   "g": "I",
   "a": "Signing an unwitnessed drug check",
   "k": "CBEDA",
-  "s": "Month 8, a community sedation clinic. Policy: two registrants check each IV midazolam dose as it is drawn up and both sign before use. The nurse holds a filled, labelled syringe for Mr Price’s 2pm sedation; he has a learning disability, and his carer spent the morning preparing him. The senior dentist says he checked it with her but was called away before signing: ‘Sign as second checker.’ Privately, the nurse says he was on the phone when she drew it up. The ampoule is in the sharps bin. The clinic manager handles incidents.",
+  "s": "Month 8, a community sedation clinic. Policy: two registrants check each IV midazolam dose as it is drawn up and both sign before use. The nurse holds a filled, labelled syringe for Mr Price’s sedation; he has a learning disability, and his carer spent the morning preparing him. The senior dentist says he checked it with her but was called away before signing: ‘Sign as second checker.’ Privately, the nurse says he was on the phone when she drew it up. The ampoule is in the sharps bin. The clinic manager handles incidents.",
   "o": [
    [
     "Ask the nurse to retrieve the empty ampoule from the sharps bin, and sign as second checker once the drug, strength and expiry match the label.",
@@ -10401,7 +10401,7 @@ const RW_9_3 = [
   "g": "F",
   "a": "Misdirected letter, unsent urgent referral",
   "k": "CBEAD",
-  "s": "Month 9, a mixed practice, the Friday before a bank holiday. 4:38pm: Mrs Ali phones. Her envelope held a letter for her neighbour, Mr Bell: the patient copy of your urgent suspected-cancer referral for his tongue ulcer. She has read it. 4:41pm: you find the referral still a draft, never sent; sending takes ten minutes. The hospital triages referrals arriving by 5pm; later ones wait until Tuesday. Your 4:50 filling patient is waiting. The practice manager, the information governance lead, left at 4:30; her home number is on the staff contact sheet.",
+  "s": "Month 9, a mixed practice, 4:40pm on the Friday before a bank holiday. Mrs Ali phones. Her envelope held a letter for her neighbour, Mr Bell: the patient copy of your urgent suspected-cancer referral for his tongue ulcer. She has read it. You find the referral still a draft, never sent; sending takes ten minutes. The hospital triages referrals arriving by 5pm; later ones wait until Tuesday. Your 4:50 filling patient is waiting. The practice manager, the information governance lead, has gone home; her home number is on the staff contact sheet.",
   "o": [
    [
     "Phone the practice manager at home now to start assessing the breach, then see your 4:50 patient and send the referral before you leave.",
@@ -10511,7 +10511,7 @@ const RW_9_4 = [
   "g": "F",
   "a": "Possible seizure in a lorry driver",
   "k": "ABC",
-  "s": "Month 10, a private practice. During an inferior dental nerve block, Mr Walsh goes rigid and unresponsive for about 40 seconds, arms jerking. He recovers within minutes; oxygen saturation is normal. Your nurse thinks he fainted. He asks you to leave it out of his notes: it is his third ‘funny turn’ this year, one in his parked lorry cab; his GP doesn’t know, and he would lose his HGV licence. He drove here and starts a night shift at 6pm. Your ES is on leave; the practice owner, a dentist, is next door.",
+  "s": "Month 10, a private practice. During an inferior dental nerve block, Mr Walsh goes rigid and unresponsive for about 40 seconds, arms jerking. He recovers quickly; oxygen saturation is normal. Your nurse thinks he fainted. He asks you to leave it out of his notes: it is his third ‘funny turn’ this year, one in his parked lorry cab; his GP doesn’t know, and he would lose his HGV licence. He drove here and starts a night shift at 6pm. Your ES is on leave; the practice owner, a dentist, is next door.",
   "o": [
    [
     "Record the episode as you saw it, your nurse’s view and his account of the earlier turns, explaining that you cannot leave them out.",
@@ -10559,7 +10559,7 @@ const RW_9_4 = [
   "g": "F",
   "a": "Lost team list while on call",
   "k": "ABC",
-  "s": "Month 6, your hospital OMFS rotation. 5:35pm: you are the junior on call; the registrar is in theatre until about 6:30pm, reachable via the theatre coordinator. Your printed team list, with names, hospital numbers, diagnoses and one patient’s HIV status, is missing: probably left in the public café 20 minutes ago, possibly in the doctors’ office. The café closes at 6pm. 5:37pm: A&amp;E bleeps you about Mr Lane, whose submandibular swelling has spread over two hours, with trismus and painful swallowing. 5:40pm: a ward nurse asks for a drug chart rewrite before the 8pm round.",
+  "s": "Month 6, your hospital OMFS rotation, 5:35pm. You are the junior on call; the registrar is in theatre, reachable via the theatre coordinator. Your printed team list, with names, hospital numbers, diagnoses and one patient’s HIV status, is missing: probably left in the public café earlier, possibly in the doctors’ office. The café closes at 6pm. A&amp;E then bleeps you about Mr Lane, whose submandibular swelling has spread over two hours, with trismus and painful swallowing. A ward nurse also asks for a drug chart rewrite before the 8pm round.",
   "o": [
    [
     "Go to A&amp;E to assess Mr Lane, asking the theatre coordinator to let the registrar know about him as soon as she can be told.",
@@ -10607,7 +10607,7 @@ const RW_9_4 = [
   "g": "S",
   "a": "Capacitous refusal, others at risk",
   "k": "CAEDB",
-  "s": "Month 8, a special-care clinic, Friday 3:30pm. Chloe, 29, who has a mild learning disability and lives in supported housing, says a night support worker grips her arm and shouts when she won’t go to bed. Her arm has two fading oval bruises. She understands what a referral involves and doesn’t want one: ‘I don’t want trouble.’ As her taxi arrives, she adds, ‘He does it to Mark too. Mark can’t talk.’ Mark is another tenant, and the worker is on tonight. The safeguarding lead is away until Monday; the trust’s advice line closes at 5pm.",
+  "s": "Month 8, a special-care clinic, Friday afternoon. Chloe, 29, who has a mild learning disability and lives in supported housing, says a night support worker grips her arm and shouts when she won’t go to bed. Her arm has two fading oval bruises. She understands what a referral involves and doesn’t want one: ‘I don’t want trouble.’ As her taxi arrives, she adds, ‘He does it to Mark too. Mark can’t talk.’ Mark is another tenant, and the worker is on tonight. The safeguarding lead is away until Monday; the trust’s advice line closes at 5pm.",
   "o": [
    [
     "Respect her own decision, record her account and the bruises, and phone the advice line today about the other tenant, naming her only if needed.",
@@ -10643,7 +10643,7 @@ const RW_9_4 = [
   "g": "S",
   "a": "Infant frenum tear, discharge pressure",
   "k": "CEADB",
-  "s": "Month 10, OMFS rotation, Saturday in A&amp;E. Isla, 5 months, has a torn upper labial frenum, not bleeding. Triage notes say she ‘rolled off the changing mat’; her father says she ‘pulled herself up on the coffee table’. Her mother says she cannot yet roll or sit. The OMFS registrar, Mr Mensah, phones from theatre: ‘No sutures. Babies fall. Discharge her.’ The parents want to leave for a party. Policy requires paediatric review of any injury in a non-mobile infant before discharge; paediatrics can be bleeped. The OMFS consultant is at home, 40 minutes away.",
+  "s": "Month 10, OMFS rotation, Saturday in A&amp;E. Isla, 5 months, has a torn upper labial frenum, not bleeding. Triage notes say she ‘rolled off the changing mat’; her father says she ‘pulled herself up on the coffee table’. Her mother says she cannot yet roll or sit. The OMFS registrar, Mr Mensah, phones from theatre: ‘No sutures. Babies fall. Discharge her.’ The parents want to leave for a party. Policy requires paediatric review of any injury in a non-mobile infant before discharge; paediatrics can be bleeped. The OMFS consultant is at home.",
   "o": [
    [
     "Phone the OMFS consultant at home to explain the differing accounts and ask whether Isla should stay for paediatric review, then follow their decision.",
@@ -11071,7 +11071,7 @@ const RW_M1 = [
   "g": "I",
   "a": "Website calls you a specialist",
   "k": "BDAEC",
-  "s": "Month 4, a mixed practice. The practice’s new website, written by a marketing agency, describes you as ‘our cosmetic and implant specialist’. You qualified last year, are not on any GDC specialist list and have never placed an implant. Two new patients have booked private implant consultations asking for you by name. The owner says the wording is ‘just marketing’ and would cost money to change. You are deciding what to do.",
+  "s": "Month 4, a mixed practice. The practice’s new website, written by a marketing agency, describes you as ‘our cosmetic and implant specialist’. You qualified last year, are not on any GDC specialist list and have never placed an implant. Two new patients have booked private implant consultations asking for you by name. The owner says the wording is ‘just marketing’ and would cost money to change. He has offered to fund an implant course for you. You are deciding what to do.",
   "o": [
    [
     "The owner controls the website, so correcting it depends on persuading him that the wording must change.",
@@ -12999,7 +12999,7 @@ const RW_M1 = [
   "g": "T",
   "a": "Lead criticises your screening coding",
   "k": "BADCE",
-  "s": "Month 3, a community dental service screening session at a primary school. Halfway through, the senior dental officer leading the session tells you, within earshot of a teacher and several children, that you are ‘holding everyone up’ and coding wrongly. Last week you were trained to code using the service’s manual, and you think you are following it. The lead has run this programme for years. Forty children remain, and the session ends at noon.",
+  "s": "Month 3, a community dental service screening session at a primary school. Halfway through, the senior dental officer leading the session tells you, within earshot of a teacher and several children, that you are ‘holding everyone up’ and coding wrongly. Last week you were trained to code using the service’s manual, and you think you are following it. The lead has run this programme for years. Forty children remain, and the session ends at noon, with a short break before then.",
   "o": [
    [
     "Carry on coding as the manual says, then ask the lead at the break to go through the difference with you.",
@@ -13214,7 +13214,7 @@ const RW_10_1 = [
    ],
    [
     "See Mr Vance now, check him for any sign of reaction, and tell him about the error, saying the dose was stopped before it was given.",
-    "Checks him and is open about the error now, but tells him as fact what the 8:20 chart contradicts, so he and the team may be falsely reassured and a reaction missed (GDC candour guidance, Std 1.3.1). Before the turn it would lead; now it sits below E, which reports the doubt."
+    "Checks him and is open about the error now, but tells him as fact what the 8:20 chart contradicts, so he and the team may be falsely reassured and a reaction missed (GDC candour guidance, Std 1.3.1). Before the pharmacist’s news it would lead; now it sits below E, which reports the doubt."
    ],
    [
     "Ask the nurse to check him now for any sign of reaction, and complete an incident report recording your error and the conflicting chart entry.",
@@ -15668,7 +15668,7 @@ const RW_M2 = [
   "g": "K",
   "a": "Consent form signed at reception",
   "k": "BEH",
-  "s": "An out-of-hours dental service, Saturday 2pm. Mr Keane, 52, has a broken, painful lower molar. As you call him in, your nurse hands you a consent form for ‘extraction’ that he signed at the reception desk on arrival. The receptionist says this is a new step to speed up the queue. Mr Keane tells you he did not really read it; he wants the pain gone. On examination, the tooth could be saved with root canal treatment and a crown at his own practice, or extracted today. The radiograph shows its roots lie close to the nerve canal.",
+  "s": "An out-of-hours dental service, Saturday 2pm. Mr Keane, 52, has a broken, painful lower molar. As you call him in, your nurse hands you a consent form for ‘extraction’ that he signed at the reception desk on arrival. The receptionist says this is a new step to speed up the queue. A shift lead is running today’s session. Mr Keane tells you he did not really read it; he wants the pain gone. On examination, the tooth could be saved with root canal treatment and a crown at his own practice, or extracted today. The radiograph shows its roots lie close to the nerve canal.",
   "o": [
    [
     "Confirm with him that he still wants the tooth out, then extract it as the form he signed describes.",
@@ -16615,7 +16615,7 @@ const RW_M2 = [
   "g": "W",
   "a": "Recalled anaesthetic batch still in use",
   "k": "BDAEC",
-  "s": "Month 9, a private-only practice, 8:45am. Your nurse shows you a field safety notice the supplier emailed on Friday. It recalls one batch of articaine cartridges because some may have hairline cracks that can release glass fragments during injection, and it says affected stock should be set aside for collection. Three boxes from that batch are in your surgery. Your nurse says the owner told the team on Friday to ‘keep using them carefully’ until new stock arrives on Wednesday, but the owner is on a flight until this afternoon and nobody else heard him say it. The store holds a different anaesthetic from an unaffected batch, which you have used less often. Your first patient, due at 9am, needs a filling under local anaesthetic.",
+  "s": "Month 9, a private-only practice, 8:45am. Your nurse shows you a field safety notice the supplier emailed on Friday. It recalls one batch of articaine cartridges because some may have hairline cracks that can release glass fragments during injection, and it says affected stock should be set aside for collection. Three boxes from that batch are in your surgery, and two other dentists are working today. Your nurse says the owner told the team on Friday to ‘keep using them carefully’ until new stock arrives on Wednesday, but the owner is on a flight until this afternoon and nobody else heard him say it. The store holds a different anaesthetic from an unaffected batch, which you have used less often. Your first patient, due at 9am, needs a filling under local anaesthetic.",
   "o": [
    [
     "Whether you can give today’s patients effective anaesthesia with the unaffected anaesthetic in the store, and in what doses.",
