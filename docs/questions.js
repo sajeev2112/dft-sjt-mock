@@ -6327,7 +6327,7 @@ const RW_6_2 = [
   "g": "H",
   "a": "Pregnant, rostered on sedation list",
   "k": "BDAEC",
-  "s": "You are five months into DFT and nine weeks pregnant; only your GP knows, and you had planned to tell work after your 12-week scan. At 10am you see that your ES, Dr Marcus Hale, who owns the practice and employs you, has rostered you to assist all afternoon on his inhalation sedation list: six children from 1:30pm in Surgery 3. That surgery’s active scavenging unit was reported faulty a fortnight ago, and the room relies on an open window. Dr Hale is free at 12:30pm. The practice manager, Sandra Kemp, is on site; she arranges the nurses’ rota but not your training sessions.",
+  "s": "You are five months into DFT and nine weeks pregnant; only your GP knows, and you had planned to tell work after your 12-week scan. At 10am you see that your ES, Dr Marcus Hale, who owns the practice and employs you, has rostered you to assist all afternoon on his inhalation sedation list: six children from 1:30pm in Surgery 3. That surgery’s active scavenging unit was reported faulty a fortnight ago, and the room relies on an open window. Dr Hale is free at 12:30pm. Another FD also works at the practice. The practice manager, Sandra Kemp, is on site; she arranges the nurses’ rota but not your training sessions.",
   "o": [
    [
     "Ask the other FD to swap this afternoon’s session with you, keeping your reason private until after your scan so the news stays confidential for now.",
@@ -10087,7 +10087,7 @@ const RW_9_2 = [
   "g": "I",
   "a": "Op notes for unseen operations",
   "k": "DBAEC",
-  "s": "Month 9, a DFT hospital post in OMFS. Four day cases are waiting to go home before the unit closes at 6pm. The registrar operated while you were in clinic and is now scrubbed for a long emergency. The consultant is in her office downstairs. He asks you to write the op notes from the template and sign them. One count sheet lists a drain the template omits. Through a nurse you tell him you did not see the operations and a drain is listed. Reply: ‘Add the drain, sign them, I’ll check tomorrow.’",
+  "s": "Month 9, a DFT hospital post in OMFS. Four day cases are waiting to go home before the unit closes at 6pm; their discharge letters need the op notes. The registrar operated while you were in clinic and is now scrubbed in theatre for a long emergency. The consultant is in her office downstairs. He asks you to write the op notes from the template and sign them. One count sheet lists a drain the template omits. Through a nurse you tell him you did not see the operations and a drain is listed. Reply: ‘Add the drain, sign them, I’ll check tomorrow.’",
   "o": [
    [
     "Tell the ward sister the discharges must wait until the registrar is out of theatre, and note in each record that the op note is awaited.",
@@ -11071,7 +11071,7 @@ const RW_M1 = [
   "g": "I",
   "a": "Website calls you a specialist",
   "k": "BDAEC",
-  "s": "Month 4, a mixed practice. The practice’s new website, written by a marketing agency, describes you as ‘our cosmetic and implant specialist’. You qualified last year, are not on any GDC specialist list and have never placed an implant. Two new patients have booked private implant consultations asking for you by name. The owner says the wording is ‘just marketing’ and would cost money to change. You are deciding what to do.",
+  "s": "Month 4, a mixed practice. The practice’s new website, written by a marketing agency, describes you as ‘our cosmetic and implant specialist’. You qualified last year, are not on any GDC specialist list and have never placed an implant. Two new patients have booked private implant consultations asking for you by name. The owner says the wording is ‘just marketing’ and would cost money to change. He has offered to fund an implant course for you. You are deciding what to do.",
   "o": [
    [
     "The owner controls the website, so correcting it depends on persuading him that the wording must change.",
@@ -12999,7 +12999,7 @@ const RW_M1 = [
   "g": "T",
   "a": "Lead criticises your screening coding",
   "k": "BADCE",
-  "s": "Month 3, a community dental service screening session at a primary school. Halfway through, the senior dental officer leading the session tells you, within earshot of a teacher and several children, that you are ‘holding everyone up’ and coding wrongly. Last week you were trained to code using the service’s manual, and you think you are following it. The lead has run this programme for years. Forty children remain, and the session ends at noon.",
+  "s": "Month 3, a community dental service screening session at a primary school. Halfway through, the senior dental officer leading the session tells you, within earshot of a teacher and several children, that you are ‘holding everyone up’ and coding wrongly. Last week you were trained to code using the service’s manual, and you think you are following it. The lead has run this programme for years. Forty children remain, and the session ends at noon, with a short break before then.",
   "o": [
    [
     "Carry on coding as the manual says, then ask the lead at the break to go through the difference with you.",

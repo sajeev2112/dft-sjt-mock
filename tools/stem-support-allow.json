@@ -1,0 +1,168 @@
+{
+ "30": {
+  "words": [
+   "costs"
+  ],
+  "why": "reviewed Nov 2026: word restates or follows from the stem, no unsupported reference"
+ },
+ "92": {
+  "words": [
+   "scope"
+  ],
+  "why": "reviewed Nov 2026: word restates or follows from the stem, no unsupported reference"
+ },
+ "121": {
+  "words": [
+   "glove"
+  ],
+  "why": "reviewed Nov 2026: minor only, the option states the fact itself or it is an ordinary inference"
+ },
+ "125": {
+  "words": [
+   "resul",
+   "poore",
+   "slide"
+  ],
+  "why": "reviewed Nov 2026: word restates or follows from the stem, no unsupported reference"
+ },
+ "129": {
+  "words": [
+   "mouth",
+   "reche"
+  ],
+  "why": "reviewed Nov 2026: word restates or follows from the stem, no unsupported reference"
+ },
+ "150": {
+  "words": [
+   "adren"
+  ],
+  "why": "reviewed Nov 2026: minor only, the option states the fact itself or it is an ordinary inference"
+ },
+ "162": {
+  "words": [
+   "near-",
+   "routi"
+  ],
+  "why": "reviewed Nov 2026: minor only, the option states the fact itself or it is an ordinary inference"
+ },
+ "164": {
+  "words": [
+   "washe",
+   "wound"
+  ],
+  "why": "reviewed Nov 2026: word restates or follows from the stem, no unsupported reference"
+ },
+ "167": {
+  "words": [
+   "error"
+  ],
+  "why": "reviewed Nov 2026: word restates or follows from the stem, no unsupported reference"
+ },
+ "194": {
+  "words": [
+   "gauze",
+   "recov"
+  ],
+  "why": "reviewed Nov 2026: minor only, the option states the fact itself or it is an ordinary inference"
+ },
+ "216": {
+  "words": [
+   "error"
+  ],
+  "why": "reviewed Nov 2026: word restates or follows from the stem, no unsupported reference"
+ },
+ "218": {
+  "words": [
+   "nhsbs",
+   "claim",
+   "rules"
+  ],
+  "why": "reviewed Nov 2026: word restates or follows from the stem, no unsupported reference"
+ },
+ "234": {
+  "words": [
+   "frida",
+   "cycle"
+  ],
+  "why": "reviewed Nov 2026: minor only, the option states the fact itself or it is an ordinary inference"
+ },
+ "236": {
+  "words": [
+   "roles"
+  ],
+  "why": "reviewed Nov 2026: minor only, the option states the fact itself or it is an ordinary inference"
+ },
+ "246": {
+  "words": [
+   "run-o"
+  ],
+  "why": "reviewed Nov 2026: word restates or follows from the stem, no unsupported reference"
+ },
+ "271": {
+  "words": [
+   "entry"
+  ],
+  "why": "reviewed Nov 2026: word restates or follows from the stem, no unsupported reference"
+ },
+ "275": {
+  "words": [
+   "image"
+  ],
+  "why": "reviewed Nov 2026: word restates or follows from the stem, no unsupported reference"
+ },
+ "277": {
+  "words": [
+   "withh",
+   "forme"
+  ],
+  "why": "reviewed Nov 2026: word restates or follows from the stem, no unsupported reference"
+ },
+ "303": {
+  "words": [
+   "sympt",
+   "safet"
+  ],
+  "why": "reviewed Nov 2026: word restates or follows from the stem, no unsupported reference"
+ },
+ "325": {
+  "words": [
+   "repla",
+   "wrong"
+  ],
+  "why": "reviewed Nov 2026: minor only, the option states the fact itself or it is an ordinary inference"
+ },
+ "328": {
+  "words": [
+   "young",
+   "carer"
+  ],
+  "why": "reviewed Nov 2026: word restates or follows from the stem, no unsupported reference"
+ },
+ "333": {
+  "words": [
+   "feedb"
+  ],
+  "why": "reviewed Nov 2026: minor only, the option states the fact itself or it is an ordinary inference"
+ },
+ "335": {
+  "words": [
+   "remar"
+  ],
+  "why": "reviewed Nov 2026: word restates or follows from the stem, no unsupported reference"
+ },
+ "339": {
+  "words": [
+   "joint",
+   "credi"
+  ],
+  "why": "reviewed Nov 2026: minor only, the option states the fact itself or it is an ordinary inference"
+ },
+ "343": {
+  "words": [
+   "reche",
+   "docto"
+  ],
+  "why": "reviewed Nov 2026: minor only, the option states the fact itself or it is an ordinary inference"
+ },
+ "_about": "Accepted stem-support findings (tools/stem-support.js). Key = question number; words = 5-letter prefixes accepted for that question; why = reviewer verdict (Nov 2026 audit, two Opus readers; see ~/Documents/sjt/paper9b/stem-support-audit.md). A new or edited question that triggers the check needs a stem fix or a reviewed entry here."
+}
