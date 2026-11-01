@@ -92,6 +92,7 @@ function page(view = "guide", store = new Map()){
       createElement: t => new El(t.toUpperCase()), querySelector: () => new El(),
       querySelectorAll: s => s === "[data-tour-inert]" ? body.children.filter(c => c.dataset.tourInert) : []},
   };
+  ctx.crumb = () => {}; // error-report breadcrumbs (app.js), not under test here
   ctx.TOUR_KEY = "dft-tour"; ctx.prev = prev; ctx.wrap = wrap; ctx.script = script;
   vm.createContext(ctx); vm.runInContext(code.replace("let tour = null;", "var tour = null;"), ctx);
   return ctx;

@@ -4,7 +4,7 @@
 //   GET  /api/stats?q=N how everyone answered question N
 //   POST /api/feedback  "I disagree with this key", with an optional comment
 //   POST /api/visit     one anonymous visit per page load (private visitor stats, read in the D1 console)
-//   POST /api/error     a browser error report (message only)
+//   POST /api/error     a browser problem report: a short message plus a detail object of codes and numbers (no personal data; see cleanErrorReport)
 //   POST /api/mock      a timed mock started or finished (random run number only; feeds the dashboard's completion rate)
 //   GET  /api/mock-stats?no=N  how everyone scored on numbered mock N, or practice paper N - 100 (first attempts, percentages only; for the Progress page)
 //   POST /api/sync      save, load or delete progress under a username + PIN (optional cross-device sync; no accounts)
@@ -13,6 +13,7 @@
 //   POST /api/explain-feedback  thumbs up/down on an explanation (question, answer letters, +1/-1; no free text)
 //   GET  /api/admin     private dashboard data; needs "Authorization: Bearer <ADMIN_KEY>" (a Worker secret)
 //   GET  /api/health    uptime check used by the GitHub Actions alert workflow (counts only, no messages)
+// Error rows are kept for 30 days.
 // Answers and feedback use the _v2 tables since the question bank was rewritten (Sept 2026); the old tables are kept but unused.
 // No names, emails or IP addresses are stored. IPs are only hashed into hourly rate-limit buckets.
 
@@ -31,7 +32,7 @@ const LIMITS = {answers: 3000, feedback: 100, visit: 600, error: 20, admin: 60, 
 const MIN_STATS = 3;
 const MIN_MOCK = 10; // first attempts needed before a mock's spread of scores is shown
 
-let schemaReady = false;
+let schemaReady = false, errorDetail = false; // errorDetail: the errors table has its detail column (added below)
 const SCHEMA = [
   "CREATE TABLE IF NOT EXISTS answers_v2 (client TEXT NOT NULL, q INTEGER NOT NULL, a TEXT NOT NULL, t INTEGER NOT NULL, PRIMARY KEY (client, q))",
   "CREATE INDEX IF NOT EXISTS answers_v2_q ON answers_v2 (q)",
@@ -71,6 +72,7 @@ export default {
         // one-off: build the totals from answers stored before they existed
         if (!(await env.DB.prepare("SELECT 1 AS x FROM answer_counts LIMIT 1").first()))
           await env.DB.prepare("INSERT INTO answer_counts (q, a, c) SELECT q, a, COUNT(*) FROM answers_v2 WHERE NOT EXISTS (SELECT 1 FROM answer_counts) GROUP BY q, a").run();
+        errorDetail = await ensureErrorDetail(env);
         schemaReady = true;
       }
       if (url.pathname === "/api/stats" && request.method === "GET") return await stats(url, env, cors);
@@ -221,25 +223,105 @@ async function visit(request, env, ctx, cors) {
 }
 
 async function clientError(request, env, ctx, cors) {
-  const body = await readJson(request, 2048);
-  if (!body || typeof body.msg !== "string") return json({error: "bad_request"}, 400, cors);
+  const r = cleanErrorReport(await readJson(request, 8192));
+  if (!r) return json({error: "bad_request"}, 400, cors);
   if (!(await allow(request, env, ctx, 1, "error"))) return json({error: "rate_limited"}, 429, cors);
-  const since = Date.now() - 3600000;
-  const recent = await env.DB.prepare("SELECT COUNT(*) AS c FROM errors WHERE kind = ? AND t > ?").bind("client", since).first();
+  const now = Date.now();
+  const recent = await env.DB.prepare("SELECT COUNT(*) AS c FROM errors WHERE kind LIKE 'client%' AND t > ?").bind(now - 3600000).first();
   if ((recent && recent.c) < 200) {
-    const msg = body.msg.replace(/[\u0000-\u001F\u007F]/g, " ").slice(0, 300);
-    await env.DB.prepare("INSERT INTO errors (t, kind, msg) VALUES (?, ?, ?)").bind(Date.now(), "client", msg).run();
+    if (errorDetail) await env.DB.prepare("INSERT INTO errors (t, kind, msg, detail) VALUES (?, ?, ?, ?)").bind(now, r.kind, r.msg, r.detail).run();
+    else await env.DB.prepare("INSERT INTO errors (t, kind, msg) VALUES (?, ?, ?)").bind(now, r.kind, r.msg).run();
   }
+  if (Math.random() < 0.02) ctx.waitUntil(pruneErrors(env, now).catch(() => {}));
   return json({ok: true}, 200, cors);
+}
+const pruneErrors = (env, now) => env.DB.prepare("DELETE FROM errors WHERE t < ?").bind(now - 30 * 86400000).run();
+
+// The detail column was added in Nov 2026. ALTER TABLE ... ADD COLUMN (nullable, no default) only changes the table's
+// definition in SQLite: existing rows are not rewritten and read as NULL, and older code that names its columns keeps
+// working. It runs once per Worker start: if the column is already there the ALTER fails harmlessly, and if it can't be
+// added for any other reason reports are stored without detail, as before, rather than failing.
+async function ensureErrorDetail(env){
+  const has = async () => { try { await env.DB.prepare("SELECT detail FROM errors LIMIT 1").first(); return true; } catch (e) { return false; } };
+  if (await has()) return true;
+  try { await env.DB.prepare("ALTER TABLE errors ADD COLUMN detail TEXT").run(); } catch (e) { /* added by another Worker meanwhile, or not possible */ }
+  return has();
+}
+
+// Browser problem reports. Old reports ({msg}) still work. New ones add a kind and a detail object; only the listed keys
+// are kept, each clipped to a short code, number or true/false, so nothing typed or personal can be stored even if a
+// browser sent it. Text is scrubbed again here (e-mail addresses, 4+ digit runs, long quoted text, web addresses).
+const ERROR_KINDS = {error: "client", rejection: "client", api: "client-api", slow: "client-slow", sw: "client-sw", storage: "client-storage", sync: "client-sync"};
+const cCode = n => v => typeof v === "string" ? v.replace(/[^A-Za-z0-9 #:./_-]/g, "").slice(0, n) || undefined : undefined;
+const cBool = v => typeof v === "boolean" ? v : undefined;
+const cInt = max => v => Number.isFinite(v) ? Math.max(0, Math.min(max, Math.round(v))) : undefined;
+const cList = (n, f) => v => { if (!Array.isArray(v)) return undefined; const a = v.slice(0, n).map(f).filter(x => x !== undefined); return a.length ? a : undefined; };
+const ERROR_DETAIL = {
+  v: cCode(12), via: cCode(16), view: cCode(16), set: cCode(16), mode: cCode(16), ptr: cCode(8), lang: cCode(16), br: cCode(40),
+  hash: v => typeof v === "string" && /^#?[a-z0-9.-]{0,30}$/i.test(v) ? v : v === undefined ? undefined : "#other",
+  name: cCode(40), loc: cCode(48), ep: cCode(20), reason: cCode(40), st: cInt(999), ms: cInt(600000),
+  app: cBool, online: cBool, store: cBool, calm: cBool, vw: cInt(100000), vh: cInt(100000), up: cInt(1e7),
+  open: cList(8, cCode(16)), stack: cList(6, cCode(80)),
+  crumbs: cList(10, c => Array.isArray(c) && typeof c[0] === "string" ? [c[0].toLowerCase().replace(/[^a-z0-9:-]/g, "").slice(0, 24), cInt(1e7)(c[1]) ?? 0].concat(Number.isInteger(c[2]) && c[2] > 1 ? [Math.min(c[2], 999)] : []) : undefined)
+};
+function scrubText(s){
+  return String(s).replace(/[\u0000-\u001F\u007F]/g, " ")
+    .replace(/\b(?:https?|blob|file):\/\/[^\s'"`)]*/gi, u => (u.split(/[?#]/)[0].split("/").pop() || "url"))
+    .replace(/[^\s@'"`]+@[^\s@'"`]+\.[a-z]{2,}/gi, "[email]")
+    .replace(/[^\s'"`]*[^\s@'"`]@[^\s'"`]*|@[^\s@'"`][^\s'"`]*/g, "[email]") // a half-quoted address (JSON.parse errors echo the start of the text)
+    .replace(/(\.js(?::\d+){0,2})|\d{4,}/g, (m, js) => js ? m : "#")
+    .replace(/["“”`][^"“”`]{6,}(?:["“”`]|$)/g, "\"…\"");
+}
+export function cleanErrorReport(body){
+  if (!body || typeof body !== "object" || typeof body.msg !== "string" || !body.msg.trim()) return null;
+  const kind = ERROR_KINDS[body.kind] || "client";
+  let detail = null;
+  if (body.detail && typeof body.detail === "object" && !Array.isArray(body.detail)) {
+    const d = {};
+    for (const k of Object.keys(ERROR_DETAIL)) { const x = ERROR_DETAIL[k](body.detail[k]); if (x !== undefined) d[k] = x; }
+    const text = JSON.stringify(d);
+    if (Object.keys(d).length && text.length <= 4000) detail = text;
+  }
+  return {kind, msg: scrubText(body.msg).slice(0, 300), detail};
+}
+
+// For the dashboard: errors grouped by kind + message (which includes the file and line), newest first, with how many,
+// first and last seen, which browser families and app versions, the most common last few button codes before it, and the
+// newest report's detail as a sample. Also a count per app version, so a bad release stands out.
+export function groupErrors(rows){
+  const groups = new Map(), versions = new Map();
+  const bump = (o, k) => { if (k) o[k] = (o[k] || 0) + 1; };
+  const top = (o, n) => Object.entries(o).sort((a, b) => b[1] - a[1]).slice(0, n);
+  for (const r of rows) {
+    let d = null; try { d = r.detail ? JSON.parse(r.detail) : null; } catch (e) { d = null; }
+    const key = r.kind + "|" + r.msg;
+    let g = groups.get(key);
+    if (!g) groups.set(key, g = {kind: r.kind, msg: r.msg, n: 0, first: r.t, last: r.t, browsers: {}, versions: {}, trails: {}, sample: null});
+    g.n++; g.first = Math.min(g.first, r.t); g.last = Math.max(g.last, r.t);
+    if (d) {
+      if (!g.sample || r.t > g.sample.t) g.sample = {t: r.t, ...d};
+      bump(g.browsers, d.br); bump(g.versions, d.v);
+      if (Array.isArray(d.crumbs) && d.crumbs.length) bump(g.trails, d.crumbs.slice(-3).map(c => c[0]).join(" > "));
+    }
+    if (r.kind !== "server") {
+      const v = d && d.v || "unknown", x = versions.get(v) || {v, n: 0, first: r.t, last: r.t, msgs: new Set()};
+      x.n++; x.first = Math.min(x.first, r.t); x.last = Math.max(x.last, r.t); x.msgs.add(key); versions.set(v, x);
+    }
+  }
+  return {
+    groups: [...groups.values()].sort((a, b) => b.last - a.last).slice(0, 60).map(g => ({...g, browsers: top(g.browsers, 5), versions: top(g.versions, 5), trails: top(g.trails, 3)})),
+    versions: [...versions.values()].sort((a, b) => b.last - a.last).slice(0, 12).map(({msgs, ...x}) => ({...x, kinds: msgs.size}))
+  };
 }
 
 async function health(env, cors) {
   const now = Date.now(), h1 = now - 3600000, h24 = now - 86400000;
   const r = await env.DB.prepare(
-    "SELECT SUM(kind = 'server' AND t > ?1) AS s1, SUM(kind = 'client' AND t > ?1) AS c1, SUM(kind = 'server' AND t > ?2) AS s24, SUM(kind = 'client' AND t > ?2) AS c24 FROM errors WHERE t > ?2"
+    "SELECT SUM(kind = 'server' AND t > ?1) AS s1, SUM(kind = 'client' AND t > ?1) AS c1, SUM(kind = 'server' AND t > ?2) AS s24, SUM(kind = 'client' AND t > ?2) AS c24, SUM(kind LIKE 'client-%') AS o24 FROM errors WHERE t > ?2"
   ).bind(h1, h24).first();
-  if (Math.random() < 0.05) await env.DB.prepare("DELETE FROM errors WHERE t < ?").bind(now - 30 * 86400000).run();
-  return json({ok: true, db: true, errors: {server_1h: r?.s1 || 0, client_1h: r?.c1 || 0, server_24h: r?.s24 || 0, client_24h: r?.c24 || 0}}, 200, {...cors, "Cache-Control": "no-store"});
+  if (Math.random() < 0.05) await pruneErrors(env, now);
+  // client_*: script errors (as before); client_other_24h: failed API calls, slow pages, storage, service-worker and Sync problems
+  return json({ok: true, db: true, errors: {server_1h: r?.s1 || 0, client_1h: r?.c1 || 0, server_24h: r?.s24 || 0, client_24h: r?.c24 || 0, client_other_24h: r?.o24 || 0}}, 200, {...cors, "Cache-Control": "no-store"});
 }
 
 // Optional cross-device sync. A username plus a 4–8 digit PIN; the PIN is stored salted and hashed.
@@ -319,7 +401,7 @@ async function admin(request, env, ctx, cors) {
     q("SELECT date(t / 1000, 'unixepoch') AS day, COUNT(*) AS answers, COUNT(DISTINCT client) AS people FROM answers_v2 GROUP BY day ORDER BY day DESC LIMIT 120"),
     q("SELECT q, a, COUNT(*) AS c FROM answers_v2 GROUP BY q, a"),
     q("SELECT q, comment, t FROM feedback_v2 ORDER BY t DESC LIMIT 300"),
-    q("SELECT t, kind, msg FROM errors ORDER BY t DESC LIMIT 50"),
+    q(`SELECT t, kind, msg, ${errorDetail ? "detail" : "NULL AS detail"} FROM errors WHERE t > ${now - 30 * 864e5} ORDER BY t DESC LIMIT 1000`),
     q("SELECT day, n FROM ai_usage ORDER BY day DESC LIMIT 90"),
     q("SELECT q, COALESCE(SUM(rating = 1), 0) AS up, COALESCE(SUM(rating = -1), 0) AS down FROM explain_feedback GROUP BY q"),
     q("SELECT COUNT(*) AS n FROM explain_cache"),
@@ -333,7 +415,7 @@ async function admin(request, env, ctx, cors) {
     q(`SELECT mode, CASE WHEN status IS NOT NULL THEN status WHEN started > ${now - 3 * 3600000} THEN 'live' ELSE 'abandoned' END AS st, COUNT(*) AS n, COALESCE(AVG(CASE WHEN ended IS NOT NULL THEN ended - started END), 0) AS ms, COALESCE(MAX(started), 0) AS last FROM mock_runs GROUP BY mode, st`)
   ]);
   return json({generated: Date.now(), totals: totals.results[0], visits: visits.results.reverse(), answersByDay: answersByDay.results.reverse(),
-    distributions: dist.results, feedback: feedback.results, errors: errors.results,
+    distributions: dist.results, feedback: feedback.results, errors: errors.results.slice(0, 50).map(({detail, ...e}) => e), errorReport: groupErrors(errors.results),
     ai: {cap: DAILY_NEURON_CAP, days: aiDays.results.reverse(), votes: aiVotes.results, cached: aiCache.results[0].n},
     sync: {...syncTot.results[0], days: syncDays.results.reverse()},
     newVisitors: newDays.results.reverse(), retention: {d7: back7.results[0], d30: back30.results[0]}, times: times.results, mocks: mocks.results}, 200, noStore);
