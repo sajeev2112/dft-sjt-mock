@@ -9749,7 +9749,7 @@ const RW_9_1 = [
   "g": "R",
   "a": "Injured colleague insists on surgery",
   "k": "BEG",
-  "s": "Month 9, an urgent care centre. The senior dentist slips in the car park and hurts her wrist. She agrees with you to postpone Mr Fox’s 2pm surgical root removal and get her wrist checked; he is in pain. Just before 2pm, Mr Fox is in her chair and her nurse is drawing up anaesthetic. Now in a splint, she says the pain has settled: ‘it’s a quick one’. The clinical manager is on call. You are the only other dentist, with a patient at 2:10pm, and surgical root removal is beyond your experience.",
+  "s": "Month 9, an urgent care centre. 1:20pm: the senior dentist slips in the car park and hurts her wrist. 1:35pm: she agrees with you to postpone Mr Fox’s 2pm surgical root removal and get her wrist checked; he is in pain. 1:55pm: Mr Fox is in her chair and her nurse is drawing up anaesthetic. Now in a splint, she says the pain has settled: ‘it’s a quick one’. The clinical manager is on call. You are the only other dentist, with a patient at 2:10pm, and surgical root removal is beyond your experience.",
   "o": [
    [
     "Phone the clinical manager now, before speaking to the senior dentist again, telling him about the fall, the splint and the planned surgery.",
@@ -9845,7 +9845,7 @@ const RW_9_1 = [
   "g": "P",
   "a": "Two seniors, one walk-in",
   "k": "CEDBA",
-  "s": "Month 9, a community clinic. The clinical lead, your ES, has told you to run your list and leave walk-ins to the senior dentist. At 10:40 he brings you Mr Reid with jaw swelling from LR8, trismus and fever of 38.3°C. ‘I’m in a GA assessment. Take him; I’ll square it with her.’ He told your nurse it hurts to swallow; to you he says it is ‘just sore’. Your 11:00 patient, who has dementia, had two visits cancelled; her transport leaves at 11:45. The lead is in a meeting but reads messages.",
+  "s": "Month 9, a community clinic. The clinical lead, your ES, has told you to run your list and leave walk-ins to the senior dentist. At 10:40 the senior dentist brings you Mr Reid with jaw swelling from LR8, trismus and fever of 38.3°C. ‘I’m in a GA assessment. Take him; I’ll square it with the lead.’ Mr Reid told your nurse it hurts to swallow; to you he says it is ‘just sore’. Your 11:00 patient, who has dementia, had two visits cancelled; her transport leaves at 11:45. The lead is in a meeting but reads messages.",
   "o": [
    [
     "See your 11:00 patient as booked so her transport is kept, and ask your nurse to recheck Mr Reid’s temperature and swallowing until 11:30.",
@@ -9919,7 +9919,7 @@ const RW_9_2 = [
   "g": "P",
   "a": "Anticoagulated bleed mid-procedure",
   "k": "EACBD",
-  "s": "Month 4, a mixed practice. You are partway through root canal treatment on UL6, with the access cavity open and canals not yet found; the appointment runs until 3:15. Your ES is out until 4pm; the associate is mid-extraction. Mrs Moss, who takes apixaban and whose LR4 you took out this morning, is back: the socket is ‘oozing’ despite an hour on gauze. At 2:46 your nurse reports she has soaked two pads with fresh blood, feels light-headed and looks very pale. Her husband asks whether to drive her to hospital.",
+  "s": "Month 4, a mixed practice. You are partway through root canal treatment on UL6, with the access cavity open and canals not yet found; the appointment runs until 3:15. Your ES is out until 4pm; the associate is mid-extraction. Mrs Moss, who takes apixaban and whose LR4 you took out this morning, is back: the socket is ‘oozing’ despite an hour on gauze. At 2:46 your nurse reports that Mrs Moss has soaked two pads with fresh blood, feels light-headed and looks very pale. Her husband asks whether to drive her to hospital.",
   "o": [
    [
     "Ask reception to give Mrs Moss fresh gauze while you find the canals and dress UL6, then assess her in about ten minutes.",
