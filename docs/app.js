@@ -1276,7 +1276,8 @@ function renderResults(){
     S.hist.slice().reverse().forEach(x => { const mc = histMockId(x, claimed); h += `<tr><td>${new Date(x.t).toLocaleDateString("en-GB", {day:"numeric", month:"short"})}</td><td>${esc(histName(x, mc))}${mc && mockKept(mc) ? ` <button type="button" class="btn small" data-act="mock-open" data-c="${mc}">Review</button>` : ""}</td><td>${x.mode === "exam" ? "Exam" : "Practice"}</td><td>${x.g} / ${x.m} · ${pct(x.g, x.m)}%</td></tr>`; });
     h += `</tbody></table></div>`;
   }
-  el.innerHTML = tidyResults(h) + `</div>`;
+  const html = tidyResults(h) + `</div>`;
+  try { el.innerHTML = html; } catch (e) { setTimeout(() => { el.innerHTML = html; }, 0); } // Chrome throws if a focused field's blur moves nodes mid-replace; try again outside that event
 }
 // ---------- the Mock exams tab ----------
 // Where the learner picks Mock 1 to 5 (status, attempts seen before, Start / Resume / Retake), takes it (the exam
@@ -1657,7 +1658,7 @@ document.addEventListener("click", async e => {
 });
 document.addEventListener("change", e => {
   if (e.target.id === "share") { S.share = e.target.checked; save(); if (S.share) flush(); }
-  if (e.target.id === "examdate") { const v = e.target.value; if (!v || /^\d{4}-\d{2}-\d{2}$/.test(v)) { S.exam = v; save(); render(); } }
+  if (e.target.id === "examdate") { const v = e.target.value; if (!v || /^\d{4}-\d{2}-\d{2}$/.test(v)) { S.exam = v; save(); setTimeout(render, 0); } } // redrawn after this event: replacing a focused date field from inside its own change/blur can throw NotFoundError
 });
 function refreshStats(qi){ keepFocus(() => { const box = document.getElementById("stats-" + qi); if (box) box.outerHTML = statsHtml(qi); }); }
 function markSet(){
@@ -2042,7 +2043,7 @@ window.addEventListener("online", flushMockEvents);
 // always open there, answered or not), the exam screen or a running mock, and never with a clock running, a form, a
 // confirmation, a drag, the Sync panel or a study plan being written. Takes plain facts so tools/test-update.mjs can check it.
 function updateMayReload(f){ return ["mocks", "results", "guide", "settings"].includes(f.view) && !f.exam && !f.mock && !f.timer && !f.building && !f.typing && !f.feedback && !f.dialog; }
-const BUILD = "f6ac049549"; // this page's build version, set by tools/build.js
+const BUILD = "163c9c36e7"; // this page's build version, set by tools/build.js
 // What's on screen right now, for updateMayReload and the welcome tour (an open tour counts as a dialog).
 const quietFacts = () => { const c = S.sets.custom; return {view: S.view, exam: !!(window.Exam && Exam.isOpen()), mock: !!c && mockLive(c) && !c.left, timer: timerOn, building: ui.building,
   typing: busyTyping() || !!(document.getElementById("code-in") || {}).value || !!ui.code, feedback: ui.fbOpen != null, dialog: !!syncUi.conflict || !!document.querySelector(".dragging, .confirm, .sp-go:disabled, .tour")}; };
