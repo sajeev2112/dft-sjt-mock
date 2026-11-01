@@ -1762,6 +1762,7 @@ window.addEventListener("storage", e => {
 async function syncCall(action, extra){
   const r = await fetch(API + "/api/sync", {method: "POST", headers: {"Content-Type": "application/json"}, cache: "no-store",
     body: JSON.stringify(Object.assign({action}, extra))});
+  netFails.sync = 0;
   let body = {}; try { body = await r.json(); } catch(e) {}
   return {status: r.status, body};
 }
@@ -1776,7 +1777,7 @@ const SYNC_ERRORS = {
 };
 // For error reports: the server's reason code (such as rate_limited or bad_data) or the HTTP status, or "network" when the
 // browser says it's online but the server couldn't be reached. Never the username, PIN or progress.
-function syncFailed(res){ if (res) report("sync", {reason: /^[a-z_]{1,20}$/.test(res.body && res.body.error || "") ? res.body.error : "http " + res.status, st: res.status}); else if (navigator.onLine) report("sync", {reason: "network", st: 0}); }
+function syncFailed(res){ if (res) report("sync", {reason: /^[a-z_]{1,20}$/.test(res.body && res.body.error || "") ? res.body.error : "http " + res.status, st: res.status}); else if (navigator.onLine && (netFails.sync = (netFails.sync || 0) + 1) >= 2) report("sync", {reason: "network", st: 0}); }
 function syncErr(res){ if (res.body.error === "locked") return `Too many wrong PINs for that username. Try again in ${res.body.retry_after} minute${res.body.retry_after === 1 ? "" : "s"}.`; return SYNC_ERRORS[res.body.error] || "Couldn’t reach the server. Check your connection and try again."; }
 function adopt(data, ts){
   const view = S.view, setId = S.setId, n = normalise(JSON.parse(data));
@@ -2173,14 +2174,15 @@ window.addEventListener("unhandledrejection", e => { try {
   const at = String(r && r.stack || "").match(/\/([\w-]+\.js)(?:\?[^:\s)]*)?:(\d+):(\d+)/) || [];
   report("rejection", {via: "rejection", name: r && r.name, message: r && r.message || r, stack: r && r.stack, file: at[1], line: at[2], col: at[3]});
 } catch(err) {} });
+const netFails = {}; // consecutive network failures per endpoint, so a single blip is not reported
 // Failed calls to the site's own API: the endpoint and status only (never what was sent or received). Sync reports its own
 // failures by reason, and expected refusals (wrong PIN 401, conflict 409, locked 423, rate limit 429) are not problems.
 if (rawFetch) window.fetch = function(input){
   const p = rawFetch.apply(window, arguments);
   try {
     const ep = (String(typeof input === "string" ? input : input && input.url || "").match(/\/api\/([a-z-]+)/) || [])[1];
-    if (ep && ep !== "error" && ep !== "sync") p.then(r => { if (r.status >= 500 || [400, 403, 404, 405, 413].includes(r.status)) report("api", {ep, st: r.status}); },
-      er => { if (navigator.onLine && !(er && er.name === "AbortError")) report("api", {ep, st: 0}); });
+    if (ep && ep !== "error" && ep !== "sync") p.then(r => { netFails[ep] = 0; if (r.status >= 500 || [400, 403, 404, 405, 413].includes(r.status)) report("api", {ep, st: r.status}); },
+      er => { if (navigator.onLine && !(er && er.name === "AbortError") && (netFails[ep] = (netFails[ep] || 0) + 1) >= 3) report("api", {ep, st: 0}); }); // one dropped request (a Mac waking, Wi-Fi to mobile) is retried by the queues; only repeats are a problem
   } catch(e) {}
   return p;
 };
@@ -2205,7 +2207,7 @@ window.addEventListener("online", flushMockEvents);
 // always open there, answered or not), the exam screen or a running mock, and never with a clock running, a form, a
 // confirmation, a drag, the Sync panel or a study plan being written. Takes plain facts so tools/test-update.mjs can check it.
 function updateMayReload(f){ return ["mocks", "results", "guide", "settings"].includes(f.view) && !f.exam && !f.mock && !f.timer && !f.building && !f.typing && !f.feedback && !f.dialog; }
-const BUILD = "775bf80c6d"; // this page's build version, set by tools/build.js
+const BUILD = "331cc92977"; // this page's build version, set by tools/build.js
 // What's on screen right now, for updateMayReload and the welcome tour (an open tour counts as a dialog).
 const quietFacts = () => { const c = S.sets.custom; return {view: S.view, exam: !!(window.Exam && Exam.isOpen()), mock: !!c && mockLive(c) && !c.left, timer: timerOn, building: ui.building,
   typing: busyTyping() || !!(document.getElementById("code-in") || {}).value || !!ui.code, feedback: ui.fbOpen != null, dialog: !!syncUi.conflict || !!document.querySelector(".dragging, .confirm, .sp-go:disabled, .tour")}; };
@@ -2339,7 +2341,7 @@ if ("serviceWorker" in navigator && location.protocol !== "file:") {
       const v = String((await r.json()).v || "");
       if (!/^[a-f0-9]{10}$/.test(v) || !/^[a-f0-9]{10}$/.test(BUILD) || v === BUILD) return;
       newest = v; updateWaiting = true; crumb("update-found");
-      if (swReg) swReg.update().catch(e => report("sw", {reason: "update " + (e && e.name || "error")})); // let the offline copy catch up too
+      if (swReg) swReg.update().catch(e => { if (!(e && e.name === "TypeError")) report("sw", {reason: "update " + (e && e.name || "error")}); }); // let the offline copy catch up too
       if (!reloadIfQuiet() && dismissed !== v) showUpdateBar();
     } catch (e) { /* offline or a hiccup: try again at the next check */ }
   };

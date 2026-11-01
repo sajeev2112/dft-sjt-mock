@@ -81,9 +81,9 @@ ok(T.scrub("a\u0000b\nc") === "a b c" && T.scrub("x".repeat(500)).length === 200
   ok(s.length < 2500, "a full report is small (" + s.length + " chars)"); }
 
 // ---------- the reporter in a stand-in browser ----------
-function browser({share = true, fetchThrows = false, sRef = true} = {}){
+function browser({share = true, fetchThrows = false, sRef = true, dropAnswers = false} = {}){
   const sent = [], listeners = {};
-  const fetchImpl = async (url, init) => { if (fetchThrows) throw new TypeError("Failed to fetch"); sent.push({url, body: init && init.body}); return {ok: String(url).includes("/api/stats") ? false : true, status: String(url).includes("/api/stats") ? 503 : 200}; };
+  const fetchImpl = async (url, init) => { if (fetchThrows || (dropAnswers && String(url).includes("/api/answers"))) throw new TypeError("Failed to fetch"); sent.push({url, body: init && init.body}); return {ok: String(url).includes("/api/stats") ? false : true, status: String(url).includes("/api/stats") ? 503 : 200}; };
   const win = {addEventListener: (t, f) => (listeners[t] = listeners[t] || []).push(f), fetch: fetchImpl, innerWidth: 390, innerHeight: 844, matchMedia: q => ({matches: q.includes("coarse")})};
   const ctx = {window: win, location: {protocol: "https:", hash: "#results"}, navigator: {onLine: true, language: "en-GB", userAgent: UA["Chrome 130 / Android"]},
     performance: {now: () => 5000}, document: {getElementById: () => null, querySelector: () => null}, API: "", BUILD: "163c9c36e7",
@@ -116,6 +116,11 @@ const tick = () => new Promise(r => setTimeout(r, 10));
   ok(b.sent.length === 1 && JSON.parse(b.sent[0].body).msg === "SyntaxError: bad @ app.js:1771", "an error filed under the page counts when its stack runs through our code; others don't"); }
 { const b = browser({share: false}); b.fire("error", {filename: "https://x.dev/app.js", lineno: 1, message: "x"}); await b.ctx.window.fetch("/api/stats"); await tick();
   ok(b.sent.filter(x => x.url === "/api/error").length === 0, "anonymous sharing off: nothing is reported"); }
+{ const b = browser({dropAnswers: true}); const f = () => b.ctx.window.fetch("/api/answers", {method: "POST", body: "{}"}).catch(() => {});
+  await f(); await f(); await tick();
+  ok(b.sent.length === 0, "one or two dropped requests in a row are not reported (the answer queue retries them)");
+  await f(); await tick();
+  ok(b.sent.length === 1 && JSON.parse(b.sent[0].body).msg === "API answers network", "three in a row are reported"); }
 { const b = browser({fetchThrows: true}); let threw = false;
   try { b.fire("error", {filename: "https://x.dev/app.js", lineno: 1, message: "x", error: {get stack(){ throw new Error("evil"); }, name: "E"}}); b.ctx.R.report("api", null); b.ctx.R.report(undefined, undefined); await tick(); } catch (e) { threw = true; }
   ok(!threw, "the reporter never throws, even when sending fails or the error object is hostile"); }
