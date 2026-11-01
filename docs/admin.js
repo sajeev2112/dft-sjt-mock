@@ -204,11 +204,12 @@ function watchAlerts(){
 }
 
 // ---------- extra sections ----------
-// Mock-only questions (mk: 1, the brand-new mock) are in no paper: they are labelled "New mock, Qn" (n = 1 to 56 in the order written).
-const MK0 = Q.findIndex(q => q.mk);
-const paperOf = q => q.mk ? "New mock" : "Paper " + q.p, localOf = q => q.mk ? q.n - MK0 : q.n - (q.p - 1) * 32;
+// Mock-only questions (mk: 1 = Mock 1, Q289-344; mk: 2 = Mock 2, Q377-432) are in no paper: they are labelled "Mock 1, Qn" or
+// "Mock 2, Qn" (n = 1 to 56 in the order written).
+const MK0 = mk => Q.findIndex(q => q.mk === mk);
+const paperOf = q => q.mk ? "Mock " + q.mk : "Paper " + q.p, localOf = q => q.mk ? q.n - MK0(q.mk) : q.n - (q.p - 1) * 32 - (q.p > 9 ? 56 : 0); // Paper 10 (Q345-376) sits after the 56 mock-only questions
 const qLabel = q => `${paperOf(q)}, Q${localOf(q)}`;
-const groupName = k => +k === 0 ? "New mock" : "Paper " + k; // by-paper tables group mock-only questions (p = 0) on their own
+const groupOf = q => q.mk ? "m" + q.mk : q.p, groupName = k => /^m/.test(k) ? "Mock " + k.slice(1) : "Paper " + k; // by-paper tables group each mock's mock-only questions (p = 0) on their own
 const rate = o => o && o.n ? pct(o.back, o.n) + "%" : "–";
 const rateSub = (o, d) => o && o.n ? `${fmtN(o.back)} of ${fmtN(o.n)} people first seen ${d}+ days ago came back within ${d} days` : `Not enough history yet (needs people first seen ${d}+ days ago)`;
 function weekStart(day){ const d = new Date(day + "T12:00:00Z"), dow = (d.getUTCDay() + 6) % 7; return new Date(d - dow * 864e5).toISOString().slice(0, 10); }
@@ -247,7 +248,7 @@ function timeCard(qs){
   const mean = rs => { const n = rs.reduce((t, r) => t + r.t.n, 0); return n ? rs.reduce((t, r) => t + r.t.avg * r.t.n, 0) / n : 0; };
   const cnt = rs => rs.reduce((t, r) => t + r.t.n, 0);
   const rank = rows.filter(r => r.x.rank), best = rows.filter(r => !r.x.rank), papers = {};
-  for (const r of rows) (papers[r.x.q.p] = papers[r.x.q.p] || []).push(r);
+  for (const r of rows) (papers[groupOf(r.x.q)] = papers[groupOf(r.x.q)] || []).push(r);
   const slow = rows.filter(r => r.t.n >= MIN_N).sort((a, b) => b.t.avg - a.t.avg).slice(0, 10);
   const tbl = (head, body) => `<div class="tscroll"><table class="rtable"><thead><tr>${head.map(h => `<th>${h}</th>`).join("")}</tr></thead><tbody>${body}</tbody></table></div>`;
   return `<section class="card half"><h2 class="bh">Time per question</h2>
@@ -286,7 +287,7 @@ function rankCard(qs){
   const judged = qs.filter(x => x.n >= MIN_N), row = (x, c) => `<tr><td>${qLabel(x.q)}</td><td>${esc(x.q.a)}</td>${c}</tr>`;
   const hardest = judged.slice().sort((a, b) => a.avg - b.avg).slice(0, 10), popular = qs.filter(x => x.n).sort((a, b) => b.n - a.n).slice(0, 10);
   const papers = {};
-  for (const x of qs) { const p = papers[x.q.p] = papers[x.q.p] || {n: 0, sum: 0, recheck: 0}; p.n += x.n; p.sum += (x.avg || 0) * x.n; if (x.flag === "recheck") p.recheck++; }
+  for (const x of qs) { const p = papers[groupOf(x.q)] = papers[groupOf(x.q)] || {n: 0, sum: 0, recheck: 0}; p.n += x.n; p.sum += (x.avg || 0) * x.n; if (x.flag === "recheck") p.recheck++; }
   const tbl = (head, rows) => `<div class="tscroll"><table class="rtable"><thead><tr>${head.map(h => `<th>${h}</th>`).join("")}</tr></thead><tbody>${rows}</tbody></table></div>`;
   return `<section class="card"><h2 class="bh">Question rankings</h2>
     <div class="rcols"><div><p class="plabel" style="margin-top:0">Hardest questions</p><p class="muted">Lowest average score against the key. Only questions with ${MIN_N}+ answers.</p>${hardest.length ? tbl(["Question", "Scenario", "Answers", "Average score"], hardest.map(x => row(x, `<td>${fmtN(x.n)}</td><td>${Math.round(x.avg * 100)}%</td>`)).join("")) : `<p class="empty">Not enough answers yet.</p>`}
@@ -308,11 +309,11 @@ function download(name, rows){
 function exportQuestions(){
   const votes = Object.fromEntries(((data.ai || {}).votes || []).map(v => [v.q, v])), tms = Object.fromEntries((data.times || []).map(t => [t.q, t]));
   download("dft-sjt-question-stats.csv", [["Question", "Paper", "Question in paper", "Scenario", "Answers", "Average score %", "Agree on the top %", "Status", "AI thumbs up", "AI thumbs down", "Timed answers", "Average seconds"]].concat(
-    analyse().map(x => [x.i + 1, x.q.mk ? "New mock" : x.q.p, localOf(x.q), x.q.a, x.n, x.n ? Math.round(x.avg * 100) : "", x.n ? Math.round(x.agree * 100) : "", FLAG_TEXT[x.flag], (votes[x.i + 1] || {}).up || 0, (votes[x.i + 1] || {}).down || 0, (tms[x.i + 1] || {}).n || 0, tms[x.i + 1] ? Math.round(tms[x.i + 1].avg) : ""])));
+    analyse().map(x => [x.i + 1, x.q.mk ? "Mock " + x.q.mk : x.q.p, localOf(x.q), x.q.a, x.n, x.n ? Math.round(x.avg * 100) : "", x.n ? Math.round(x.agree * 100) : "", FLAG_TEXT[x.flag], (votes[x.i + 1] || {}).up || 0, (votes[x.i + 1] || {}).down || 0, (tms[x.i + 1] || {}).n || 0, tms[x.i + 1] ? Math.round(tms[x.i + 1].avg) : ""])));
 }
 function exportComments(){
   download("dft-sjt-disagree-comments.csv", [["Date", "Question", "Paper", "Question in paper", "Scenario", "Comment"]].concat(
-    data.feedback.map(f => { const q = Q[f.q - 1]; return [new Date(f.t).toISOString().slice(0, 10), f.q, q ? (q.mk ? "New mock" : q.p) : "", q ? localOf(q) : "", q ? q.a : "", f.comment || ""]; })));
+    data.feedback.map(f => { const q = Q[f.q - 1]; return [new Date(f.t).toISOString().slice(0, 10), f.q, q ? (q.mk ? "Mock " + q.mk : q.p) : "", q ? localOf(q) : "", q ? q.a : "", f.comment || ""]; })));
 }
 function dataTable(pts, ...cols){
   return `<div class="tscroll"><table class="rtable"><thead><tr><th>Day</th>${cols.map(c => `<th>${c[0]}</th>`).join("")}</tr></thead><tbody>${pts.slice().reverse().map(p => `<tr><td>${dayLabel(p.day)}</td>${cols.map(c => `<td>${fmtN(c[1](p))}</td>`).join("")}</tr>`).join("")}</tbody></table></div>`;

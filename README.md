@@ -4,9 +4,9 @@ An unofficial practice site for the UK Dental Foundation Training (DFT) Situatio
 
 **Try it:** https://dft-sjt-mock.sajeev-r13.workers.dev
 
-- 288 original questions in nine papers: Paper 1 (standard), Papers 2 and 3 (harder), Papers 4 to 7 · Advanced and Papers 8 and 9 · Expert (deliberately harder than the live test, written and checked by a multi-agent question factory)
+- 320 original questions in ten papers: Paper 1 (standard), Papers 2 and 3 (harder), Papers 4 to 7 · Advanced and Papers 8 to 10 · Expert (deliberately harder than the live test, written and checked by a multi-agent question factory)
 - Ranking items you drag into order, and best-three-of-eight items, both marked with the live test's near-miss scoring
-- Five timed mock exams (Mock 1 to Mock 5, in their own Mock exams tab): fixed, balanced 56-question papers with no question in more than one, 105 minutes each, retakes kept and every attempt reviewable, with a countdown, warnings at 15 and 5 minutes, automatic marking when time runs out and a results summary
+- Seven timed mock exams (Mock 1 to Mock 7, in their own Mock exams tab): fixed 56-question papers with no question in more than one. Mock 1 and Mock 2 are 112 brand-new questions used nowhere else on the site; Mock 3 to Mock 7 are balanced papers drawn from Papers 1 to 9. Each takes 105 minutes, retakes kept and every attempt reviewable, with a countdown, warnings at 15 and 5 minutes, automatic marking when time runs out and a results summary
 - Flags on any question (button or the F key), shown on the question grid, with a Flagged questions quiz
 - Quick 10 quizzes, and weak-spot, area and theme quizzes
 - Gentle animations between questions and on reveals, switched off for anyone who prefers reduced motion

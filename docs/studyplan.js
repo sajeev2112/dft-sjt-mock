@@ -11,8 +11,8 @@
 
   // The answer you last gave to a question: from the quiz you did most recently if it covered it, else from its paper.
   function answerOf(qi){
-    const sets = [S.sets.custom, S.sets["p" + (Math.floor(qi / 32) + 1)]];
-    for (const set of sets) if (set && (set.list || []).includes(qi) || (set && set === S.sets["p" + (Math.floor(qi / 32) + 1)])) { if (set && revealed(set, qi) && set.ans[qi] && complete(set, qi)) return set.ans[qi]; }
+    const paper = S.sets["p" + Q[qi].p], sets = [S.sets.custom, paper]; // Q[qi].p: Paper 10 sits after the mock-only questions (p 0 = none)
+    for (const set of sets) if (set && (set.list || []).includes(qi) || (set && set === paper)) { if (set && revealed(set, qi) && set.ans[qi] && complete(set, qi)) return set.ans[qi]; }
     return null;
   }
 

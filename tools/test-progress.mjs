@@ -123,6 +123,8 @@ check("junk counts are ignored", percentile([1, "x", -4, null, 1], 4) === 50);
   [s, d] = await call("GET", "/api/mock-stats?no=103");
   check("paper scores: first complete attempt per person, kept apart from the mocks", s === 200 && d.n === 12 && d.dist[50] === 1 && d.dist[100] === 0 && (await call("GET", "/api/mock-stats?no=3"))[1].n === 1);
   check("a paper event can't write a mock's number or a bad score", bs1 === 400 && bs2 === 400);
+  { const [s10] = await paper("paper10-client-1", 110, 64), [g10, d10] = await call("GET", "/api/mock-stats?no=110");
+    check("Paper 10 scores are stored and compared as number 110", s10 === 200 && g10 === 200 && d10.n === 1); }
   check("paper events are not mock runs (the dashboard's completion rate is unchanged)", db.prepare("SELECT COUNT(*) AS c FROM mock_runs").get().c === 14);
   check("the finish events still feed the dashboard's mock_runs", db.prepare("SELECT COUNT(*) AS c FROM mock_runs WHERE status = 'finish'").get().c === 13);
   check("only percentages and the random browser code are stored", J(Object.keys(db.prepare("SELECT * FROM mock_scores LIMIT 1").get())) === J(["client", "no", "p", "t"])); }

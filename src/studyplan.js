@@ -88,7 +88,7 @@ const mmss = s => Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0");
 export function factsOf(p) {
   const lines = [], focus = [];
   lines.push(QA.length === QN ? `The trainee has answered ${p.answered} of ${QN} practice questions and scores ${p.pct}% on average (the live test's marking).` // QN: practice questions; the rest of QA are the brand-new mock's
-    : `The trainee has answered ${p.answered} of ${QA.length} questions (${QN} practice questions plus ${QA.length - QN} in a brand-new mock) and scores ${p.pct}% on average (the live test's marking).`);
+    : `The trainee has answered ${p.answered} of ${QA.length} questions (${QN} practice questions plus ${QA.length - QN} in the brand-new mocks) and scores ${p.pct}% on average (the live test's marking).`);
   const weak = p.themes.filter(t => t.n >= 2).slice(0, 4);
   weak.forEach(t => {
     const qs = (p.weakQs[t.g] || []).map(q => QA[q - 1]);

@@ -38,20 +38,39 @@ else Q.forEach((q, i) => {
   else if (tagData.sig[i] !== sigOf(q)) errors.push(`Q${i + 1}: options changed since they were tagged; re-tag it in tools/tags.json (new signature ${sigOf(q)})`);
 });
 // mockOnly:start (tools/test-newmock.mjs runs this function on its own)
-// Mock-only questions (mk: 1) make up the brand-new mock and nothing else, so there must be none, or exactly 56 (37 ranking-type
-// and 19 best-three, like the live test), all after the last practice question (the papers are counted from the start of Q).
+// Mock-only questions (mk: 1 = Mock 1, mk: 2 = Mock 2) make up the brand-new mocks and nothing else. Each mock's block must be
+// exactly 56 (37 ranking-type and 19 best-three, like the live test), one unbroken block after a whole number of practice
+// papers (the papers are counted over the practice questions only), with Mock 1's block (Q289-344) before Mock 2's (Q377-432).
+// Practice papers (Paper 10 on) are appended between and after the blocks, so no question number ever changes.
 function checkMockOnly(Q){
-  const out = [], mk = Q.map((q, i) => i).filter(i => Q[i].mk);
-  Q.forEach((q, i) => { if ("mk" in q && q.mk !== 1) out.push(`Q${i + 1}: mk must be 1 (mock-only) or left out, not ${JSON.stringify(q.mk)}`); });
-  if (!mk.length) return out;
-  const rank = mk.filter(i => Q[i].t !== "best3").length, best = mk.length - rank;
-  if (mk.length !== 56 || rank !== 37 || best !== 19) out.push(`Mock-only questions (mk: 1): found ${mk.length} (${rank} ranking-type, ${best} best-three); the brand-new mock needs exactly 56: 37 ranking-type (rank or consider) and 19 best-three`);
-  const firstMk = mk[0], lastPractice = Q.map((q, i) => i).filter(i => !Q[i].mk).pop();
-  if (lastPractice > firstMk) out.push(`Mock-only questions must come after every practice question: Q${firstMk + 1} is mock-only but Q${lastPractice + 1} (a practice question) comes after it; append the mock-only questions at the end of Q`);
+  const out = [];
+  Q.forEach((q, i) => { if ("mk" in q && q.mk !== 1 && q.mk !== 2) out.push(`Q${i + 1}: mk must be 1 or 2 (mock-only, Mock 1 or Mock 2) or left out, not ${JSON.stringify(q.mk)}`); });
+  let total = 0, prevEnd = -1;
+  for (const m of [1, 2]) {
+    const mk = Q.map((q, i) => i).filter(i => Q[i].mk === m); total += mk.length;
+    if (!mk.length) { if (m === 1 && Q.some(q => q.mk === 2)) out.push("Mock 2's questions (mk: 2) need Mock 1's (mk: 1) first"); continue; }
+    const rank = mk.filter(i => Q[i].t !== "best3").length, best = mk.length - rank;
+    if (mk.length !== 56 || rank !== 37 || best !== 19) out.push(`Mock ${m}'s mock-only questions (mk: ${m}): found ${mk.length} (${rank} ranking-type, ${best} best-three); each brand-new mock needs exactly 56: 37 ranking-type (rank or consider) and 19 best-three`);
+    const firstMk = mk[0], lastMk = mk[mk.length - 1], practiceBefore = Q.slice(0, firstMk).filter(q => !q.mk).length;
+    if (lastMk - firstMk + 1 !== mk.length) out.push(`Mock ${m}'s questions must be one unbroken block: Q${firstMk + 1} to Q${lastMk + 1} also holds other questions`);
+    if (practiceBefore % 32) out.push(`Mock ${m}'s questions must start after a whole practice paper: ${practiceBefore} practice questions come before Q${firstMk + 1}`);
+    if (firstMk < prevEnd) out.push(`Mock ${m}'s questions must come after Mock ${m - 1}'s`);
+    prevEnd = lastMk;
+  }
+  if (total && total !== 112) out.push(`Mock-only questions: found ${total}; expected 112 (56 for Mock 1 and 56 for Mock 2)`);
   return out;
 }
 // mockOnly:end
 errors.push(...checkMockOnly(Q));
+// Each paper tab in docs/app.js (PAPERS: id, from, to) must hold exactly the 32 questions of that paper, and every practice
+// question must be in one: Paper 10 starts at Q345, after the mock-only block, so its range is not next to Paper 9's.
+{
+  const P = {}; for (const m of read("docs/app.js").matchAll(/^\s*p(\d+):\{name:"[^"]*", from:(\d+), to:(\d+)/gm)) P[m[1]] = [+m[2], +m[3]];
+  const covered = new Set();
+  Object.entries(P).forEach(([n, [from, to]]) => { if (to - from !== 32) errors.push(`PAPERS p${n}: needs 32 questions, has ${to - from}`);
+    for (let i = from; i < to; i++) { covered.add(i); if (Q[i] && Q[i].p !== +n) errors.push(`PAPERS p${n} covers Q${i + 1}, which is ${Q[i].mk ? "mock-only" : "in Paper " + Q[i].p}`); } });
+  Q.forEach((q, i) => { if (!q.mk && !covered.has(i)) errors.push(`Q${i + 1} (Paper ${q.p}) is in no paper tab: add it to PAPERS in docs/app.js`); });
+}
 if (errors.length) { console.error(errors.join("\n")); process.exit(1); }
 
 // Difficulty audit (warnings only): the answer shouldn’t be guessable from length or giveaway wording.
@@ -92,7 +111,7 @@ if (errors.length) { console.error(errors.join("\n")); process.exit(1); }
 {
   const BASE = "https://sajeev2112.github.io/dft-sjt-mock/", today = new Date().toISOString().slice(0, 10);
   const esc = t => String(t).replace(/&(?!amp;|lt;|gt;|quot;|#\d+;)/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-  const PQ = Q.filter(q => !q.mk); // the practice bank: the published pages count practice questions only (the brand-new mock's are not in any paper)
+  const PQ = Q.filter(q => !q.mk); // the practice bank: the published pages count practice questions only (the brand-new mocks' are not in any paper)
   const countBy = f => { const c = {}; PQ.forEach(q => { c[f(q)] = (c[f(q)] || 0) + 1; }); return c; };
   const byTheme = countBy(q => q.g), byDomain = countBy(q => q.d), byType = countBy(q => q.t);
   const PAGES = [
@@ -184,7 +203,7 @@ ${body}
 - Source code: https://github.com/sajeev2112/dft-sjt-mock
 `);
 }
-fs.writeFileSync(path.join(root, "src/study-data.js"), "// Generated by tools/build.js. Do not edit.\nexport const THEMES = " + JSON.stringify(THEMES) + ";\nexport const DOMAINS = " + JSON.stringify(DOMAINS) + ";\nexport const TAGS = " + JSON.stringify(TAG_LABELS) + ";\nexport const QA = " + JSON.stringify(Q.map(q => q.a)) + ";\nexport const QN = " + Q.filter(q => !q.mk).length + "; // practice questions (the rest are the brand-new mock's)\nexport const QG = " + JSON.stringify(Q.map(q => q.g).join("")) + ";\nexport const SECTIONS = " + JSON.stringify(SECTIONS) + ";\nexport const TAG_READ = " + JSON.stringify(TAG_READ) + ";\nexport const OPT_TAGS = " + JSON.stringify(tagData.tags) + ";\n");
+fs.writeFileSync(path.join(root, "src/study-data.js"), "// Generated by tools/build.js. Do not edit.\nexport const THEMES = " + JSON.stringify(THEMES) + ";\nexport const DOMAINS = " + JSON.stringify(DOMAINS) + ";\nexport const TAGS = " + JSON.stringify(TAG_LABELS) + ";\nexport const QA = " + JSON.stringify(Q.map(q => q.a)) + ";\nexport const QN = " + Q.filter(q => !q.mk).length + "; // practice questions (the rest are the brand-new mocks')\nexport const QG = " + JSON.stringify(Q.map(q => q.g).join("")) + ";\nexport const SECTIONS = " + JSON.stringify(SECTIONS) + ";\nexport const TAG_READ = " + JSON.stringify(TAG_READ) + ";\nexport const OPT_TAGS = " + JSON.stringify(tagData.tags) + ";\n");
 
 const types = Q.map(q => q.t === "best3" ? "b" : "r").join("");
 const worker = read("src/worker.js").replace(/\/\/ TYPES:start[\s\S]*?\/\/ TYPES:end/, `// TYPES:start\nconst QTYPES = "${types}";\n// TYPES:end`);
