@@ -9,7 +9,7 @@
 //   4. Anything that fails is reported as "written", and the page keeps showing the plain study plan the browser built.
 // Cost: shares the daily free-allowance counter with "Explain my mistake" (reserveNeurons), plus a per-network hourly limit.
 import { runModel, parseJson, british, SOURCES, reserveNeurons, settleNeurons } from "./explain.js";
-import { THEMES, DOMAINS, TAGS, QA, QN, QG, SECTIONS, TAG_READ } from "./study-data.js";
+import { THEMES, DOMAINS, TAGS, QA, QN, QM, QG, SECTIONS, TAG_READ } from "./study-data.js";
 
 const MODEL = "gpt-oss-120b", VERIFIER = "llama-3.3-70b";
 const RESERVE = 420;
@@ -87,8 +87,8 @@ const mmss = s => Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0");
 // The facts the model is given, as plain sentences, plus the exact focus names it may use.
 export function factsOf(p) {
   const lines = [], focus = [];
-  lines.push(QA.length === QN ? `The trainee has answered ${p.answered} of ${QN} practice questions and scores ${p.pct}% on average (the live test's marking).` // QN: practice questions; the rest of QA are the brand-new mock's
-    : `The trainee has answered ${p.answered} of ${QA.length} questions (${QN} practice questions plus ${QA.length - QN} in the brand-new mocks) and scores ${p.pct}% on average (the live test's marking).`);
+  lines.push(!QM ? `The trainee has answered ${p.answered} of ${QN} practice questions and scores ${p.pct}% on average (the live test's marking).` // QN: practice questions on the site; QM: the brand-new mocks' (QA also holds any held paper's)
+    : `The trainee has answered ${p.answered} of ${QN + QM} questions (${QN} practice questions plus ${QM} in the brand-new mocks) and scores ${p.pct}% on average (the live test's marking).`);
   const weak = p.themes.filter(t => t.n >= 2).slice(0, 4);
   weak.forEach(t => {
     const qs = (p.weakQs[t.g] || []).map(q => QA[q - 1]);

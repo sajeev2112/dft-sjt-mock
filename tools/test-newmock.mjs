@@ -10,6 +10,8 @@
 // - practice: Quick 10, area, theme and flagged quizzes, builder theme counts and Results totals never use a mock-only
 //   question until it has been answered; then Weak spots, My mistakes and Results include it;
 // - tools/build.js refuses a wrong number of mock-only questions (112 = 56 + 56); docs/admin.js labels them.
+// - Paper 10 is held (hold:true in PAPERS): no tab, in no quiz, list or count, saved Paper 10 progress loads cleanly and is kept,
+//   and removing hold:true brings it all back.
 import fs from "node:fs";
 import vm from "node:vm";
 const read = f => fs.readFileSync(new URL("../" + f, import.meta.url), "utf8");
@@ -42,8 +44,8 @@ const withNew2 = (items, items2) => withNew(items).replace("const Q = [", "const
 const synthetic2 = (n = 56, nRank = 37) => synthetic(n, nRank, {mk: 2}).map((q, k) => Object.assign(q, {a: "Synthetic Mock 2 item " + (k + 1), s: `Synthetic Mock 2 scenario ${k + 1}.`}));
 
 // ---------- the app, in a sandbox ----------
-function app(bankText){
-  const els = {};
+function app(bankText, appSrc = src){ // appSrc: docs/app.js, or a changed copy of it (Paper 10 released, below)
+  const cut = cutOf(appSrc), els = {};
   const ctx = {console, crypto: globalThis.crypto, location: {protocol: "https:", hostname: "example.org", hash: ""}, window: {addEventListener(){}, matchMedia: null},
     document: {querySelector: () => null, querySelectorAll: () => [], addEventListener(){}, getElementById: id => els[id] || (els[id] = {innerHTML: "", id})}, confirm: () => true, TextEncoder, TextDecoder, fetch: () => Promise.reject(new Error("offline"))};
   vm.createContext(ctx);
@@ -54,7 +56,7 @@ function app(bankText){
     var ui = {rdet: {}, warned: {}, summary: false}, timerOn = false, autoPausedSet = null, saved = 0, PLAYBOOKS = {};
     function save(){ saved++; } function render(){} function scrollToCard(){} function markSet(){} function focusCard(){} function announce(){}
     function addAttemptFor(qi, g, m, t){ (S.att[qi] = S.att[qi] || []).push({g, m, t: t || Date.now()}); }
-    globalThis.T = {Q, DOMAINS, THEMES, PAPER_IDS, PAPERS, mockPapers, newMockPaper, NEW_LIST, NEW_MOCK, NEW_LIST2, NEW_MOCK2, NEWEST_MOCK, MOCK_ORDER, mockLabel, mockNoOf, mockCountWord, PRACTICE, forPractice, flagList,
+    globalThis.T = {Q, DOMAINS, THEMES, PAPER_IDS, PAPERS, heldQ, mockPapers, newMockPaper, NEW_LIST, NEW_MOCK, NEW_LIST2, NEW_MOCK2, NEWEST_MOCK, MOCK_ORDER, mockLabel, mockNoOf, mockCountWord, PRACTICE, forPractice, flagList,
       mockPaperList, nextMock, buildQuiz, builderHtml, renderResults, renderMocks, mockCardsHtml, peersHtml, mockSummaryHtml, quizName, setName, histName, weakList, mistakesList,
       normalise, mergeState, fresh, newSet, packMock, unpackMock, addMocks, addAttemptFor, get S(){ return S; }, set S(v){ S = v; }};`, ctx);
   ctx.T.els = els; return ctx.T;
@@ -254,20 +256,56 @@ check("real bank: the new mocks share no question with each other or the five fi
 check("real bank: adding Mock 2 leaves Mock 1 exactly as it was (same 56 questions, same order, same keys)", J(RL.NEW_LIST) === J(RL1.NEW_LIST) && RL1.Q.every((q, i) => RL.Q[i].k === q.k && RL.Q[i].s === q.s && RL.Q[i].p === q.p && RL.Q[i].n === q.n) && RL1.Q.length === 376);
 check("real bank: Mock 1 and Mock 2 are the brand-new papers and the old five are Mock 3-7", J(RL.MOCK_ORDER) === J([6, 7, 1, 2, 3, 4, 5]) && RL.mockLabel(6) === "Mock 1" && RL.mockLabel(7) === "Mock 2" && RL.mockLabel(1) === "Mock 3" && RL.mockLabel(5) === "Mock 7");
 check("real bank: before Mock 2 (Papers 1-10 and Mock 1) the numbering was Mock 1, Mock 2-6", J(RL1.MOCK_ORDER) === J([6, 1, 2, 3, 4, 5]) && RL1.NEW_LIST2.length === 0);
-check("real bank: the practice pool is the 320 practice questions (Papers 1-10)", RL.PRACTICE.length === 320 && RL.PRACTICE.every(i => !RL.Q[i].mk));
+check("real bank: the practice pool is the 288 practice questions of Papers 1-9 (Paper 10 is held)", RL.PRACTICE.length === 288 && J(RL.PRACTICE) === J(R.PRACTICE) && RL.PRACTICE.every(i => !RL.Q[i].mk));
 check("real bank: Mock 2's questions are never in practice quizzes until answered", (RL.S = RL.fresh(), rmk2.every(i => !RL.forPractice(i))));
 // ---------- Paper 10 (Q345-Q376), appended after the mock-only block ----------
 const p10 = range0(344, 376);
 function range0(a, b){ return Array.from({length: b - a}, (_, i) => a + i); }
 check("Paper 10: Q345-Q376 are paper 10, keep their site-wide numbers, 16 rank + 6 consider + 10 best-three", p10.every(i => RL.Q[i].p === 10 && RL.Q[i].n === i + 1 && !RL.Q[i].mk) && p10.filter(i => RL.Q[i].t === "rank").length === 16 && p10.filter(i => RL.Q[i].t === "consider").length === 6 && p10.filter(i => RL.Q[i].t === "best3").length === 10);
 check("Paper 10: Papers 1-9 keep exactly their questions and keys", R.Q.every((q, i) => RL.Q[i].p === q.p && RL.Q[i].n === q.n && RL.Q[i].k === q.k));
-check("Paper 10: a tenth paper tab, p10, holding Q345-Q376", RL.PAPER_IDS.length === 10 && RL.PAPER_IDS[9] === "p10" && RL.PAPERS.p10.from === 344 && RL.PAPERS.p10.to === 376 && J(RL.Q.slice(344, 376).map(q => q.p)) === J(Array(32).fill(10)));
+check("Paper 10 is held: PAPERS keeps p10 (Q345-Q376, hold:true) but there are nine paper tabs, p1-p9", RL.PAPERS.p10.hold === true && RL.PAPERS.p10.from === 344 && RL.PAPERS.p10.to === 376 && J(RL.PAPER_IDS) === J(R.PAPER_IDS) && RL.PAPER_IDS.length === 9 && p10.every(i => RL.heldQ(i)) && !RL.Q.some((q, i) => RL.heldQ(i) && !p10.includes(i)));
 check("Paper 10: the five fixed mocks and the brand-new mocks are unchanged and use none of it", J(fixedReal) === J(R.mockPapers(R.Q)) && fixedReal.flat().concat(RL.NEW_LIST).every(i => i < 344) && RL.NEW_LIST2.every(i => i >= 376));
-check("Paper 10: its questions are practice questions (Quick 10 / theme quizzes may use them)", p10.every(i => RL.PRACTICE.includes(i) && RL.forPractice(i)));
-RL.S = RL.fresh();
-check("Paper 10: a fresh progress copy has a p10 set, and a copy saved before Paper 10 loads with an empty one", !!RL.S.sets.p10 && (() => { const n = RL.normalise(JSON.parse(savedJson)); return n.sets.p10 && Object.keys(n.sets.p10.ans).length === 0; })());
-RL.S.att = {}; for (const i of p10) RL.S.att[i] = [{g: 15, m: 20, t: T0 + i}]; RL.renderResults(); const r10 = RL.els["view-results"].innerHTML;
-check("Paper 10: Results lists ten papers By paper, Paper 10 with 32/32 answered and 32 / 320 practice questions", (r10.match(/Paper \d+[^<]*<small class="muted">\d+\/32/g) || []).length === 10 && /Paper 10[^<]*<small class="muted">32\/32/.test(r10) && /32<small> \/ 320<\/small>/.test(r10));
+const noP10 = l => l.every(i => !p10.includes(i));
+check("Paper 10: a fresh progress copy still has a (hidden) p10 set, and a copy saved before Paper 10 loads with an empty one", !!RL.fresh().sets.p10 && (() => { const n = RL.normalise(JSON.parse(savedJson)); return n.sets.p10 && Object.keys(n.sets.p10.ans).length === 0; })());
+check("Paper 10: none of its questions is in the practice pool or counts for practice, even once answered", (RL.S = RL.fresh(), RL.S.att = {[p10[0]]: [{g: 2, m: 20, t: T0}]}, p10.every(i => !RL.PRACTICE.includes(i) && !RL.forPractice(i))));
+{ RL.S = RL.fresh(); let ok = true;
+  for (let k = 0; k < 80; k++) { RL.buildQuiz("quick"); if (!noP10(RL.S.sets.custom.list)) ok = false; }
+  for (const g of Object.keys(RL.THEMES)) { RL.buildQuiz("theme", g); if (!noP10(RL.S.sets.custom.list)) ok = false; }
+  for (const d of "IPET") for (let k = 0; k < 10; k++) { RL.buildQuiz("area", d); if (!noP10(RL.S.sets.custom.list)) ok = false; }
+  check("Paper 10: Quick 10, every theme quiz and every area quiz leave it out", ok);
+  check("...and the builder's theme counts are the Papers 1-9 ones", themeCount(RL.builderHtml()) === (R.S = R.fresh(), themeCount(R.builderHtml()))); }
+// someone who opened Paper 10 in the minutes it was live: on it, answers, mistakes, flags, a Completed-sets row, a quiz holding some of it
+const T1 = Date.now() - 3600000, p10Ans = {}, p10Chk = {};
+p10.slice(0, 6).forEach(i => { p10Ans[i] = RL.Q[i].t === "best3" ? {p: [0, 1, 2]} : {ord: [4, 3, 2, 1, 0], set: true}; p10Chk[i] = true; });
+const p10Json = J({v: 5, ts: 500, cid: "12345678-abcd", setId: "p10", view: "practice", sets: {p10: {ans: p10Ans, chk: p10Chk, cur: 6, el: 300, marked: true, logged: true},
+    custom: {name: "Quick 10", kind: "quick", list: [5, p10[2], 40, p10[3]], created: T1, ans: {5: {ord: [0, 1, 2, 3, 4], set: true}, [p10[2]]: p10Ans[p10[2]]}, chk: {5: true, [p10[2]]: true}, cur: 3}},
+  att: Object.assign({5: [{g: 20, m: 20, t: T1}], 40: [{g: 4, m: 20, t: T1}]}, ...p10.slice(0, 6).map((i, k) => ({[i]: [{g: k % 2 ? 4 : 20, m: 20, t: T1 + k, s: 300}]}))),
+  flags: {7: 1, [p10[0]]: 1, [p10[1]]: 1}, hist: [{t: T1, name: "Paper 10 · Expert", g: 500, m: 640, n: 32, total: 32, mode: "practice", c: 0}, {t: T1 + 1, name: "Paper 1", g: 500, m: 640, n: 32, total: 32, mode: "practice", c: 0}],
+  days: {"2026-11-01": {g: 100, m: 160, n: 8}}});
+const L10 = RL.normalise(JSON.parse(p10Json));
+check("saved on Paper 10: loads without error and falls back to Paper 1", L10.setId === "p1");
+check("...its Paper 10 answers, attempts, flags and Completed-sets row are all kept (they come back on release)", J(L10.sets.p10.ans) === J(p10Ans) && L10.sets.p10.cur === 6 && L10.sets.p10.marked && p10.slice(0, 6).every(i => L10.att[i] && L10.att[i].length === 1) && L10.flags[p10[0]] && L10.flags[p10[1]] && L10.hist.length === 2);
+check("...a quiz holding Paper 10 questions keeps only the others, and still opens on a question", J(L10.sets.custom.list) === J([5, 40]) && L10.sets.custom.chk[5] && !L10.sets.custom.ans[p10[2]] && L10.sets.custom.cur >= 0 && L10.sets.custom.cur < 2);
+RL.S = L10;
+check("...My mistakes, Weak spots and Flagged questions leave Paper 10 out", noP10(RL.mistakesList()) && RL.mistakesList().includes(40) && noP10(RL.weakList()) && RL.weakList().includes(40) && J(RL.flagList()) === "[7]");
+RL.buildQuiz("mistakes"); const mq = RL.S.sets.custom.list; RL.buildQuiz("flagged"); const fq = RL.S.sets.custom.list;
+check("...and so do the quizzes built from them", noP10(mq) && mq.length > 0 && J(fq) === "[7]");
+RL.S = RL.normalise(JSON.parse(p10Json)); RL.renderResults(); const r10 = RL.els["view-results"].innerHTML;
+check("...Progress: nine By paper rows, no Paper 10 anywhere, 2 / 288 answered, no Paper 10 row in Completed sets", (r10.match(/Paper \d+[^<]*<small class="muted">\d+\/32/g) || []).length === 9 && !/Paper 10/.test(r10) && /2<small> \/ 288<\/small>/.test(r10) && /<td>Paper 1<\/td>/.test(r10));
+const m10 = RL.mergeState(RL.normalise(JSON.parse(p10Json)), Object.assign(RL.fresh(), {ts: 999}));
+check("...Sync 'Combine both' with a copy holding Paper 10 data keeps that data and lands on Paper 1", m10.setId === "p1" && J(m10.sets.p10.ans) === J(p10Ans) && m10.flags[p10[0]] && m10.att[p10[0]] && m10.hist.length === 2);
+check("the build's published totals leave Paper 10 out (run node tools/build.js first): 288 practice questions in study-data, topics and llms.txt", /export const QN = 288;/.test(read("src/study-data.js")) && /export const QM = 112;/.test(read("src/study-data.js")) && /covered by the 288 practice questions/.test(read("docs/topics.html")) && /: 288 original questions/.test(read("docs/llms.txt")));
+// ---------- releasing Paper 10: the one-line switch ----------
+const released = src.replace(', to:376, hold:true, note:', ', to:376, note:');
+check("the switch is one property: hold:true on p10 in PAPERS", released !== src && !/hold:true/.test(released.replace(/\/\/[^\n]*/g, "")));
+const RX = app(realBankSrc, released);
+check("released: a tenth paper tab, p10, holding Q345-Q376", RX.PAPER_IDS.length === 10 && RX.PAPER_IDS[9] === "p10" && J(RX.Q.slice(344, 376).map(q => q.p)) === J(Array(32).fill(10)) && p10.every(i => !RX.heldQ(i)));
+check("released: its questions are practice questions again (320 in all)", RX.PRACTICE.length === 320 && p10.every(i => RX.PRACTICE.includes(i) && RX.forPractice(i)));
+const X10 = RX.normalise(JSON.parse(p10Json));
+check("released: the kept Paper 10 progress comes back (a saved place on it, answers, flags, mistakes)", X10.setId === "p10" && J(X10.sets.p10.ans) === J(p10Ans) && (RX.S = X10, RX.flagList().includes(p10[0]) && RX.mistakesList().some(i => p10.includes(i))));
+RX.S = RX.fresh(); RX.S.att = {}; for (const i of p10) RX.S.att[i] = [{g: 15, m: 20, t: T0 + i}]; RX.renderResults(); const rx = RX.els["view-results"].innerHTML;
+check("released: Results lists ten papers By paper, Paper 10 with 32/32 answered and 32 / 320 practice questions", (rx.match(/Paper \d+[^<]*<small class="muted">\d+\/32/g) || []).length === 10 && /Paper 10[^<]*<small class="muted">32\/32/.test(rx) && /32<small> \/ 320<\/small>/.test(rx));
+check("released: the mocks are exactly the same as while it was held", J(RX.MOCK_ORDER) === J(RL.MOCK_ORDER) && J(RX.NEW_LIST2) === J(RL.NEW_LIST2) && J(RX.mockPapers(RX.Q)) === J(fixedReal));
 const admR = new Function("Q", cutOf(adminSrc)("const MK0 =", "const rate =") + "\nreturn {qLabel};")(RL.Q);
 check("Paper 10: admin labels Q345 'Paper 10, Q1' and Q376 'Paper 10, Q32'; Q289 is 'Mock 1, Q1' and Q377-Q432 'Mock 2, Q1-Q56'", admR.qLabel(RL.Q[344]) === "Paper 10, Q1" && admR.qLabel(RL.Q[375]) === "Paper 10, Q32" && admR.qLabel(RL.Q[288]) === "Mock 1, Q1" && admR.qLabel(RL.Q[287]) === "Paper 9, Q32" && admR.qLabel(RL.Q[376]) === "Mock 2, Q1" && admR.qLabel(RL.Q[431]) === "Mock 2, Q56");
 check("real bank: every new question has 5 options (ranking-type) or 8 (best-three), a key in range, and no pre-shuffled order problems", rmk.concat(rmk2).every(i => { const q = RL.Q[i]; return q.o.length === (q.t === "best3" ? 8 : 5) && (q.t === "best3" ? q.k.length === 3 : q.k.length === 5); }));

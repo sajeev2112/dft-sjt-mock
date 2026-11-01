@@ -52,7 +52,7 @@ check("next batch: nothing left gives nothing", J(nextBatch([4, 1], [1, 4], 5)) 
 check("next batch: questions answered in this quiz and still wrong may come round again", J(nextBatch([9, 4, 7, 1], [4, 1, 7], 5, [1, 4])) === J([9, 4, 1]));
 { // the real topUp, driven the way the Check and Next buttons drive it
   const roll = cut("function mistakeOrder(att, now){", '// "Finish for now"');
-  const R = {S: {att: {}}, isQi: i => Number.isInteger(i) && i >= 0 && i < 1000, Date: {now: () => R.now}, now: NOW};
+  const R = {S: {att: {}}, isQi: i => Number.isInteger(i) && i >= 0 && i < 1000, heldQ: () => false, Date: {now: () => R.now}, now: NOW};
   vm.createContext(R); vm.runInContext(roll + ";globalThis.X = {topUp, upNext, rollLeft, mistakesList, ROLL};", R);
   const X = R.X, a = R.S.att;
   for (let i = 0; i < 12; i++) a[i] = att([5, 20, ago(30 - i)]); // question 0 is the oldest mistake, 11 the newest
@@ -70,7 +70,7 @@ check("next batch: questions answered in this quiz and still wrong may come roun
   check("topping up then stops when no mistakes are left, and the list holds each question once", X.mistakesList().length === 0 && new Set(set.list).size === set.list.length && set.list.length === 12);
   check("a question coming round again is cleared to answer afresh at the end of the quiz", J(set.list.slice(-2)) === J([0, 3]) && set.chk[0] && set.chk[3]); }
 { // never straight away: the question just got wrong is not repeated next, even when it is the only mistake left
-  const R = {S: {att: {7: att([5, 20, ago(9)])}}, isQi: () => true, Date: {now: () => NOW}};
+  const R = {S: {att: {7: att([5, 20, ago(9)])}}, isQi: () => true, heldQ: () => false, Date: {now: () => NOW}};
   vm.createContext(R); vm.runInContext(cut("function mistakeOrder(att, now){", '// "Finish for now"') + ";globalThis.X = {topUp};", R);
   const set = {list: [7], cur: 0, ans: {7: {p: [1, 2, 3]}}, chk: {7: true}}; R.S.att[7].push({g: 4, m: 12, t: NOW});
   check("the only mistake left, just got wrong again: no top-up (it waits for the next round)", R.X.topUp(set) === 0 && J(set.list) === "[7]");

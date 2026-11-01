@@ -86,7 +86,7 @@
 
     // hero stats
     if (typeof S !== "undefined" && typeof Q !== "undefined") {
-      const ids = Object.keys(S.att || {}); let g = 0, m = 0;
+      const ids = Object.keys(S.att || {}).filter(i => typeof heldQ !== "function" || !heldQ(+i)); let g = 0, m = 0; // a held paper's answers are not counted
       const bank = typeof PRACTICE !== "undefined" ? PRACTICE.length : Q.length, done = typeof mockOnly === "function" ? ids.filter(i => !mockOnly(+i)).length : ids.length; // the practice bank: brand-new mock questions are not counted here
       const nFlags = typeof flagList === "function" ? flagList().length : Object.keys(S.flags || {}).length;
       ids.forEach(i => { const a = S.att[i]; const l = a && a[a.length - 1]; if (l) { g += l.g; m += l.m; } });

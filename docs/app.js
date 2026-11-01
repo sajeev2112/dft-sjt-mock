@@ -12,9 +12,12 @@ const PAPERS = {
   p8:{name:"Paper 8 · Expert", from:224, to:256, note:"the hardest set: harder than Paper 7"},
   p9:{name:"Paper 9 · Expert", from:256, to:288, note:"themed: raising concerns, priorities, probity, confidentiality, safeguarding"},
   // Paper 10 comes after the brand-new mock's questions (Q289-344), so its range is not next to Paper 9's: question numbers never change.
-  p10:{name:"Paper 10 · Expert", from:344, to:376, note:"mixed themes: a step harder than Paper 9"}
+  // hold:true keeps a paper off the site: no tab, in no quiz, list or count, while its questions stay in docs/questions.js and
+  // any saved answers are kept. To release it, delete "hold:true, " and run node tools/build.js.
+  p10:{name:"Paper 10 · Expert", from:344, to:376, hold:true, note:"mixed themes: a step harder than Paper 9"}
 };
-const PAPER_IDS = Object.keys(PAPERS).filter(id => Q.length >= PAPERS[id].to);
+const PAPER_IDS = Object.keys(PAPERS).filter(id => Q.length >= PAPERS[id].to && !PAPERS[id].hold);
+const heldQ = i => !!Q[i] && !!(PAPERS["p" + Q[i].p] || {}).hold; // a question of a held paper: shown and counted nowhere
 const PACE = 112.5; // seconds per item at live-test pace (105 min / 56)
 const MOCK_SECS = 105 * 60; // the live test: 56 questions in 105 minutes
 // The numbered mock papers: MOCK_COUNT fixed papers of MOCK_RANK ranking-type + MOCK_BEST best-three questions, built from
@@ -66,7 +69,7 @@ function cleanSet(x, list){
 }
 function cleanCustom(c){
   if (!c || !Array.isArray(c.list)) return null;
-  const list = [...new Set(c.list.map(Number))].filter(isQi); if (!list.length) return null;
+  const list = [...new Set(c.list.map(Number))].filter(i => isQi(i) && !heldQ(i)); if (!list.length) return null; // a held paper's questions leave the quiz
   return Object.assign(cleanSet(c, list), {list, name: typeof c.name === "string" ? c.name.slice(0, 60) : "Quiz",
     kind: typeof c.kind === "string" ? c.kind.slice(0, 10) : "quick", created: num(c.created, 1e14),
     limit: Math.floor(num(c.limit, 20000)), started: !!c.started, left: !!c.left, mockNo: Math.floor(num(c.mockNo, 99))});
@@ -341,7 +344,7 @@ function optPts(set, qi, idx){
 }
 function qScore(set, qi){ let got = 0; Q[qi].o.forEach((_, idx) => got += optPts(set, qi, idx)); return {got, max: isRank(Q[qi]) ? 20 : 12}; }
 function band(got, max){ const p = got / max; return p >= 0.8 ? "good" : p >= 0.55 ? "near" : "bad"; }
-function lastAtt(qi){ const a = S.att[qi]; return a && a.length ? a[a.length - 1] : null; }
+function lastAtt(qi){ const a = !heldQ(qi) && S.att[qi]; return a && a.length ? a[a.length - 1] : null; } // a held paper's attempts are kept but count nowhere
 
 // ---------- recording attempts and community submissions ----------
 function addAttempt(s, set, qi, submit = true){
@@ -390,7 +393,7 @@ function flush(){
 }
 // Tells the dashboard a timed mock started or ended (anonymous: random browser code and the mock's creation time only).
 // Events wait in a small queue and are sent in order, so one that fails (offline, server hiccup) is retried later with the time it happened.
-let mockQ = []; try { const a = JSON.parse(localStorage.getItem("dft-mock-queue") || "[]"); if (Array.isArray(a)) mockQ = a.slice(-20); } catch (e) {}
+let mockQ = []; try { const a = JSON.parse(localStorage.getItem("dft-mock-queue") || "[]"); if (Array.isArray(a)) mockQ = a.filter(e => !(e && e.event === "paper" && (PAPERS["p" + (e.no - 100)] || {}).hold)).slice(-20); } catch (e) {} // a held paper's score is never sent (100 is PAPER_BASE)
 const saveMockQ = () => { try { if (mockQ.length) localStorage.setItem("dft-mock-queue", JSON.stringify(mockQ)); else localStorage.removeItem("dft-mock-queue"); } catch (e) {} };
 let mockSending = false;
 async function flushMockEvents(){
@@ -424,7 +427,7 @@ function logSetIfDone(id){
   S.hist.push({t:Date.now(), name:setName(id), g, m, n, total:list.length, mode:set.mode, c: isMock(set) ? set.created : 0});
   set.logged = true;
   if (first && S.share && location.protocol !== "file:") { // for "better than X% of people" on Progress: the score only, queued and sent like a mock event
-    mockQ.push({client: S.cid, run: Date.now(), event: "paper", no: PAPER_BASE + PAPER_IDS.indexOf(id) + 1, p: pct(g, m), at: Date.now()});
+    mockQ.push({client: S.cid, run: Date.now(), event: "paper", no: PAPER_BASE + +id.slice(1), p: pct(g, m), at: Date.now()});
     if (mockQ.length > 20) mockQ.shift();
     saveMockQ(); flushMockEvents();
   }
@@ -851,7 +854,7 @@ function mistakeOrder(att, now){
 // The next n questions from that order that aren't already waiting in the quiz (list). Questions in "again" (already
 // answered in this quiz and still a mistake) may come round again. Pure.
 function nextBatch(order, list, n, again){ const ok = new Set(again || []), have = new Set(list.filter(i => !ok.has(i))); return order.filter(i => !have.has(i)).slice(0, n); }
-function mistakesList(){ return mistakeOrder(S.att, Date.now()).filter(isQi); }
+function mistakesList(){ return mistakeOrder(S.att, Date.now()).filter(i => isQi(i) && !heldQ(i)); }
 // A "My mistakes" quiz rolls: it starts with the ROLL most-due mistakes and tops itself up with the next ones when you
 // reach the end, until you finish or none are left. One answered with full marks is no longer a mistake, so it doesn't
 // come back; one that still lost marks comes round again in the same quiz, after the older ones (never straight away:
@@ -945,8 +948,8 @@ function mockPapers(bank){
 // tabs or any practice total. Once answered, it is like any other question for review, Weak spots and My mistakes, which
 // work from your attempts.
 const mockOnly = i => !!Q[i] && !!Q[i].mk;
-const PRACTICE = Q.map((_, i) => i).filter(i => !mockOnly(i)); // the practice bank: Papers 1 to 10
-const forPractice = i => !mockOnly(i) || !!S.att[i]; // a practice question, or a mock-only one you have already answered
+const PRACTICE = Q.map((_, i) => i).filter(i => !mockOnly(i) && !heldQ(i)); // the practice bank: the papers with a tab (PAPER_IDS)
+const forPractice = i => !heldQ(i) && (!mockOnly(i) || !!S.att[i]); // a practice question, or a mock-only one you have already answered
 const flagList = () => Object.keys(S.flags).map(Number).filter(i => isQi(i) && forPractice(i)).sort((x, y) => x - y); // the Flagged questions quiz
 // A brand-new mock: all MOCK_RANK + MOCK_BEST questions marked mk (1 or 2) in a fixed order. Part One is the ranking-type
 // ones in a fixed shuffled order (each mock its own seed), Part Two the best-three in the order written. Empty unless there
@@ -1262,7 +1265,7 @@ function renderResults(){
   h += `<h3 class="bsub">Progress over time</h3>` + progressChart();
   h += `<h3 class="bsub">By area</h3><div class="doms wide">` + Object.keys(DOMAINS).map(d => { const x = byD[d]; return `<div class="dom"><span>${DOMAINS[d]} <small class="muted">${x.n}/${x.total}</small></span><span>${x.n ? pct(x.g, x.m) + "%" : "–"}</span><div class="bar"><i style="width:${pct(x.g, x.m)}%"></i></div></div>`; }).join("") + `</div>`;
   { // time per question, from practice sessions where the timer was running
-    const timed = Q.map((_, i) => i).map(i => { const atts = S.att[i] || []; for (let k = atts.length - 1; k >= 0; k--) if (atts[k].s > 0) return {i, s: atts[k].s, g: atts[k].g, m: atts[k].m}; return null; }).filter(Boolean);
+    const timed = Q.map((_, i) => i).map(i => { const atts = !heldQ(i) && S.att[i] || []; for (let k = atts.length - 1; k >= 0; k--) if (atts[k].s > 0) return {i, s: atts[k].s, g: atts[k].g, m: atts[k].m}; return null; }).filter(Boolean);
     if (timed.length) {
       const avg = list => list.length ? Math.round(list.reduce((t, x) => t + x.s, 0) / list.length) : 0, byT = t => timed.filter(x => Q[x.i].t === t);
       const mm = s => Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0");
@@ -1277,12 +1280,13 @@ function renderResults(){
   const themeOrder = themesSorted.concat(Object.keys(THEMES).filter(t => !byG[t].n));
   themeOrder.forEach(t => { const x = byG[t]; h += `<tr><td><a href="#guide-${t}">${THEMES[t]}</a></td><td>${x.n}/${x.total}</td><td>${x.n ? `<span class="pill ${band(x.g, x.m)}">${pct(x.g, x.m)}%</span>` : "–"}</td><td><button type="button" class="btn small" data-act="build" data-kind="theme" data-arg="${t}">Practise</button></td></tr>`; });
   h += `</tbody></table></div>`;
-  h += `<h3 class="bsub">By paper</h3><div class="doms wide">` + PAPER_IDS.map(id => { const P = PAPERS[id]; let pg = 0, pm = 0, n = 0; range(P.from, P.to).forEach(i => { const a = lastAtt(i); if (a) { pg += a.g; pm += a.m; n++; } }); const ff = firstFull(S.hist, P.name, P.to - P.from), vs = ff == null ? "" : peerLine(PAPER_BASE + PAPER_IDS.indexOf(id) + 1, ff); // compared on your first complete attempt only
+  h += `<h3 class="bsub">By paper</h3><div class="doms wide">` + PAPER_IDS.map(id => { const P = PAPERS[id]; let pg = 0, pm = 0, n = 0; range(P.from, P.to).forEach(i => { const a = lastAtt(i); if (a) { pg += a.g; pm += a.m; n++; } }); const ff = firstFull(S.hist, P.name, P.to - P.from), vs = ff == null ? "" : peerLine(PAPER_BASE + +id.slice(1), ff); // compared on your first complete attempt only
     return `<div class="dom"><span>${P.name} <small class="muted">${n}/32</small></span><span>${n ? pct(pg, pm) + "%" : "–"}</span><div class="bar"><i style="width:${pct(pg, pm)}%"></i></div>${ff == null ? "" : `<small class="muted pgvs">First full attempt ${ff}%${vs ? " · " + vs : ""}</small>`}</div>`; }).join("") + `</div>`;
-  if (S.hist.length) {
+  const hist = S.hist.filter(x => !Object.values(PAPERS).some(P => P.hold && P.name === x.name)); // a held paper's rows are kept but not shown
+  if (hist.length) {
     h += `<h3 class="bsub">Completed sets</h3><div class="tscroll"><table class="rtable rt-hist"><thead><tr><th>Date</th><th>Set</th><th>Mode</th><th>Score</th></tr></thead><tbody>`;
-    const claimed = new Set(S.hist.filter(x => x.c).map(x => x.c));
-    S.hist.slice().reverse().forEach(x => { const mc = histMockId(x, claimed); h += `<tr><td>${new Date(x.t).toLocaleDateString("en-GB", {day:"numeric", month:"short"})}</td><td>${esc(histName(x, mc))}${mc && mockKept(mc) ? ` <button type="button" class="btn small" data-act="mock-open" data-c="${mc}">Review</button>` : ""}</td><td>${x.mode === "exam" ? "Exam" : "Practice"}</td><td>${x.g} / ${x.m} · ${pct(x.g, x.m)}%</td></tr>`; });
+    const claimed = new Set(hist.filter(x => x.c).map(x => x.c));
+    hist.slice().reverse().forEach(x => { const mc = histMockId(x, claimed); h += `<tr><td>${new Date(x.t).toLocaleDateString("en-GB", {day:"numeric", month:"short"})}</td><td>${esc(histName(x, mc))}${mc && mockKept(mc) ? ` <button type="button" class="btn small" data-act="mock-open" data-c="${mc}">Review</button>` : ""}</td><td>${x.mode === "exam" ? "Exam" : "Practice"}</td><td>${x.g} / ${x.m} · ${pct(x.g, x.m)}%</td></tr>`; });
     h += `</tbody></table></div>`;
   }
   const html = tidyResults(h) + `</div>`;
@@ -2201,7 +2205,7 @@ window.addEventListener("online", flushMockEvents);
 // always open there, answered or not), the exam screen or a running mock, and never with a clock running, a form, a
 // confirmation, a drag, the Sync panel or a study plan being written. Takes plain facts so tools/test-update.mjs can check it.
 function updateMayReload(f){ return ["mocks", "results", "guide", "settings"].includes(f.view) && !f.exam && !f.mock && !f.timer && !f.building && !f.typing && !f.feedback && !f.dialog; }
-const BUILD = "2ce94b6009"; // this page's build version, set by tools/build.js
+const BUILD = "3131971495"; // this page's build version, set by tools/build.js
 // What's on screen right now, for updateMayReload and the welcome tour (an open tour counts as a dialog).
 const quietFacts = () => { const c = S.sets.custom; return {view: S.view, exam: !!(window.Exam && Exam.isOpen()), mock: !!c && mockLive(c) && !c.left, timer: timerOn, building: ui.building,
   typing: busyTyping() || !!(document.getElementById("code-in") || {}).value || !!ui.code, feedback: ui.fbOpen != null, dialog: !!syncUi.conflict || !!document.querySelector(".dragging, .confirm, .sp-go:disabled, .tour")}; };

@@ -11,6 +11,7 @@
 
   // The answer you last gave to a question: from the quiz you did most recently if it covered it, else from its paper.
   function answerOf(qi){
+    if (heldQ(qi)) return null; // a held paper (app.js) counts nowhere
     const paper = S.sets["p" + Q[qi].p], sets = [S.sets.custom, paper]; // Q[qi].p: Paper 10 sits after the mock-only questions (p 0 = none)
     for (const set of sets) if (set && (set.list || []).includes(qi) || (set && set === paper)) { if (set && revealed(set, qi) && set.ans[qi] && complete(set, qi)) return set.ans[qi]; }
     return null;
@@ -43,7 +44,7 @@
     p.habits.missed = Object.keys(missedKey).filter(t => missedKey[t] >= 3 && missedKey[t] / keyOpps[t] >= 0.4).map(t => ({tag: t, n: missedKey[t]})).sort((x, y) => y.n - x.n).slice(0, 2);
 
     // questions that lost marks on each of the last two attempts
-    p.repeats = Q.map((_, i) => i).filter(i => { const at = S.att[i] || []; return at.length >= 2 && at[at.length - 1].g < at[at.length - 1].m && at[at.length - 2].g < at[at.length - 2].m; })
+    p.repeats = Q.map((_, i) => i).filter(i => { const at = !heldQ(i) && S.att[i] || []; return at.length >= 2 && at[at.length - 1].g < at[at.length - 1].m && at[at.length - 2].g < at[at.length - 2].m; })
       .sort((x, y) => lastAtt(y).t - lastAtt(x).t).slice(0, 8).map(i => i + 1);
 
     // the questions that cost the most marks in each of the four weakest themes
@@ -51,7 +52,7 @@
       const qs = Q.map((q, i) => ({i, q})).filter(x => x.q.g === t.g && lastAtt(x.i) && lastAtt(x.i).g < lastAtt(x.i).m).sort((x, y) => (lastAtt(y.i).m - lastAtt(y.i).g) - (lastAtt(x.i).m - lastAtt(x.i).g)).slice(0, 3).map(x => x.i + 1);
       if (qs.length) p.weakQs[t.g] = qs;
     });
-    const timed = Q.map((_, i) => { const at = S.att[i] || []; for (let k = at.length - 1; k >= 0; k--) if (at[k].s > 0) return at[k].s; return 0; }).filter(Boolean);
+    const timed = Q.map((_, i) => { const at = !heldQ(i) && S.att[i] || []; for (let k = at.length - 1; k >= 0; k--) if (at[k].s > 0) return at[k].s; return 0; }).filter(Boolean);
     if (timed.length >= 5) p.pace = {avg: Math.round(timed.reduce((t, x) => t + x, 0) / timed.length), n: timed.length, slow: timed.filter(x => x > 180).length};
 
     const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - 7); const ck = cutoff.toISOString().slice(0, 10);
