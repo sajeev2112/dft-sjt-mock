@@ -59,7 +59,8 @@ function app(bankText){
       normalise, mergeState, fresh, newSet, packMock, unpackMock, addMocks, addAttemptFor, get S(){ return S; }, set S(v){ S = v; }};`, ctx);
   ctx.T.els = els; return ctx.T;
 }
-const R = app(bankSrc), N = app(withNew(synthetic())); // R: the real bank today; N: the real bank plus 56 synthetic mock-only questions
+const R = app(bankSrc), N = app(withNew(synthetic())); // R: Papers 1-9 alone; N: plus 56 synthetic Mock 1 questions (as before Mock 2)
+const N2 = app(withNew2(synthetic(), synthetic2())); // N2: plus 56 synthetic Mock 2 questions (mk: 2) after them
 const mk = N.Q.map((_, i) => i).filter(i => N.Q[i].mk);
 
 // ---------- the bank and the load code ----------
@@ -149,6 +150,45 @@ check("Retake starts a fresh attempt at the same 56 questions", N.S.sets.custom.
 R.S = R.fresh(); R.buildQuiz("mock", "6");
 check("today a request for mockNo 6 falls back to the next fixed mock (no brand-new questions yet)", R.S.sets.custom.mockNo === 1 && R.S.sets.custom.list.length === 56);
 
+// ---------- Mock 2: a second brand-new mock (mk: 2) ----------
+const NL2 = N2.NEW_LIST2, mk2 = N2.Q.map((_, i) => i).filter(i => N2.Q[i].mk === 2);
+check("Mock 2: its 56 mock-only questions (mk: 2), each once, Part One ranking-type then Part Two best-three", NL2.length === 56 && new Set(NL2).size === 56 && NL2.every(i => N2.Q[i].mk === 2) && NL2.slice(0, 37).every(i => N2.Q[i].t !== "best3") && NL2.slice(37).every(i => N2.Q[i].t === "best3"));
+check("...Part Two in the order written, Part One in its own fixed shuffled order (deterministic)", J(NL2.slice(37)) === J(mk2.slice(37)) && J(NL2.slice(0, 37)) !== J(mk2.slice(0, 37)) && J(N2.newMockPaper(N2.Q, 2)) === J(NL2) && J(app(withNew2(synthetic(), synthetic2())).NEW_LIST2) === J(NL2));
+check("...adding Mock 2 changes neither Mock 1 (same 56, same order) nor the five fixed mocks", J(N2.NEW_LIST) === J(N.NEW_LIST) && J(N2.mockPapers(N2.Q)) === J(R.mockPapers(R.Q)));
+check("...no question is in two mocks", N2.NEW_LIST.every(i => !NL2.includes(i)) && N2.mockPapers(N2.Q).flat().every(i => !NL2.includes(i) && !N2.NEW_LIST.includes(i)));
+check("...mockPaperList: 6 is Mock 1, 7 is Mock 2, 1-5 the fixed papers", J(N2.mockPaperList(6)) === J(N2.NEW_LIST) && J(N2.mockPaperList(7)) === J(NL2) && J(N2.mockPaperList(1)) === J(R.mockPaperList(1)));
+check("...display order Mock 1 (6), Mock 2 (7), then the fixed papers as Mock 3-7; seven mocks", J(N2.MOCK_ORDER) === J([6, 7, 1, 2, 3, 4, 5]) && N2.mockCountWord() === "seven");
+check("...labels: mockNo 6 = Mock 1, 7 = Mock 2, 1-5 = Mock 3-7, and back", N2.mockLabel(6) === "Mock 1" && N2.mockLabel(7) === "Mock 2" && [1, 2, 3, 4, 5].every(n => N2.mockLabel(n) === "Mock " + (n + 2)) && N2.mockNoOf(1) === 6 && N2.mockNoOf(2) === 7 && [3, 4, 5, 6, 7].every(k => N2.mockNoOf(k) === k - 2) && N2.mockNoOf(8) === 0 && N2.MOCK_ORDER.every(no => N2.mockNoOf(+N2.mockLabel(no).slice(5)) === no));
+check("...an earlier random mock (mockNo 0) is still 'Earlier random mock'", N2.mockLabel(0) === "Earlier random mock");
+for (const [label, items2] of [["55", synthetic2(55)], ["38 + 18", synthetic2(56, 38)]]) {
+  const X = app(withNew2(synthetic(), items2));
+  check(`Mock 2 with wrong counts (${label}): not offered, Mock 1 and the fixed papers unchanged and numbered as before, its questions stay out of practice`, X.NEW_LIST2.length === 0 && J(X.MOCK_ORDER) === J([6, 1, 2, 3, 4, 5]) && J(X.NEW_LIST) === J(N.NEW_LIST) && X.PRACTICE.length === 288);
+}
+// saved attempts from both earlier numberings keep their number and show the new name
+const T2 = Date.UTC(2026, 10, 1, 10), was2 = R.packMock(attempt(R, 2, T2)), was6 = N.packMock(attempt(N, 6, T2 + 1e7)), was1 = N.packMock(attempt(N, 1, T2 + 2e7));
+const saved2 = J({v: 5, ts: 100, cid: "12345678-abcd", sets: {}, mocks: [was2, was6, was1], hist: [], att: {}});
+N2.S = N2.normalise(JSON.parse(saved2));
+check("saved attempts keep their stored numbers (2, 6, 1) after Mock 2 arrives", J(N2.S.mocks.map(m => m.mockNo)) === J([2, 6, 1]));
+check("...shown as: mockNo 2 (once 'Mock 2', then 'Mock 3') is now Mock 4; mockNo 6 is still Mock 1; mockNo 1 (shown as 'Mock 2' with Mock 1) is now Mock 3", N2.quizName(N2.unpackMock(N2.S.mocks[0])) === "Mock 4" && N2.quizName(N2.unpackMock(N2.S.mocks[1])) === "Mock 1" && N2.quizName(N2.unpackMock(N2.S.mocks[2])) === "Mock 3");
+N2.renderMocks(); const m2h = N2.els["view-mocks"].innerHTML;
+check("...Previous mocks lists them as Mock 3, Mock 1 and Mock 4, never as a Mock 2 attempt", /<b>Mock 3<\/b> · attempt 1/.test(m2h) && /<b>Mock 1<\/b> · attempt 1/.test(m2h) && /<b>Mock 4<\/b> · attempt 1/.test(m2h) && !/<b>Mock 2<\/b> · attempt/.test(m2h));
+check("...the old attempts' answers and lists are intact", J(N2.unpackMock(N2.S.mocks[1]).list) === J(N.NEW_LIST) && J(N2.unpackMock(N2.S.mocks[0]).list) === J(R.mockPaperList(2)));
+N2.S = N2.fresh(); N2.renderMocks(); const tab2 = N2.els["view-mocks"].innerHTML, cards2 = [...tab2.matchAll(/data-kind="mock" data-arg="(\d)"><b>(Mock \d)/g)].map(m => [+m[1], m[2]]);
+check("Mock exams tab: seven cards, Mock 1 (6), Mock 2 (7), then Mock 3-7 (mockNo 1-5)", J(cards2) === J([[6, "Mock 1"], [7, "Mock 2"], [1, "Mock 3"], [2, "Mock 4"], [3, "Mock 5"], [4, "Mock 6"], [5, "Mock 7"]]));
+check("...only Mock 2 has the 'Brand new questions' badge", (tab2.match(/Brand new questions/g) || []).length === 1 && /data-arg="7"><b>Mock 2 <span class="mst new">Not started<\/span> <span class="mnew">Brand new questions/.test(tab2) && (tab2.match(/mnewcard/g) || []).length === 1);
+check("...the intro says seven papers and that Mock 1 and Mock 2 are made entirely of brand-new questions", /Seven fixed papers/.test(tab2) && /Mock 1 and Mock 2 are made entirely of brand-new questions/.test(tab2) && /Mock 3 to Mock 7 each have the same spread/.test(tab2));
+check("the home button's next mock: Mock 1 first, then Mock 2", N2.nextMock() === 6 && (N2.S.mocks = [was6], N2.nextMock() === 7));
+N2.S = N2.fresh(); N2.buildQuiz("mock", "7"); const c2 = N2.S.sets.custom;
+check("starting Mock 2: the 56 Mock 2 questions in order, mockNo 7, exam mode, 105 minutes, named Mock 2", c2 && J(c2.list) === J(NL2) && c2.mockNo === 7 && c2.mode === "exam" && c2.limit === 6300 && N2.setName("custom") === "Mock 2");
+NL2.slice(0, 30).forEach(qi => { c2.ans[qi] = N2.Q[qi].t === "best3" ? {p: [0, 1, 2]} : {ord: [4, 3, 2, 1, 0], set: true}; c2.chk[qi] = true; });
+c2.marked = true; c2.started = true; N2.addMocks(N2.S.mocks, [N2.packMock(c2)]);
+const p2 = N2.S.mocks[0], u2 = N2.unpackMock(p2), mg2 = N2.mergeState(N2.normalise(JSON.parse(J(N2.S))), Object.assign(N2.fresh(), {ts: 999}));
+check("...finished: archived with mockNo 7 and its 56 questions, kept by Sync 'Combine both'", p2.mockNo === 7 && J(u2.list) === J(NL2) && Object.keys(u2.ans).length === 30 && mg2.mocks.length === 1 && mg2.mocks[0].mockNo === 7);
+check("...its summary is 'Mock 2 complete' with Retake Mock 2 and says every question is brand new on its intro", (N2.S.sets.custom = u2, N2.S.setId = "custom", /Mock 2 complete/.test(N2.mockSummaryHtml(u2)) && /Retake Mock 2/.test(N2.mockSummaryHtml(u2))));
+N2.S = N2.fresh(); let ok2 = true;
+for (let k = 0; k < 60; k++) { N2.buildQuiz("quick"); if (N2.S.sets.custom.list.some(i => N2.Q[i].mk)) ok2 = false; }
+check("practice: Quick 10 never picks a Mock 1 or Mock 2 question, and PRACTICE is still the 288 practice questions", ok2 && N2.PRACTICE.length === 288 && J(N2.PRACTICE) === J(R.PRACTICE));
+
 // ---------- practice never uses a mock-only question until it has been answered ----------
 const noMk = l => l.every(i => !N.Q[i].mk);
 N.S = N.fresh(); let ok = true;
@@ -206,28 +246,31 @@ check("admin: a practice question is 'Paper N, Qn'; mock-only ones 'Mock 1, Qn' 
 check("admin: by-paper tables group each mock on its own", adm.groupOf(N2.Q[300]) === "m1" && adm.groupOf(N2.Q[350]) === "m2" && adm.groupName("m1") === "Mock 1" && adm.groupName("m2") === "Mock 2" && adm.groupName("3") === "Paper 3");
 
 // ---------- the REAL bank (the published brand-new questions) ----------
-const RL = app(realBankSrc), rmk = RL.Q.map((q, i) => i).filter(i => RL.Q[i].mk === 1);
-check("real bank: 376 questions; Q289-Q344 are the 56 mock-only ones with paper 0 (numbers unchanged by Paper 10)", RL.Q.length === 376 && rmk.length === 56 && rmk[0] === 288 && rmk[55] === 343 && rmk.every(i => RL.Q[i].p === 0));
-check("real bank: 37 ranking-type then 19 best-three in the new mock, all with a theme", RL.NEW_LIST.length === 56 && RL.NEW_LIST.slice(0, 37).every(i => RL.Q[i].t !== "best3") && RL.NEW_LIST.slice(37).every(i => RL.Q[i].t === "best3") && rmk.every(i => RL.Q[i].g));
+const RL = app(realBankSrc), RL1 = app(realNoM2Src), rmk = RL.Q.map((q, i) => i).filter(i => RL.Q[i].mk === 1), rmk2 = RL.Q.map((q, i) => i).filter(i => RL.Q[i].mk === 2);
+check("real bank: 432 questions; Q289-Q344 are Mock 1's 56 and Q377-Q432 Mock 2's 56 mock-only ones, all paper 0", RL.Q.length === 432 && rmk.length === 56 && rmk[0] === 288 && rmk[55] === 343 && rmk2.length === 56 && rmk2[0] === 376 && rmk2[55] === 431 && rmk.concat(rmk2).every(i => RL.Q[i].p === 0 && RL.Q[i].n === i + 1));
+check("real bank: 37 ranking-type then 19 best-three in each new mock, all with a theme", [[RL.NEW_LIST, rmk], [RL.NEW_LIST2, rmk2]].every(([l, m]) => l.length === 56 && l.slice(0, 37).every(i => RL.Q[i].t !== "best3") && l.slice(37).every(i => RL.Q[i].t === "best3") && m.every(i => RL.Q[i].g)));
 const fixedReal = RL.mockPapers(RL.Q);
-check("real bank: the new mock shares no question with the five fixed mocks (which are unchanged)", RL.NEW_LIST.every(i => !fixedReal.flat().includes(i)) && J(fixedReal) === J(R.mockPapers(R.Q)));
-check("real bank: Mock 1 is the brand-new paper and the old five are Mock 2-6", J(RL.MOCK_ORDER) === J([6, 1, 2, 3, 4, 5]) && RL.mockLabel(6) === "Mock 1" && RL.mockLabel(1) === "Mock 2");
+check("real bank: the new mocks share no question with each other or the five fixed mocks (which are unchanged)", RL.NEW_LIST.concat(RL.NEW_LIST2).every(i => !fixedReal.flat().includes(i)) && RL.NEW_LIST.every(i => !RL.NEW_LIST2.includes(i)) && J(fixedReal) === J(R.mockPapers(R.Q)));
+check("real bank: adding Mock 2 leaves Mock 1 exactly as it was (same 56 questions, same order, same keys)", J(RL.NEW_LIST) === J(RL1.NEW_LIST) && RL1.Q.every((q, i) => RL.Q[i].k === q.k && RL.Q[i].s === q.s && RL.Q[i].p === q.p && RL.Q[i].n === q.n) && RL1.Q.length === 376);
+check("real bank: Mock 1 and Mock 2 are the brand-new papers and the old five are Mock 3-7", J(RL.MOCK_ORDER) === J([6, 7, 1, 2, 3, 4, 5]) && RL.mockLabel(6) === "Mock 1" && RL.mockLabel(7) === "Mock 2" && RL.mockLabel(1) === "Mock 3" && RL.mockLabel(5) === "Mock 7");
+check("real bank: before Mock 2 (Papers 1-10 and Mock 1) the numbering was Mock 1, Mock 2-6", J(RL1.MOCK_ORDER) === J([6, 1, 2, 3, 4, 5]) && RL1.NEW_LIST2.length === 0);
 check("real bank: the practice pool is the 320 practice questions (Papers 1-10)", RL.PRACTICE.length === 320 && RL.PRACTICE.every(i => !RL.Q[i].mk));
+check("real bank: Mock 2's questions are never in practice quizzes until answered", (RL.S = RL.fresh(), rmk2.every(i => !RL.forPractice(i))));
 // ---------- Paper 10 (Q345-Q376), appended after the mock-only block ----------
 const p10 = range0(344, 376);
 function range0(a, b){ return Array.from({length: b - a}, (_, i) => a + i); }
 check("Paper 10: Q345-Q376 are paper 10, keep their site-wide numbers, 16 rank + 6 consider + 10 best-three", p10.every(i => RL.Q[i].p === 10 && RL.Q[i].n === i + 1 && !RL.Q[i].mk) && p10.filter(i => RL.Q[i].t === "rank").length === 16 && p10.filter(i => RL.Q[i].t === "consider").length === 6 && p10.filter(i => RL.Q[i].t === "best3").length === 10);
 check("Paper 10: Papers 1-9 keep exactly their questions and keys", R.Q.every((q, i) => RL.Q[i].p === q.p && RL.Q[i].n === q.n && RL.Q[i].k === q.k));
 check("Paper 10: a tenth paper tab, p10, holding Q345-Q376", RL.PAPER_IDS.length === 10 && RL.PAPER_IDS[9] === "p10" && RL.PAPERS.p10.from === 344 && RL.PAPERS.p10.to === 376 && J(RL.Q.slice(344, 376).map(q => q.p)) === J(Array(32).fill(10)));
-check("Paper 10: the five fixed mocks and the brand-new mock are unchanged and use none of it", J(fixedReal) === J(R.mockPapers(R.Q)) && fixedReal.flat().concat(RL.NEW_LIST).every(i => i < 344));
+check("Paper 10: the five fixed mocks and the brand-new mocks are unchanged and use none of it", J(fixedReal) === J(R.mockPapers(R.Q)) && fixedReal.flat().concat(RL.NEW_LIST).every(i => i < 344) && RL.NEW_LIST2.every(i => i >= 376));
 check("Paper 10: its questions are practice questions (Quick 10 / theme quizzes may use them)", p10.every(i => RL.PRACTICE.includes(i) && RL.forPractice(i)));
 RL.S = RL.fresh();
 check("Paper 10: a fresh progress copy has a p10 set, and a copy saved before Paper 10 loads with an empty one", !!RL.S.sets.p10 && (() => { const n = RL.normalise(JSON.parse(savedJson)); return n.sets.p10 && Object.keys(n.sets.p10.ans).length === 0; })());
 RL.S.att = {}; for (const i of p10) RL.S.att[i] = [{g: 15, m: 20, t: T0 + i}]; RL.renderResults(); const r10 = RL.els["view-results"].innerHTML;
 check("Paper 10: Results lists ten papers By paper, Paper 10 with 32/32 answered and 32 / 320 practice questions", (r10.match(/Paper \d+[^<]*<small class="muted">\d+\/32/g) || []).length === 10 && /Paper 10[^<]*<small class="muted">32\/32/.test(r10) && /32<small> \/ 320<\/small>/.test(r10));
 const admR = new Function("Q", cutOf(adminSrc)("const MK0 =", "const rate =") + "\nreturn {qLabel};")(RL.Q);
-check("Paper 10: admin labels Q345 'Paper 10, Q1' and Q376 'Paper 10, Q32'; Q289 is still 'New mock, Q1'", admR.qLabel(RL.Q[344]) === "Paper 10, Q1" && admR.qLabel(RL.Q[375]) === "Paper 10, Q32" && admR.qLabel(RL.Q[288]) === "New mock, Q1" && admR.qLabel(RL.Q[287]) === "Paper 9, Q32");
-check("real bank: every new question has 5 options (ranking-type) or 8 (best-three), a key in range, and no pre-shuffled order problems", rmk.every(i => { const q = RL.Q[i]; return q.o.length === (q.t === "best3" ? 8 : 5) && (q.t === "best3" ? q.k.length === 3 : q.k.length === 5); }));
+check("Paper 10: admin labels Q345 'Paper 10, Q1' and Q376 'Paper 10, Q32'; Q289 is 'Mock 1, Q1' and Q377-Q432 'Mock 2, Q1-Q56'", admR.qLabel(RL.Q[344]) === "Paper 10, Q1" && admR.qLabel(RL.Q[375]) === "Paper 10, Q32" && admR.qLabel(RL.Q[288]) === "Mock 1, Q1" && admR.qLabel(RL.Q[287]) === "Paper 9, Q32" && admR.qLabel(RL.Q[376]) === "Mock 2, Q1" && admR.qLabel(RL.Q[431]) === "Mock 2, Q56");
+check("real bank: every new question has 5 options (ranking-type) or 8 (best-three), a key in range, and no pre-shuffled order problems", rmk.concat(rmk2).every(i => { const q = RL.Q[i]; return q.o.length === (q.t === "best3" ? 8 : 5) && (q.t === "best3" ? q.k.length === 3 : q.k.length === 5); }));
 
 console.log(`${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);
