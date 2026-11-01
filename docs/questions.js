@@ -13592,7 +13592,7 @@ const RW_10_2 = [
    ],
    [
     "Start antibiotics today and ask the hospital to bring his anaesthetic date forward, so the infected teeth come out this week.",
-    "Tempting, as it treats the infection and speeds up definitive care, but a feverish child with facial swelling needs same-day hospital assessment, not tablets and a date later in the week (SDCEP; Std 1.4.2). It also leaves the pattern unshared, unlike F."
+    "Tempting, as it treats the infection and speeds up definitive care, but a feverish child with facial swelling, whose teeth cannot be treated in the chair, needs urgent assessment today, not tablets and a date later in the week (Std 1.4.2). It also leaves the pattern unshared, unlike F."
    ],
    [
     "Tell her you will discuss Zac with the safeguarding lead, and that she will hear from you before anything goes to social care.",
@@ -16385,7 +16385,7 @@ const RW_M2 = [
   "o": [
    [
     "Tell Mrs Hart you will look into it today, then give the practice owner the prescription records without altering anything.",
-    "Once a stranger has collected a controlled drug in her name this is likely crime, not a mix-up, so it goes to the owner on site with the evidence intact, and the patient is kept informed, which edges out C (Std 8.2.3, 4.1.5)."
+    "Once a stranger has collected a controlled drug in her name this is likely crime, not a mix-up, so it goes to the owner on site with the evidence intact for the practice to report, and the patient is kept informed, which edges out C (Std 8.2.3, 4.1.5)."
    ],
    [
     "Ask the associate privately whether his login could have been used by someone else, then take it to the owner.",
@@ -16393,7 +16393,7 @@ const RW_M2 = [
    ],
    [
     "Report the prescriptions to the NHS England controlled drugs accountable officer, then tell the practice owner what you have done.",
-    "Reaches an outside body that can look into controlled-drug concerns, and its second half informs the owner, but the owner is on site and has not failed to act, so going outside first skips a rung, unlike A (Std 8.2.4, 8.2.3)."
+    "Reaches the accountable officer who receives controlled-drug incidents, and the owner is told, but reporting before the owner on site has heard sidesteps the person who can secure the records and report for the practice, unlike A (Std 8.2.3, 8.2.1)."
    ],
    [
     "Tell Mrs Hart that the associate’s login was used, and advise her to report possible identity misuse to the police.",
@@ -16615,14 +16615,14 @@ const RW_M2 = [
   "g": "W",
   "a": "Recalled anaesthetic batch still in use",
   "k": "BDAEC",
-  "s": "Month 9, a private-only practice, 8:45am. Your nurse shows you a field safety notice the supplier emailed on Friday. It recalls one batch of articaine cartridges because some may have hairline cracks that can release glass fragments during injection, and it says affected stock should be set aside for collection. Three boxes from that batch are in your surgery, and two other dentists are working today. Your nurse says the owner told the team on Friday to ‘keep using them carefully’ until new stock arrives on Wednesday, but the owner is on a flight until this afternoon and nobody else heard him say it. The store holds a different anaesthetic from an unaffected batch, which you have used less often. Your first patient, due at 9am, needs a filling under local anaesthetic.",
+  "s": "Month 9, a private-only practice, 8:45am. Your nurse shows you a recall notice the supplier emailed on Friday. It recalls one batch of articaine cartridges because some may have hairline cracks that can release glass fragments during injection, and it says affected stock should be set aside for collection. Three boxes from that batch are in your surgery, and two other dentists are working today. Your nurse says the owner told the team on Friday to ‘keep using them carefully’ until new stock arrives on Wednesday, but the owner is on a flight until this afternoon and nobody else heard him say it. The store holds a different anaesthetic from an unaffected batch, which you have used less often. Your first patient, due at 9am, needs a filling under local anaesthetic.",
   "o": [
    [
     "Whether you can give today’s patients effective anaesthesia with the unaffected anaesthetic in the store, and in what doses.",
     "It sits below D: the 9am patient needs safe, effective pain control and the unaffected stock decides whether your list can go ahead, but it matters only once the batch is out of use; above E (Std 7.2.1)."
    ],
    [
-    "What the field safety notice says must happen to cartridges from the affected batch, and whether yours match it.",
+    "What the recall notice says must happen to cartridges from the affected batch, and whether yours match it.",
     "It outranks D: the notice is the authoritative instruction on a direct physical hazard to patients and applies whatever the owner may have said; everything else follows from it (Std 1.5.1, 7.1)."
    ],
    [
@@ -16656,7 +16656,7 @@ const RW_M2 = [
   "o": [
    [
     "Switch the unit off at its isolator, put a ‘do not use’ sign on it, and tell the shift lead what happened.",
-    "It outranks C because it removes the hazard at once and tells the person responsible for radiation safety, rather than leaving a faulty unit live while someone else decides (Std 1.5.1, 8.2.1)."
+    "It outranks C because it removes the hazard at once and tells the person who supervises radiation safety on site, rather than leaving a faulty unit live while someone else decides (Std 1.5.1, 8.2.1)."
    ],
    [
     "Report the fault to the shift lead now, and keep using the unit for urgent radiographs until she can arrange a service.",
@@ -16709,7 +16709,7 @@ const RW_M2 = [
    ],
    [
     "Ask a colleague who has taken biopsies to supervise you doing one today, then send the referral with the result.",
-    "Better than C because you would be supervised, but it still delays the urgent referral for a biopsy the specialist team should take, so it falls below B (Std 7.2.2, 6.3.3)."
+    "Better than C because you would be supervised, but it still delays the urgent referral for a biopsy the specialist team can take on that pathway, so it falls below B (Std 7.2.2, 6.3.3)."
    ]
   ],
   "tk": "A suspected oral cancer goes on the urgent referral pathway without delay; you do not take on an unfamiliar procedure because a senior suggests it.",
