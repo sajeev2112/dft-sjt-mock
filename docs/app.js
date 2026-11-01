@@ -2036,8 +2036,9 @@ function scrub(s, max, bank){
   s = String(s == null ? "" : s).replace(/[\u0000-\u001F\u007F]/g, " ")
     .replace(/\b(?:https?|blob|file):\/\/[^\s'"`)]*/gi, u => (u.split(/[?#]/)[0].split("/").pop() || "url"))
     .replace(/[^\s@'"`]+@[^\s@'"`]+\.[a-z]{2,}/gi, "[email]")
+    .replace(/[^\s'"`]*[^\s@'"`]@[^\s'"`]*|@[^\s@'"`][^\s'"`]*/g, "[email]") // a half-quoted address (JSON.parse errors echo the start of the text)
     .replace(/(\.js(?::\d+){0,2})|\d{4,}/g, (m, js) => js ? m : "#")
-    .replace(/["“”`][^"“”`]{20,}(?:["“”`]|$)/g, "\"…\"")
+    .replace(/["“”`][^"“”`]{6,}(?:["“”`]|$)/g, "\"…\"")
     .replace(/\s+/g, " ").trim();
   if (bank) {
     const w = s.split(" "), cut = new Array(w.length).fill(false), norm = x => x.toLowerCase().replace(/[^a-z]+/g, " ").trim();
@@ -2193,7 +2194,7 @@ window.addEventListener("online", flushMockEvents);
 // always open there, answered or not), the exam screen or a running mock, and never with a clock running, a form, a
 // confirmation, a drag, the Sync panel or a study plan being written. Takes plain facts so tools/test-update.mjs can check it.
 function updateMayReload(f){ return ["mocks", "results", "guide", "settings"].includes(f.view) && !f.exam && !f.mock && !f.timer && !f.building && !f.typing && !f.feedback && !f.dialog; }
-const BUILD = "bee85ec7cc"; // this page's build version, set by tools/build.js
+const BUILD = "d2f834c762"; // this page's build version, set by tools/build.js
 // What's on screen right now, for updateMayReload and the welcome tour (an open tour counts as a dialog).
 const quietFacts = () => { const c = S.sets.custom; return {view: S.view, exam: !!(window.Exam && Exam.isOpen()), mock: !!c && mockLive(c) && !c.left, timer: timerOn, building: ui.building,
   typing: busyTyping() || !!(document.getElementById("code-in") || {}).value || !!ui.code, feedback: ui.fbOpen != null, dialog: !!syncUi.conflict || !!document.querySelector(".dragging, .confirm, .sp-go:disabled, .tour")}; };

@@ -268,8 +268,9 @@ function scrubText(s){
   return String(s).replace(/[\u0000-\u001F\u007F]/g, " ")
     .replace(/\b(?:https?|blob|file):\/\/[^\s'"`)]*/gi, u => (u.split(/[?#]/)[0].split("/").pop() || "url"))
     .replace(/[^\s@'"`]+@[^\s@'"`]+\.[a-z]{2,}/gi, "[email]")
+    .replace(/[^\s'"`]*[^\s@'"`]@[^\s'"`]*|@[^\s@'"`][^\s'"`]*/g, "[email]") // a half-quoted address (JSON.parse errors echo the start of the text)
     .replace(/(\.js(?::\d+){0,2})|\d{4,}/g, (m, js) => js ? m : "#")
-    .replace(/["“”`][^"“”`]{20,}(?:["“”`]|$)/g, "\"…\"");
+    .replace(/["“”`][^"“”`]{6,}(?:["“”`]|$)/g, "\"…\"");
 }
 export function cleanErrorReport(body){
   if (!body || typeof body !== "object" || typeof body.msg !== "string" || !body.msg.trim()) return null;
