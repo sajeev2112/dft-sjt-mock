@@ -5712,7 +5712,7 @@ const RW_5_4 = [
   "g": "T",
   "a": "Interpreter adding her own views",
   "k": "ABC",
-  "s": "You are five months into DFT. Through a professional interpreter booked by the practice, you are discussing root canal treatment or extraction of a painful LL6 with Mr Tran, 58. You notice her replies to him run much longer than your questions. When you ask, she says she has told him extraction is cheaper and that she would have the tooth out herself. You have no way of checking what she says to him. Mr Tran has not yet signed anything. His daughter is waiting in reception, and the interpreting agency’s telephone line can supply another interpreter within ten minutes.",
+  "s": "You are five months into DFT. Through a professional interpreter booked by the practice, you are discussing root canal treatment or extraction of a painful LL6 with Mr Tran, 58. You notice her replies to him run much longer than your questions. When you ask, she says she has told him extraction is cheaper and that she would have the tooth out herself. You have no way of checking what she says to him. Mr Tran says he is leaning towards extraction. He has not yet signed anything. His daughter is waiting in reception, and the interpreting agency’s telephone line can supply another interpreter within ten minutes.",
   "o": [
    [
     "Pause and switch to the agency’s telephone interpreter, explaining to Mr Tran that you want the decision to be his own.",
@@ -6478,11 +6478,11 @@ const RW_6_2 = [
     "Seeking advice is reasonable, but it skips both Lorraine and a supportive ES who could resolve this locally. It still keeps the matter proportionate and private, so it outranks E (GDC raising concerns guidance)."
    ],
    [
-    "Report Lorraine’s conduct to the GDC, as criticising a registrant’s work in front of patients risks undermining confidence in the profession.",
+    "Ask reception to book your examinations into shorter slots for now, so that your figures improve and the main source of friction is removed.",
     "Cutting examination time to improve your figures compromises patient care, since at your stage you need that time to examine thoroughly, and it puts a practice target above patients. It is the only option that harms them, so it ranks below E (Std 1.7.1, 1.4.2)."
    ],
    [
-    "Ask reception to book your examinations into shorter slots for now, so that your figures improve and the main source of friction is removed.",
+    "Report Lorraine’s conduct to the GDC, as criticising a registrant’s work in front of patients risks undermining confidence in the profession.",
     "Her remarks are unprofessional, but this is a workplace grievance for the employer, not a GDC matter, and reporting her skips the local routes that should come first. It still outranks D because it doesn’t harm patients (GDC raising concerns guidance; Std 8.2.5)."
    ]
   ],
