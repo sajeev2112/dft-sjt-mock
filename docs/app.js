@@ -2205,7 +2205,7 @@ window.addEventListener("online", flushMockEvents);
 // always open there, answered or not), the exam screen or a running mock, and never with a clock running, a form, a
 // confirmation, a drag, the Sync panel or a study plan being written. Takes plain facts so tools/test-update.mjs can check it.
 function updateMayReload(f){ return ["mocks", "results", "guide", "settings"].includes(f.view) && !f.exam && !f.mock && !f.timer && !f.building && !f.typing && !f.feedback && !f.dialog; }
-const BUILD = "3131971495"; // this page's build version, set by tools/build.js
+const BUILD = "775bf80c6d"; // this page's build version, set by tools/build.js
 // What's on screen right now, for updateMayReload and the welcome tour (an open tour counts as a dialog).
 const quietFacts = () => { const c = S.sets.custom; return {view: S.view, exam: !!(window.Exam && Exam.isOpen()), mock: !!c && mockLive(c) && !c.left, timer: timerOn, building: ui.building,
   typing: busyTyping() || !!(document.getElementById("code-in") || {}).value || !!ui.code, feedback: ui.fbOpen != null, dialog: !!syncUi.conflict || !!document.querySelector(".dragging, .confirm, .sp-go:disabled, .tour")}; };
@@ -2217,7 +2217,7 @@ const quietFacts = () => { const c = S.sets.custom; return {view: S.view, exam: 
 const TOUR_KEY = "dft-tour";
 const tourTab = v => [`.views [data-v="${v}"]`, `.nd-tabbar [data-v="${v}"]`]; // top tabs, or the bottom bar on a phone
 const TOUR = [
-  {v: "practice", at: tourTab("practice"), t: "Welcome! Start in Practice", b: "Ten papers of practice questions, plus quick quizzes by area or theme. Answer a question, press Check answer, and you’ll see the key and the reasoning."},
+  {v: "practice", at: tourTab("practice"), t: "Welcome! Start in Practice", b: "Nine papers of practice questions, plus quick quizzes by area or theme. Answer a question, press Check answer, and you’ll see the key and the reasoning."},
   {v: "practice", at: [".nd-revmis:not([hidden])", "#newquiz"], t: "My mistakes", b: "Questions you lose marks on collect in My mistakes, a rolling quiz with the oldest first. After a wrong answer, Explain my mistake (Beta) gives a short AI explanation of where it went wrong."},
   {v: "mocks", at: tourTab("mocks"), t: "Mock exams", b: "Fixed, timed 56-question papers marked like the real test. Every attempt you finish is kept here."},
   {v: "results", at: [".pgoal"], t: "Progress and your exam countdown", b: "Your scores by theme and how your mocks compare with everyone else’s. Add your SJT date here for a countdown and a daily target."},
