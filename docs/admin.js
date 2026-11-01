@@ -154,11 +154,7 @@ function render(){
   const comments = data.feedback.filter(f => f.comment);
   h += comments.length ? `<div class="comments">${comments.map(f => { const q = Q[f.q - 1]; return `<div class="cmt"><div class="cm">${new Date(f.t).toLocaleDateString("en-GB", {day: "numeric", month: "short"})} · ${q ? `${paperOf(q)}, question ${localOf(q)} · ${esc(q.a)}` : "Question " + esc(f.q)}</div>${esc(f.comment)}</div>`; }).join("")}</div>`
     : `<p class="empty">No written comments yet${data.feedback.length ? ` (${data.feedback.length} disagreement${data.feedback.length === 1 ? "" : "s"} without a comment)` : ""}.</p>`;
-  h += `</section><section class="card" id="errs"><h2 class="bh">Recent errors</h2>`;
-  const groups = errorGroups();
-  h += groups.length ? `<div class="tscroll"><table class="rtable"><thead><tr><th>Latest</th><th>Where</th><th>Message</th><th>Times</th></tr></thead><tbody>${groups.map(e => `<tr><td>${new Date(e.t).toLocaleString("en-GB", {day: "numeric", month: "short", hour: "2-digit", minute: "2-digit"})}</td><td>${e.kind === "server" ? "Server" : "Browser"}</td><td>${esc(e.msg)}</td><td>${fmtN(e.n)}</td></tr>`).join("")}</tbody></table></div>`
-    : `<p class="empty">No errors logged.</p>`;
-  h += `</section>`;
+  h += `</section>` + errorsCard();
   el.innerHTML = h;
   wireTips("c-vis", vis, p => `${dayLabel(p.day)}<br><b>${fmtN(p.v)}</b> visitors · ${fmtN(p.row.views || 0)} page views · ${fmtN(p.row.app || 0)} app`, "line");
   wireTips("c-ans", ans, p => `${dayLabel(p.day)}<br><b>${fmtN(p.v)}</b> answers from ${fmtN(p.row.people || 0)} people`, "bar");
@@ -169,6 +165,39 @@ function render(){
   const sy = series((data.sync || {}).days || [], "n", range);
   wireTips("c-sync", sy, p => `${dayLabel(p.day)}<br><b>${fmtN(p.v)}</b> accounts last synced`, "bar");
   applyFilter(); watchAlerts();
+}
+
+// ---------- problems visitors hit ----------
+const KIND = {server: "Server", client: "Script error", "client-api": "Failed API call", "client-slow": "Slow page", "client-sw": "Offline copy / updates", "client-storage": "Saving in the browser", "client-sync": "Sync"};
+const when = t => new Date(t).toLocaleString("en-GB", {day: "numeric", month: "short", hour: "2-digit", minute: "2-digit"});
+const tally = xs => xs && xs.length ? xs.map(([k, n]) => `${esc(k)}${n > 1 ? ` <span class="dmeta">×${fmtN(n)}</span>` : ""}`).join("<br>") : `<span class="dmeta">–</span>`;
+function errorsCard(){
+  const r = data.errorReport;
+  let h = `<section class="card" id="errs"><h2 class="bh">Problems visitors hit</h2>`;
+  if (!r) { // an older Worker: the plain list
+    const groups = errorGroups();
+    return h + (groups.length ? `<div class="tscroll"><table class="rtable"><thead><tr><th>Latest</th><th>Where</th><th>Message</th><th>Times</th></tr></thead><tbody>${groups.map(e => `<tr><td>${when(e.t)}</td><td>${e.kind === "server" ? "Server" : "Browser"}</td><td>${esc(e.msg)}</td><td>${fmtN(e.n)}</td></tr>`).join("")}</tbody></table></div>` : `<p class="empty">No errors logged.</p>`) + `</section>`;
+  }
+  h += `<p class="muted">The last 30 days, grouped by message and place in the code. “Just before” is what the visitor last pressed or opened (button codes only). Open a row’s details for the newest report. Reports never include answers, question text, anything typed, Sync names or PINs.</p>`;
+  if (r.versions.length) h += `<p class="plabel">Browser problems by site version</p><div class="tscroll"><table class="rtable"><thead><tr><th>Version</th><th>Reports</th><th>Different problems</th><th>First</th><th>Last</th></tr></thead><tbody>${r.versions.map((v, i) => `<tr><td><code>${esc(v.v)}</code>${i === 0 && v.v !== "unknown" ? ` <span class="flag few">newest</span>` : v.v === "unknown" ? ` <span class="dmeta">older reports</span>` : ""}</td><td>${fmtN(v.n)}</td><td>${fmtN(v.kinds)}</td><td>${when(v.first)}</td><td>${when(v.last)}</td></tr>`).join("")}</tbody></table></div>`;
+  if (!r.groups.length) return h + `<p class="empty">No errors logged.</p></section>`;
+  h += `<p class="plabel">Grouped problems</p><div class="tscroll"><table class="rtable errt"><thead><tr><th>Last seen</th><th>Type</th><th>Problem</th><th>Times</th><th>First seen</th><th>Browsers</th><th>Versions</th><th>Just before</th></tr></thead><tbody>`;
+  for (const g of r.groups) h += `<tr><td>${when(g.last)}</td><td>${esc(KIND[g.kind] || g.kind)}</td><td>${esc(g.msg)}${g.sample ? sampleHtml(g.sample) : ""}</td><td>${fmtN(g.n)}</td><td>${when(g.first)}</td><td>${tally(g.browsers)}</td><td>${tally(g.versions)}</td><td>${tally(g.trails)}</td></tr>`;
+  return h + `</tbody></table></div></section>`;
+}
+// The newest report in a group, in plain words.
+function sampleHtml(d){
+  const yes = b => b === true ? "yes" : b === false ? "no" : "–", row = (k, v) => v == null || v === "" ? "" : `<tr><th>${k}</th><td>${v}</td></tr>`;
+  const screen = [d.view, d.set && `set: ${d.set}`, d.mode && `mode: ${d.mode}`, d.hash].filter(Boolean).map(esc).join(" · ");
+  const device = [d.br, d.vw && d.vh ? `${d.vw}×${d.vh}` : "", d.ptr && `${d.ptr} pointer`, d.lang, d.app ? "home-screen app" : d.app === false ? "in the browser" : ""].filter(Boolean).map(esc).join(" · ");
+  const crumbs = (d.crumbs || []).map(c => `${esc(c[0])}${c[2] > 1 ? " ×" + c[2] : ""} <span class="dmeta">${c[1]} s before</span>`).join("<br>");
+  return `<details class="datatoggle"><summary>Details of the newest report</summary><table class="kv">` +
+    row("When", when(d.t)) + row("Site version", d.v && `<code>${esc(d.v)}</code>`) + row("Caught by", esc(d.via || "")) +
+    row("Where", d.loc && `<code>${esc(d.loc)}</code>`) + row("Stack", d.stack && d.stack.map(x => `<code>${esc(x)}</code>`).join("<br>")) +
+    row("API call", d.ep && `${esc(d.ep)}, status ${d.st || "no answer"}`) + row("Reason", d.reason && esc(d.reason)) + row("Busy for", d.ms && `${(d.ms / 1000).toFixed(1)} s`) +
+    row("Screen", screen) + row("Open", d.open && d.open.length ? d.open.map(esc).join(", ") : "nothing") + row("Device", device) +
+    row("Online / storage / calm", `${yes(d.online)} / ${yes(d.store)} / ${yes(d.calm)}`) + row("Page open for", d.up != null && `${d.up} s`) +
+    row("Just before (oldest first)", crumbs) + `</table></details>`;
 }
 
 // ---------- error alerts ----------
@@ -182,7 +211,7 @@ function errorGroups(){
 // red: any server error in the last hour; amber: 3+ browser errors in the last hour, or the free AI allowance used up
 function alerts(){
   const now = Date.now(), recent = data.errors.filter(e => now - e.t < HOUR), out = [];
-  const server = recent.filter(e => e.kind === "server"), client = recent.filter(e => e.kind !== "server");
+  const server = recent.filter(e => e.kind === "server"), client = recent.filter(e => e.kind === "client"); // script errors; failed calls, slow pages etc. are listed below but don't alert
   if (server.length) out.push({lv: "red", text: `${server.length} server error${server.length === 1 ? "" : "s"} in the last hour. Latest: ${server[0].msg}`});
   if (client.length >= 3) out.push({lv: "amber", text: `${client.length} browser errors in the last hour. Latest: ${client[0].msg}`});
   const ai = data.ai, used = ai && ((ai.days.find(d => d.day === new Date().toISOString().slice(0, 10)) || {}).n || 0);

@@ -18,13 +18,13 @@ ok(start > 0 && end > start, "found checkForUpdate in app.js");
 const body = app.slice(start, end);
 async function run({build: b = "aaaaaaaaaa", online = true, res, force = false, quiet = false, dismissed = "", reloading = false, throwFetch = false, lastCheck = 0}) {
   const log = {fetched: 0, bar: 0, reload: 0, swUpdate: 0};
-  const fn = new Function("navigator", "fetch", "BUILD", "reloadIfQuiet", "showUpdateBar", "swReg", "Date", `
+  const fn = new Function("navigator", "fetch", "BUILD", "reloadIfQuiet", "showUpdateBar", "swReg", "Date", "crumb", "report", `
     let reloading = ${reloading}, lastCheck = ${lastCheck}, updateWaiting = false, newest = "", dismissed = ${JSON.stringify(dismissed)};
     ${body}
     return async f => { await checkForUpdate(f); return {updateWaiting, newest}; };`);
   const nav = {onLine: online};
   const f = async () => { log.fetched++; if (throwFetch) throw new TypeError("offline"); return res; };
-  const state = await fn(nav, f, b, () => { if (quiet) { log.reload++; return true; } return false; }, () => { log.bar++; }, {update: () => { log.swUpdate++; return Promise.resolve(); }}, Date)(force);
+  const state = await fn(nav, f, b, () => { if (quiet) { log.reload++; return true; } return false; }, () => { log.bar++; }, {update: () => { log.swUpdate++; return Promise.resolve(); }}, Date, () => {}, () => {})(force); // crumb, report: error-report hooks, not under test here
   return {...log, ...state};
 }
 const json = v => ({ok: true, json: async () => ({v})});

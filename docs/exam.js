@@ -526,6 +526,7 @@
 
   // ---------- events ----------
   function onClick(e){
+    const cb = e.target.closest && e.target.closest("button"); if (cb && window.dftCrumb) dftCrumb("ex:" + (cb.id || (cb.dataset.key ? "key-" + cb.dataset.key : "btn")).replace(/^ex-/, "")); // a code for error reports (app.js)
     const d = e.target.closest("[data-d]");
     if (d && lay && lay.kind === "dialog") {
       const b = lay.o.btns[+d.dataset.d], prevEl = lay.prev; closeLayer(); refocus(prevEl);

@@ -215,7 +215,7 @@ function save(now, quiet, replace){
   S.ts = Math.max(Date.now(), (S.ts || 0) + 1, floor + 1); // never go backwards, even if another device's clock was ahead; newer than any other tab's copy
   if (combine) takeCopy(mergeState(S, o));
   const json = JSON.stringify(S);
-  try { localStorage.setItem(STORE, json); storageOk = true; } catch(e) { storageOk = false; }
+  try { localStorage.setItem(STORE, json); storageOk = true; } catch(e) { storageOk = false; report("storage", {reason: e && e.name || "write"}); }
   knownTs = S.ts; savedAt = Date.now();
   clearTimeout(idbTimer);
   if (now) idbPut(json); else idbTimer = setTimeout(() => idbPut(json), 800);
@@ -227,7 +227,7 @@ function save(now, quiet, replace){
 function persistAsIs(force){
   if (!force && !catchUp(false)) return; // a drag is in progress: its drop saves (and combines) instead
   const json = JSON.stringify(S);
-  try { localStorage.setItem(STORE, json); knownTs = S.ts; } catch(e) {}
+  try { localStorage.setItem(STORE, json); knownTs = S.ts; } catch(e) { report("storage", {reason: e && e.name || "write"}); }
   idbPut(json);
   keepPlace();
 }
@@ -403,6 +403,7 @@ async function flushMockEvents(){
   } finally { mockSending = false; }
 }
 function mockEvent(ev, set, mode){
+  crumb("mock-" + ev);
   if (!S.share || location.protocol === "file:" || !set || !set.created) return;
   const e = {client:S.cid, run:set.created, event:ev, mode: mode || (window.Exam && Exam.isOpen() ? "exam" : "plain"), at:Date.now()};
   if (set.mockNo) e.no = set.mockNo; // which numbered mock (the server ignores fields it doesn't use)
@@ -797,6 +798,7 @@ function initDrag(){
     onStart: evt => { el.classList.add("sorting"); document.body.classList.add("is-sorting"); const d = document.querySelector(".dragging"); if (d) d.dataset.pos = evt.oldIndex + 1; },
     onChange: evt => { buzz(3); const d = document.querySelector(".dragging"); if (d) d.dataset.pos = evt.newIndex + 1; },
     onEnd: evt => {
+      crumb("drag");
       el.classList.remove("sorting"); document.body.classList.remove("is-sorting");
       const a = ansOf(set, qi), before = a.ord.join(""), wasSet = a.set;
       a.ord = [...el.children].map(li => +li.dataset.o);
@@ -1420,7 +1422,7 @@ function renderSettingsRaw(){
   const el = document.getElementById("view-settings");
   const standalone = window.matchMedia && window.matchMedia("(display-mode: standalone)").matches;
   let h = `<div class="card"><h2 class="bh">Settings</h2>`;
-  h += `<section class="sset"><h3>How your progress is saved</h3><p class="muted">Your answers, scores and settings are saved automatically in this browser, with a backup copy, so they’re still here when you come back. There’s no account, and nothing leaves your device apart from anonymous answers for the community stats. Progress can be lost if you clear your browsing data, use a private window, or (in Safari) don’t visit for 7 days. Adding the site to your home screen avoids the Safari limit. To carry on across devices automatically, use <b>Sync</b> in the top bar: pick a username and PIN, and your progress saves to the site’s server and loads on any device with the same pair.</p></section>`;
+  h += `<section class="sset"><h3>How your progress is saved</h3><p class="muted">Your answers, scores and settings are saved automatically in this browser, with a backup copy, so they’re still here when you come back. There’s no account, and nothing leaves your device apart from the anonymous sharing described under Community stats below. Progress can be lost if you clear your browsing data, use a private window, or (in Safari) don’t visit for 7 days. Adding the site to your home screen avoids the Safari limit. To carry on across devices automatically, use <b>Sync</b> in the top bar: pick a username and PIN, and your progress saves to the site’s server and loads on any device with the same pair.</p></section>`;
   h += `<section class="sset"><h3>Welcome tour</h3><p class="muted">A one-minute look round the main screens: where to practise, the mock exams, your progress and Sync.</p><div class="row"><button type="button" class="btn small" data-act="tour">Take the tour</button></div></section>`;
   const snaps = snapshots();
   if (snaps.length) h += `<section class="sset"><h3>Copies replaced by Sync</h3><p class="muted">When you chose to replace one copy of your progress with another, the replaced copy was kept here for ${KEEP_DAYS} days in case it was the wrong choice. Restoring one makes it this device’s progress (and, with Sync on, your other devices’); the progress it replaces is kept here too.</p><ul>` +
@@ -1443,7 +1445,7 @@ function renderSettingsRaw(){
   if (ui.confirmWipe) h += `<div class="confirm"><span>This can’t be undone. Clear everything?</span><div class="row"><button type="button" class="btn small danger" data-act="wipe-yes">Clear everything</button><button type="button" class="btn small" data-act="wipe-no">Cancel</button></div></div>`;
   else h += `<button type="button" class="btn small danger" data-act="wipe">Clear everything</button>`;
   h += `</section><section class="sset"><h3>About</h3><p class="muted">${PRACTICE.length} original practice questions${NEW_LIST.length ? `, plus ${NEW_LIST.length} brand-new questions in ${mockLabel(NEW_MOCK)},` : ""} written for this site, modelled on the official 2016 and 2021 DFT practice papers and on GDC and defence organisation guidance. Unofficial, and not affiliated with NHS England, COPDEND, HEIW or NIMDTA. <a href="https://github.com/sajeev2112/dft-sjt-mock" target="_blank" rel="noopener">Source on GitHub</a>.</p></section>`;
-  h += `<section class="sset"><h3>Community stats</h3><label class="toggle"><input type="checkbox" id="share" ${S.share ? "checked" : ""}> <span>Share anonymous answers and usage</span></label><p class="muted">On by default. The site sends your first attempt at each question, a count of your visits, and any error reports. None of it includes your name, email or IP address; it’s linked only to a random code stored in this browser. Answers power the community stats. Visit counts and error reports are only seen by the site owner, to keep the site running. Turning this off stops all sending; data already sent stays in the totals.</p></section></div>`;
+  h += `<section class="sset"><h3>Community stats</h3><label class="toggle"><input type="checkbox" id="share" ${S.share ? "checked" : ""}> <span>Share anonymous answers and usage</span></label><p class="muted">On by default. The site sends your first attempt at each question, a count of your visits, and a report when something goes wrong. An error report holds technical details only: the site version, which screen was open, your browser type (such as “Chrome 130 / Android”) and screen size, and codes for the last few buttons you pressed. It never includes your answers, the question, anything you type, or your Sync username or PIN. None of it includes your name, email or IP address; answers are linked only to a random code stored in this browser. Answers power the community stats. Visit counts and error reports are only seen by the site owner, to keep the site running. Turning this off stops all sending; data already sent stays in the totals.</p></section></div>`;
   el.innerHTML = h;
 }
 
@@ -1511,6 +1513,8 @@ function fromHash(){
   render(); // unknown #anchor: still draw the page
 }
 window.addEventListener("hashchange", fromHash);
+window.addEventListener("hashchange", () => crumb("nav:" + location.hash.slice(1, 20)));
+document.addEventListener("visibilitychange", () => crumb(document.visibilityState));
 // Opening a citation from a justification remembers where you were, so the guide can offer a way back.
 document.addEventListener("click", e => {
   const a = e.target.closest && e.target.closest("#card a.cite"); if (!a) return;
@@ -1529,6 +1533,7 @@ function renderCiteBack(){
 document.addEventListener("click", async e => {
   const b = e.target.closest("[data-act]"); if (!b || b.disabled) return;
   const act = b.dataset.act, set = curSet();
+  crumb(act + (b.dataset.kind ? ":" + b.dataset.kind : b.dataset.v ? ":" + b.dataset.v : b.dataset.mode ? ":" + b.dataset.mode : "")); // codes only, for error reports
   if (act.startsWith("sync-")) { syncAction(act); return; }
   const qi = S.view === "practice" && !ui.building ? curQi() : null;
   switch (act) {
@@ -1658,7 +1663,7 @@ document.addEventListener("click", async e => {
 });
 document.addEventListener("change", e => {
   if (e.target.id === "share") { S.share = e.target.checked; save(); if (S.share) flush(); }
-  if (e.target.id === "examdate") { const v = e.target.value; if (!v || /^\d{4}-\d{2}-\d{2}$/.test(v)) { S.exam = v; save(); setTimeout(render, 0); } } // redrawn after this event: replacing a focused date field from inside its own change/blur can throw NotFoundError
+  if (e.target.id === "examdate") { crumb("exam-date"); const v = e.target.value; if (!v || /^\d{4}-\d{2}-\d{2}$/.test(v)) { S.exam = v; save(); setTimeout(render, 0); } } // redrawn after this event: replacing a focused date field from inside its own change/blur can throw NotFoundError
 });
 function refreshStats(qi){ keepFocus(() => { const box = document.getElementById("stats-" + qi); if (box) box.outerHTML = statsHtml(qi); }); }
 function markSet(){
@@ -1758,6 +1763,9 @@ const SYNC_ERRORS = {
   bad_data: "Sync couldn’t save: your progress is too large for the Sync server. Everything is still saved on this device, and nothing has been deleted.",
   bad_request: "Sync couldn’t save: your progress is too large for the Sync server. Everything is still saved on this device, and nothing has been deleted.",
 };
+// For error reports: the server's reason code (such as rate_limited or bad_data) or the HTTP status, or "network" when the
+// browser says it's online but the server couldn't be reached. Never the username, PIN or progress.
+function syncFailed(res){ if (res) report("sync", {reason: /^[a-z_]{1,20}$/.test(res.body && res.body.error || "") ? res.body.error : "http " + res.status, st: res.status}); else if (navigator.onLine) report("sync", {reason: "network", st: 0}); }
 function syncErr(res){ if (res.body.error === "locked") return `Too many wrong PINs for that username. Try again in ${res.body.retry_after} minute${res.body.retry_after === 1 ? "" : "s"}.`; return SYNC_ERRORS[res.body.error] || "Couldn’t reach the server. Check your connection and try again."; }
 function adopt(data, ts){
   const view = S.view, setId = S.setId, n = normalise(JSON.parse(data));
@@ -1825,14 +1833,14 @@ async function pushSyncNow(force){
     if (res.status === 200) { SY.lastTs = res.body.ts; SY.at = Date.now(); saveLink(); syncUi.status = "saved"; syncUi.error = ""; syncUi.conflict = null; }
     else if (res.status === 409) await resolveRemoteNewer();
     else if (res.status === 401 || res.status === 404) { syncUi.error = res.status === 404 ? "Your saved progress was deleted on another device, so this device has stopped syncing." : "The PIN for this username has changed, so this device has stopped syncing."; SY = null; saveLink(); syncUi.status = ""; }
-    else { syncUi.status = "offline"; syncUi.error = syncErr(res); }
-  } catch(e) { syncUi.status = "offline"; syncUi.error = syncErr({body: {}}); }
+    else { syncUi.status = "offline"; syncUi.error = syncErr(res); syncFailed(res); }
+  } catch(e) { syncUi.status = "offline"; syncUi.error = syncErr({body: {}}); syncFailed(null); }
   renderSyncButton(); if (syncUi.open) renderSyncPanel();
 }
 // The server copy is newer than our last sync: take it if this device hasn't changed since, otherwise ask.
 async function resolveRemoteNewer(){
   const res = await syncCall("load", {name: SY.name, pin: SY.pin});
-  if (res.status !== 200) { syncUi.status = "offline"; syncUi.error = syncErr(res); return; }
+  if (res.status !== 200) { syncUi.status = "offline"; syncUi.error = syncErr(res); syncFailed(res); return; }
   if (ownCopy(res.body.ts)) { markSynced(res.body.ts); syncUi.status = "saved"; if (S.ts > res.body.ts) await pushSync(); return; }
   if (S.ts <= (SY.lastTs || 0)) { adopt(res.body.data, res.body.ts); syncUi.status = "saved"; announce("Loaded your latest progress from another device."); }
   else { syncUi.conflict = {data: res.body.data, ts: res.body.ts, updated: res.body.updated}; syncUi.status = "conflict"; syncUi.open = true; }
@@ -1848,8 +1856,8 @@ async function syncOnStart(){
       else if (S.ts > (SY.lastTs || 0)) await pushSync();
       else syncUi.status = "saved";
     } else if (res.status === 401 || res.status === 404) { syncUi.error = "Your saved progress was deleted or its PIN changed, so this device has stopped syncing. Your progress here is kept."; SY = null; saveLink(); }
-    else { syncUi.status = "offline"; syncUi.error = syncErr(res); }
-  } catch(e) { syncUi.status = "offline"; syncUi.error = syncErr({body: {}}); }
+    else { syncUi.status = "offline"; syncUi.error = syncErr(res); syncFailed(res); }
+  } catch(e) { syncUi.status = "offline"; syncUi.error = syncErr({body: {}}); syncFailed(null); }
   renderSyncButton(); if (syncUi.open || syncUi.conflict) renderSyncPanel();
 }
 window.addEventListener("pagehide", () => {
@@ -2004,30 +2012,172 @@ async function syncAction(act){
   }
 }
 
-// ---------- private usage stats and error reports ----------
-// One anonymous visit per page load (random browser code only), and up to 3 error reports per visit.
-// Both respect the anonymous-sharing setting and are never shown on the site.
-let errorsSent = 0;
-function reportError(msg){
-  if (!S.share || errorsSent >= 3 || location.protocol === "file:") return;
-  errorsSent++;
-  try { fetch(API + "/api/error", {method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({msg: String(msg).slice(0, 300)}), keepalive:true}).catch(() => {}); } catch(e) {}
+// ---------- error reports ----------
+// Problems visitors hit are sent to the site owner (POST /api/error) with enough context to fix them and no personal data:
+// the app version, which screen and kind of set was open, a coarse browser family ("Chrome 130 / Android", never the full
+// browser string), screen size, a short trail of recent button codes, and our own script lines from the stack. Never
+// answers, question text, anything typed, Sync names or PINs. Sent only with anonymous sharing on, at most 5 per page load,
+// each distinct problem once. The helpers between TELEMETRY:start and :end are pure (tools/test-telemetry.mjs).
+// TELEMETRY:start
+const OUR_JS = /\/(app|questions|guide|exam|design|explain|studyplan|phrases|standards|tags|sw)\.js/;
+// "Chrome 130 / Android": the browser family, its major version and the operating system, nothing else.
+function uaFamily(ua){
+  ua = String(ua || "");
+  const os = /Android/.test(ua) ? "Android" : /iPhone|iPad|iPod/.test(ua) ? "iOS" : /CrOS/.test(ua) ? "ChromeOS" : /Windows/.test(ua) ? "Windows" : /Macintosh|Mac OS X/.test(ua) ? "macOS" : /Linux/.test(ua) ? "Linux" : "Other";
+  const kinds = [[/EdgA?\/(\d+)|EdgiOS\/(\d+)/, "Edge"], [/SamsungBrowser\/(\d+)/, "Samsung"], [/OPR\/(\d+)|OPiOS\/(\d+)/, "Opera"], [/Firefox\/(\d+)|FxiOS\/(\d+)/, "Firefox"],
+    [/CriOS\/(\d+)|Chrome\/(\d+)/, "Chrome"], [/Version\/(\d+)[\d.]*(?: Mobile\/\w+)? Safari\//, "Safari"]];
+  for (const [re, name] of kinds) { const m = ua.match(re); if (m) return `${name} ${m[1] || m[2]} / ${os}`; }
+  return "Other / " + os;
 }
-window.addEventListener("error", e => {
-  if (!e.filename || !/\/(app|questions|guide|sw)\.js/.test(e.filename)) return; // ignore extensions and third-party scripts
-  reportError(`${e.message} @ ${e.filename.split("/").pop()}:${e.lineno}`);
-});
+// Text that might hold something personal is cut out: e-mail addresses, runs of 4+ digits (a PIN; script line numbers such
+// as app.js:1279 stay), long double-quoted text (a browser quoting what it failed to read), web addresses beyond their file
+// name, and any run of 6 words that also appears in the question bank (bank: its text in lower case, words only).
+function scrub(s, max, bank){
+  s = String(s == null ? "" : s).replace(/[\u0000-\u001F\u007F]/g, " ")
+    .replace(/\b(?:https?|blob|file):\/\/[^\s'"`)]*/gi, u => (u.split(/[?#]/)[0].split("/").pop() || "url"))
+    .replace(/[^\s@'"`]+@[^\s@'"`]+\.[a-z]{2,}/gi, "[email]")
+    .replace(/(\.js(?::\d+){0,2})|\d{4,}/g, (m, js) => js ? m : "#")
+    .replace(/["“”`][^"“”`]{20,}(?:["“”`]|$)/g, "\"…\"")
+    .replace(/\s+/g, " ").trim();
+  if (bank) {
+    const w = s.split(" "), cut = new Array(w.length).fill(false), norm = x => x.toLowerCase().replace(/[^a-z]+/g, " ").trim();
+    for (let i = 0; i + 6 <= w.length; i++) { const p = norm(w.slice(i, i + 6).join(" ")); if (p.split(" ").length >= 6 && bank.includes(" " + p + " ")) cut.fill(true, i, i + 6); }
+    s = w.map((x, i) => cut[i] ? (cut[i - 1] ? null : "…") : x).filter(x => x != null).join(" ");
+  }
+  return s.slice(0, max || 200);
+}
+// Up to 6 stack frames: function name and file:line:col for our own scripts, "(other)" for anyone else's.
+function trimStack(st){
+  const out = [];
+  for (const line of String(st || "").split("\n")) {
+    if (out.length >= 6) break;
+    const loc = line.match(/\/([\w-]+\.js)(?:\?[^:\s)]*)?:(\d+):(\d+)/);
+    if (!loc || !OUR_JS.test("/" + loc[1])) { if (/:\d+:\d+/.test(line) && out[out.length - 1] !== "(other)") out.push("(other)"); continue; }
+    const fn = (line.match(/^\s*at\s+(?:async\s+)?([\w$.]+)\s+\(/) || line.match(/^\s*([\w$.]+)@/) || [])[1];
+    out.push((fn ? fn.slice(0, 40) + " " : "") + `${loc[1]}:${loc[2]}:${loc[3]}`);
+  }
+  return out;
+}
+// At most max reports a page load, each kind+message once, and fewer of the noisier kinds.
+function makeGate(max, perKind){
+  const seen = new Set(), kinds = {}; let n = 0;
+  return (kind, key) => {
+    if (n >= max || seen.has(kind + "|" + key) || (kinds[kind] || 0) >= (perKind[kind] || max)) return false;
+    seen.add(kind + "|" + key); kinds[kind] = (kinds[kind] || 0) + 1; n++; return true;
+  };
+}
+// The last few button and screen codes, in memory only (never saved): [code, seconds ago, times in a row].
+function makeCrumbs(size){
+  const a = [];
+  return {
+    add(code, now){
+      code = String(code || "").toLowerCase().replace(/[^a-z0-9:-]/g, "").slice(0, 24); if (!code) return;
+      const last = a[a.length - 1];
+      if (last && last[0] === code) { last[1] = now; last[2]++; return; }
+      a.push([code, now, 1]); if (a.length > size) a.shift();
+    },
+    list(now){ return a.map(([c, t, n]) => n > 1 ? [c, Math.max(0, Math.round((now - t) / 1000)), n] : [c, Math.max(0, Math.round((now - t) / 1000))]); }
+  };
+}
+// The report itself: a short message for grouping, and a detail object of codes, numbers and true/false only.
+function telemetryPayload(kind, info, ctx, crumbs, bank){
+  const code = (v, n) => String(v == null ? "" : v).replace(/[^A-Za-z0-9 #:./_-]/g, "").slice(0, n || 24);
+  const i = info || {}, c = ctx || {}, d = {via: code(i.via || kind)};
+  const where = i.file ? `${code(String(i.file).split(/[?#]/)[0].split("/").pop(), 30)}:${+i.line || 0}` : "";
+  let msg;
+  if (kind === "error" || kind === "rejection") {
+    const text = scrub(String(i.message || "").replace(/^Uncaught (?:exception: )?/, ""), 200, bank);
+    msg = (kind === "rejection" ? "Unhandled: " : "") + (i.name && !text.startsWith(i.name) ? code(i.name, 40) + ": " : "") + text + (where ? " @ " + where : "");
+  } else if (kind === "api") msg = `API ${code(i.ep, 20)} ${+i.st || "network"}`;
+  else if (kind === "slow") msg = `Page busy for over ${i.ms >= 5000 ? 5 : i.ms >= 2000 ? 2 : 1} s`;
+  else msg = `${{sw: "Service worker", storage: "Saving in this browser", sync: "Sync"}[kind] || "Problem"} failed: ${code(i.reason || i.name || "unknown", 40)}`;
+  if (i.name) d.name = code(i.name, 40);
+  if (where) d.loc = where + (i.col ? ":" + (+i.col || 0) : "");
+  const stack = trimStack(i.stack); if (stack.length) d.stack = stack;
+  if (i.ep) d.ep = code(i.ep, 20); if (i.st != null) d.st = +i.st || 0; if (i.ms) d.ms = Math.round(i.ms / 100) * 100; if (i.reason) d.reason = code(i.reason, 40);
+  for (const k of ["v", "view", "set", "mode", "ptr", "lang"]) if (c[k]) d[k] = code(c[k], 16);
+  if (c.br) d.br = code(c.br, 40);
+  if (c.hash != null) d.hash = /^#?[a-z0-9.-]{0,30}$/i.test(c.hash) ? String(c.hash).slice(0, 31) : "#other";
+  for (const k of ["app", "online", "store", "calm"]) if (typeof c[k] === "boolean") d[k] = c[k];
+  for (const k of ["vw", "vh", "up"]) if (Number.isFinite(c[k])) d[k] = Math.max(0, Math.min(1e6, Math.round(c[k])));
+  if (Array.isArray(c.open) && c.open.length) d.open = c.open.slice(0, 8).map(x => code(x, 16));
+  if (crumbs && crumbs.length) d.crumbs = crumbs.slice(-10);
+  return {kind, msg: msg.slice(0, 300), detail: d};
+}
+// TELEMETRY:end
+const crumbs = makeCrumbs(10), telGate = makeGate(5, {api: 2, slow: 1, sw: 1, storage: 1, sync: 2});
+let telBusy = false, telBank = null; const telRaw = new Set();
+function crumb(code){ try { crumbs.add(code, Date.now()); } catch(e) {} }
+window.dftCrumb = crumb; // the exam screen (exam.js) adds its own button codes
+// What was on screen. Each part on its own, so a page that failed half-way through starting still reports the rest.
+function telemetryContext(){
+  const c = {}, mm = q => { try { return !!(window.matchMedia && matchMedia(q).matches); } catch(e) { return false; } };
+  const put = f => { try { f(); } catch(e) {} };
+  put(() => { c.v = BUILD; });
+  put(() => { c.view = S.view; const set = S.sets[S.setId]; c.set = S.setId === "custom" && set ? (isMock(set) ? "mock" : set.kind || "quiz") : "paper"; c.mode = set && set.mode; });
+  put(() => { c.hash = location.hash; c.online = navigator.onLine; c.lang = navigator.language; c.br = uaFamily(navigator.userAgent); });
+  put(() => { c.app = mm("(display-mode: standalone)") || navigator.standalone === true; c.calm = calm(); c.ptr = mm("(pointer: coarse)") ? "coarse" : mm("(pointer: fine)") ? "fine" : "none"; });
+  put(() => { c.vw = window.innerWidth; c.vh = window.innerHeight; c.up = performance.now() / 1000; });
+  put(() => { c.store = storageOk; });
+  const open = c.open = [];
+  put(() => { if (document.getElementById("update-bar")) open.push("update"); if (document.querySelector(".tour")) open.push("tour"); if (document.querySelector(".confirm")) open.push("confirm"); });
+  put(() => { if (syncUi.open) open.push("sync"); if (syncUi.conflict) open.push("conflict"); });
+  put(() => { if (window.Exam && Exam.isOpen()) open.push("exam"); if (ui.building) open.push("builder"); });
+  return c;
+}
+// Never throws and never reports itself: the send uses the browser's own fetch, so a failed report is not "a failed API call".
+const rawFetch = window.fetch ? window.fetch.bind(window) : null;
+function report(kind, info){
+  try {
+    if (telBusy || !rawFetch || location.protocol === "file:" || !S.share) return;
+    const raw = kind + "|" + String(info && (info.message || info.reason || info.ep) || "").slice(0, 120) + "|" + (info && info.line || "");
+    if (telRaw.has(raw) || telRaw.size >= 20) return; // a repeating error (say, in a loop) costs nothing after the first time
+    telRaw.add(raw); telBusy = true;
+    try {
+      if (telBank == null && (kind === "error" || kind === "rejection")) { telBank = ""; try { telBank = " " + JSON.stringify(Q).toLowerCase().replace(/[^a-z]+/g, " ") + " "; } catch(e) {} }
+      const p = telemetryPayload(kind, info, telemetryContext(), crumbs.list(Date.now()), telBank);
+      if (!telGate(kind, p.msg)) return;
+      const body = JSON.stringify(p);
+      if (body.length <= 6000) rawFetch(API + "/api/error", {method: "POST", headers: {"Content-Type": "application/json"}, body, keepalive: true}).catch(() => {});
+    } finally { telBusy = false; }
+  } catch(e) {}
+}
+window.addEventListener("error", e => { try {
+  const er = e.error, ours = !!e.filename && OUR_JS.test(e.filename);
+  // ignore extensions and third-party scripts; an error the browser files under the page itself counts if its stack runs through our code
+  if (!ours && !(er && OUR_JS.test(String(er.stack || "")) && !foreignRejection(er))) return;
+  const at = ours ? [0, e.filename, e.lineno, e.colno] : [...String(er.stack).matchAll(/\/([\w-]+\.js)(?:\?[^:\s)]*)?:(\d+):(\d+)/g)].find(m => OUR_JS.test("/" + m[1])) || [];
+  report("error", {via: "error", name: er && er.name, message: e.message, stack: er && er.stack, file: at[1], line: at[2], col: at[3]});
+} catch(err) {} });
 // A rejection thrown by a visitor's own browser extension (for example a Safari web extension failing with SFErrorDomain) is not a site bug.
 function foreignRejection(r){
   const text = String(r && (r.message || r) || ""), st = String(r && r.stack || "");
   if (/sendNativeMessage|SFErrorDomain|(?:chrome|moz|safari|safari-web)-extension:/i.test(text + " " + st)) return true;
   return !!st && !/\/(app|questions|guide|exam|design|explain|studyplan|sw)\.js/.test(st); // has a stack, but none of it is our code
 }
-window.addEventListener("unhandledrejection", e => {
+window.addEventListener("unhandledrejection", e => { try {
   const r = e.reason; if (r && r.name === "TypeError" && /fetch|network|load failed/i.test(r.message)) return; // offline, not a bug
   if (foreignRejection(r)) return;
-  reportError("Unhandled: " + (r && r.message || r));
-});
+  const at = String(r && r.stack || "").match(/\/([\w-]+\.js)(?:\?[^:\s)]*)?:(\d+):(\d+)/) || [];
+  report("rejection", {via: "rejection", name: r && r.name, message: r && r.message || r, stack: r && r.stack, file: at[1], line: at[2], col: at[3]});
+} catch(err) {} });
+// Failed calls to the site's own API: the endpoint and status only (never what was sent or received). Sync reports its own
+// failures by reason, and expected refusals (wrong PIN 401, conflict 409, locked 423, rate limit 429) are not problems.
+if (rawFetch) window.fetch = function(input){
+  const p = rawFetch.apply(window, arguments);
+  try {
+    const ep = (String(typeof input === "string" ? input : input && input.url || "").match(/\/api\/([a-z-]+)/) || [])[1];
+    if (ep && ep !== "error" && ep !== "sync") p.then(r => { if (r.status >= 500 || [400, 403, 404, 405, 413].includes(r.status)) report("api", {ep, st: r.status}); },
+      er => { if (navigator.onLine && !(er && er.name === "AbortError")) report("api", {ep, st: 0}); });
+  } catch(e) {}
+  return p;
+};
+// A task that froze the page for over a second (where the browser can tell us; Chrome and Edge).
+try { if (window.PerformanceObserver && (PerformanceObserver.supportedEntryTypes || []).includes("longtask"))
+  new PerformanceObserver(l => { for (const t of l.getEntries()) if (t.duration > 1000) report("slow", {ms: t.duration}); }).observe({type: "longtask"}); } catch(e) {}
+
+// ---------- private usage stats ----------
+// One anonymous visit per page load (random browser code only); respects the anonymous-sharing setting.
 function countVisit(){
   // A reload the site started itself to install an update is not a new visit.
   try { if (sessionStorage.getItem("dft-update-reload")) { sessionStorage.removeItem("dft-update-reload"); return; } } catch (e) {}
@@ -2043,7 +2193,7 @@ window.addEventListener("online", flushMockEvents);
 // always open there, answered or not), the exam screen or a running mock, and never with a clock running, a form, a
 // confirmation, a drag, the Sync panel or a study plan being written. Takes plain facts so tools/test-update.mjs can check it.
 function updateMayReload(f){ return ["mocks", "results", "guide", "settings"].includes(f.view) && !f.exam && !f.mock && !f.timer && !f.building && !f.typing && !f.feedback && !f.dialog; }
-const BUILD = "163c9c36e7"; // this page's build version, set by tools/build.js
+const BUILD = "bee85ec7cc"; // this page's build version, set by tools/build.js
 // What's on screen right now, for updateMayReload and the welcome tour (an open tour counts as a dialog).
 const quietFacts = () => { const c = S.sets.custom; return {view: S.view, exam: !!(window.Exam && Exam.isOpen()), mock: !!c && mockLive(c) && !c.left, timer: timerOn, building: ui.building,
   typing: busyTyping() || !!(document.getElementById("code-in") || {}).value || !!ui.code, feedback: ui.fbOpen != null, dialog: !!syncUi.conflict || !!document.querySelector(".dragging, .confirm, .sp-go:disabled, .tour")}; };
@@ -2100,7 +2250,7 @@ function startTour(){
 }
 function tourStep(i){
   if (!tour || i < 0 || i >= TOUR.length) return;
-  const s = TOUR[tour.i = i], el = tour.el;
+  const s = TOUR[tour.i = i], el = tour.el; crumb("tour:" + i);
   if (s.v && s.v !== S.view) { S.view = s.v; render(); window.scrollTo({top: 0, behavior: "instant"}); }
   el.querySelector(".tour-n").textContent = `Step ${i + 1} of ${TOUR.length}`;
   el.querySelector(".tour-t").textContent = s.t; el.querySelector(".tour-b").textContent = s.b;
@@ -2128,7 +2278,7 @@ function tourPlace(){
 // Finished or skipped: never auto-start again, and put you back where you were.
 function endTour(){
   if (!tour) return;
-  const f = tour.from; tour.el.remove(); tour = null;
+  const f = tour.from; tour.el.remove(); tour = null; crumb("tour-end");
   try { localStorage.setItem(TOUR_KEY, "1"); } catch(e) {}
   window.removeEventListener("resize", tourPlace); window.removeEventListener("scroll", tourPlace);
   document.querySelectorAll("[data-tour-inert]").forEach(c => { c.inert = false; delete c.dataset.tourInert; });
@@ -2151,10 +2301,11 @@ if ("serviceWorker" in navigator && location.protocol !== "file:") {
   // open a quiet screen. The reload never marks progress as changed, so Sync can't mistake it for new answers.
   let reloading = false, swReg = null, lastCheck = Date.now(), updateWaiting = false, newest = "", dismissed = "";
   const markUpdateReload = () => { try { sessionStorage.setItem("dft-update-reload", "1"); } catch (e) {} };
-  const reloadNow = () => { reloading = true; markUpdateReload(); keepUnsaved(); location.reload(); };
+  const reloadNow = () => { crumb("update-reload"); reloading = true; markUpdateReload(); keepUnsaved(); location.reload(); };
   const reloadIfQuiet = () => { if (updateWaiting && !reloading && updateMayReload(quietFacts())) { reloadNow(); return true; } return false; };
   const showUpdateBar = () => {
     if (document.getElementById("update-bar")) return;
+    crumb("update-bar");
     const bar = document.createElement("div");
     bar.id = "update-bar"; bar.setAttribute("role", "status");
     bar.innerHTML = '<span>A new version of the site is ready. Your answers are saved.</span><button type="button" class="primary">Refresh now</button><button type="button" class="ghost" aria-label="Dismiss">Later</button>';
@@ -2163,7 +2314,7 @@ if ("serviceWorker" in navigator && location.protocol !== "file:") {
     document.body.appendChild(bar);
   };
   window.addEventListener("hashchange", () => setTimeout(reloadIfQuiet, 0)); // after the new view has been drawn
-  navigator.serviceWorker.register("sw.js").then(reg => { swReg = reg; }).catch(() => {});
+  navigator.serviceWorker.register("sw.js").then(reg => { swReg = reg; }).catch(e => report("sw", {reason: "register " + (e && e.name || "error")}));
   // Compare this page's build with the version the server publishes (version.json, written by the build). Only a real difference
   // is announced: the same number means nothing to say. Checked every few minutes while the page is open, when the visitor comes back
   // to it, and when the connection returns.
@@ -2175,8 +2326,8 @@ if ("serviceWorker" in navigator && location.protocol !== "file:") {
       if (!r.ok) return;
       const v = String((await r.json()).v || "");
       if (!/^[a-f0-9]{10}$/.test(v) || !/^[a-f0-9]{10}$/.test(BUILD) || v === BUILD) return;
-      newest = v; updateWaiting = true;
-      if (swReg) swReg.update().catch(() => {}); // let the offline copy catch up too
+      newest = v; updateWaiting = true; crumb("update-found");
+      if (swReg) swReg.update().catch(e => report("sw", {reason: "update " + (e && e.name || "error")})); // let the offline copy catch up too
       if (!reloadIfQuiet() && dismissed !== v) showUpdateBar();
     } catch (e) { /* offline or a hiccup: try again at the next check */ }
   };

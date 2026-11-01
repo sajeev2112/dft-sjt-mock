@@ -30,7 +30,7 @@ The questions are original. They're modelled on patterns in the official 2016 an
 | `wrangler.jsonc` | Worker config, including the D1 database binding for community stats |
 | `tools/build.js` | Validates every question and key, syncs the question list into the Worker, and updates the offline-cache version |
 
-**Privacy:** the stats API stores only a random per-browser ID, the question number and the answer order. IP addresses are hashed into hourly rate-limit buckets and never stored in raw form. Disagreement comments are stored for the site owner to review and are never shown publicly.
+**Privacy:** the stats API stores only a random per-browser ID, the question number and the answer order. IP addresses are hashed into hourly rate-limit buckets and never stored in raw form. Disagreement comments are stored for the site owner to review and are never shown publicly. With anonymous sharing on, the site also sends error reports to `/api/error` (at most 5 a page load): the message and our own script lines, the site version, the screen and kind of set open, a coarse browser family such as “Chrome 130 / Android” (not the full browser string), screen size, and codes for the last few buttons pressed. Never answers, question text, anything typed, Sync names or PINs; the Worker keeps only listed fields and deletes error rows after 30 days.
 
 To read the feedback, open the D1 console in the Cloudflare dashboard and run:
 
