@@ -13150,7 +13150,7 @@ const RW_10_1 = [
   "g": "C",
   "a": "Retained swab, nurse takes blame",
   "k": "BEF",
-  "s": "Month 6, an NHS practice. Mr Ellery, 52, returns four days after you surgically removed his lower left first molar. He has a bad taste and a sore socket, and says, ‘It’s my own fault, I didn’t rinse like you told me.’ You find a small folded gauze swab deep in the socket and remove it; the socket looks clean underneath. Your nurse, Pria, tells you quietly that counting the swabs was her job. The practice surgical checklist already has a swab count box, and she ticked it for his extraction. She has started an incident form naming only herself: ‘You’re a trainee. You don’t need this on your record.’ Mr Ellery is waiting for you to explain what you found.",
+  "s": "Month 6, an NHS practice. Mr Ellery returns four days after your surgical extraction with a sore, foul-tasting socket: ‘My own fault, I didn’t rinse.’ You remove a folded gauze swab; the socket looks clean. Your nurse, Pria, had ticked the checklist swab count. Her incident form names only herself: ‘You’re a trainee. Keep this off your record.’",
   "o": [
    [
     "Tell Mr Ellery a swab was found and removed, then explain and apologise in full at his review, once the incident has been looked into.",
@@ -13198,7 +13198,7 @@ const RW_10_1 = [
   "g": "C",
   "a": "Penicillin dose: given or not?",
   "k": "BEDAC",
-  "s": "Month 9, your hospital week on the oral surgery ward. Last night you prescribed IV co-amoxiclav for Mr Vance, 60, admitted with a facial swelling. You took his allergies from the referral letter, which did not mention penicillin; his wristband does. At 8am the day nurse tells you the night nurse spotted the band, did not give the 10pm dose and stopped the drug; the registrar has since prescribed an alternative by phone. She says there was no harm, so ‘there’s no need to worry him’. At 8:20 the ward pharmacist tells you the 10pm dose is signed as given on the electronic chart. The nurse thinks it is a recording slip. Mr Vance seems comfortable. The registrar is in theatre until 11am.",
+  "s": "Month 9, an oral surgery ward. Last night you prescribed IV co-amoxiclav for Mr Vance, missing the penicillin allergy on his wristband. At 8am the day nurse says the night nurse withheld the 10pm dose: ‘No harm, no need to worry him.’ At 8:20 the pharmacist finds it charted as given. He seems comfortable; the registrar is in theatre until 11am.",
   "o": [
    [
     "Write the error in his notes and tell the registrar after theatre, so the team can explain it to Mr Vance on the afternoon ward round.",
@@ -13214,7 +13214,7 @@ const RW_10_1 = [
    ],
    [
     "See Mr Vance now, check him for any sign of reaction, and tell him about the error, saying the dose was stopped before it was given.",
-    "Checks him and is open about the error now, but tells him as fact what the 8:20 chart contradicts, so he and the team may be falsely reassured and a reaction missed (GDC candour guidance, Std 1.3.1). Before the pharmacist’s news it would lead; now it sits below E, which reports the doubt."
+    "Checks him and is open about the error now, but tells him as fact what the 8:20 chart contradicts, so he and the team may be falsely reassured and a reaction missed (GDC candour guidance, Std 1.3.1). Before the turn it would lead; now it sits below E, which reports the doubt."
    ],
    [
     "Ask the nurse to check him now for any sign of reaction, and complete an incident report recording your error and the conflicting chart entry.",
@@ -13234,7 +13234,7 @@ const RW_10_1 = [
   "g": "C",
   "a": "Cracked denture, carer blamed",
   "k": "BADEC",
-  "s": "Month 8, a community dental service home visit. Mrs Bell, 84, has capacity and lives alone; a care-agency worker visits twice a day. Two weeks ago you thinned the palate of her new upper denture because it made her gag. Today the denture has a crack down the middle, though it is still in one piece and she can wear it. She says, ‘The carer must have dropped it in the sink. I’ll ring the agency after you’ve gone and ask for someone else.’ You think your thinning may have weakened it, but a drop could also crack it. She is eating soft food and has no sore areas.",
+  "s": "Month 8, a home visit. Mrs Bell, 84, has capacity and a regular agency carer. Two weeks ago you thinned her new denture’s palate. It is now cracked but wearable; she manages soft food comfortably. ‘The carer must have dropped it. I’ll ring the agency after you’ve gone for someone else.’ Your thinning may have weakened it; so could a drop.",
   "o": [
    [
     "That the cause is uncertain, so what you tell her must not claim more than you know, in either direction.",
@@ -13270,7 +13270,7 @@ const RW_10_1 = [
   "g": "M",
   "a": "Tearful whitening complaint at review",
   "k": "BEACD",
-  "s": "Month 8, a private-only practice. Ms Garner, 35, attends a review two weeks after you completed her home whitening. She has written to the practice manager, who has not yet replied, saying nobody warned her about sensitivity and that she was charged £60 for a consultation the website calls free. She wants the £450 whitening fee refunded. Your notes say ‘risks discussed’, and she signed a form that lists sensitivity. The practice manager has told you the website was out of date. As you begin to explain the form, Ms Garner becomes tearful. She says she has stopped drinking anything cold and is skipping lunch at work because eating hurts.",
+  "s": "Month 8, a private practice. At her whitening review, Ms Garner says her letter to the practice manager is unanswered: nobody warned her about sensitivity, and the website’s free consultation cost £60. She wants her £450 fee back. Her signed form lists sensitivity; the website was out of date. As you mention the form, she becomes tearful: eating hurts.",
   "o": [
    [
     "Remind her that sensitivity was listed on the consent form she signed, then examine her teeth and treat the sensitivity today.",
@@ -13305,12 +13305,12 @@ const RW_10_1 = [
   "d": "P",
   "g": "M",
   "a": "Complaint reveals booking error",
-  "k": "BDCEA",
-  "s": "Month 6, a corporate-chain practice, 11:40am. You are 20 minutes behind. Reception asks you to come out: Mr Odell is upset at the desk. He says the associate saw him for ten minutes, placed a temporary filling and ‘showed me the door’ when he asked questions. The practice manager is at another branch until 2pm, and the associate has just started a surgical extraction. You take Mr Odell to a quiet room. Then the receptionist tells you privately that she may have booked him as a 10-minute check-up by mistake. The diary now shows a 30-minute filling slot, and she cannot remember whether she changed it. Mr Odell has no pain and wants someone to take him seriously.",
+  "k": "BDECA",
+  "s": "Month 6, a corporate practice; you are running late. Mr Odell is upset at reception: the associate did a ten-minute temporary filling and ‘showed me the door’ when he asked questions. She is now mid-extraction; the practice manager is away until 2pm. The receptionist says she may have booked a 10-minute check-up; the diary shows 30 minutes, but she cannot remember changing it.",
   "o": [
    [
     "Tell him the associate was not at fault, as his slot was booked too short by mistake, and book him a 30-minute appointment this week.",
-    "Books a proper slot, but tells him as fact a booking error the diary does not confirm, and clears the associate before anyone has heard her side of his concern (Std 1.3.1, 5.2.1). It ranks below E, which says nothing unconfirmed and blames no one."
+    "Books a proper slot, but tells him as fact a booking error the receptionist cannot confirm, and clears the associate before anyone has heard her side (Std 1.3.1, 5.2.1). Lowest, below C, which at least apologises and routes the rest to the manager today."
    ],
    [
     "Listen to him privately, apologise that his visit felt rushed, and ask the practice manager to call him today, passing on what the receptionist said.",
@@ -13318,15 +13318,15 @@ const RW_10_1 = [
    ],
    [
     "Explain privately that his slot was booked too short, apologise for that, and ask the practice manager to call him today about the rest.",
-    "Open, same-day and apologetic, and if the diary agreed it could lead; but it gives him as fact a cause the receptionist is unsure of and the diary contradicts, which may need correcting later (Std 1.3.1, 5.3.8). It ranks below D, which asserts nothing uncertain; above E."
+    "Open, same-day and apologetic, but it gives him as fact a cause the receptionist cannot confirm and the diary contradicts, which may need correcting later (Std 1.3.1, 5.3.8). It ranks below E, which asserts nothing uncertain; above A, which also clears the associate."
    ],
    [
     "Ask the nurse to tell the associate, at a safe pause in the extraction, that Mr Odell is upset and waiting to see her.",
-    "Lets the clinician he is unhappy with hear and answer his concern herself, and asserts nothing uncertain; a message at a safe pause need not disrupt the extraction (Std 5.3.3, 6.5). It ranks below B, which also listens and apologises now; above C, which gives him a doubtful cause as fact."
+    "Lets the clinician he is unhappy with hear and answer his concern herself, and asserts nothing uncertain; a message at a safe pause need not disrupt the extraction (Std 5.3.3, 6.5). It ranks below B, which also listens and apologises now; above E, under which nobody hears him today."
    ],
    [
     "Ask the receptionist to book him a longer slot with the associate this week and give him the complaints leaflet, so you can return to your list.",
-    "Follows procedure with the leaflet and books more time, but nobody hears his complaint today and he is booked back with the clinician he is unhappy with without being asked (Std 5.2.1, 5.1.1). It ranks below C, which at least listens; above A, which states an unconfirmed cause and clears the associate."
+    "Follows procedure with the leaflet and more time, and asserts no unconfirmed cause, but nobody hears his complaint today and he is rebooked with the clinician he is unhappy with, unasked (Std 5.2.1, 5.1.1). Below D; above C, which gives him a doubtful cause as fact."
    ]
   ],
   "tk": "Apologise for what the patient experienced and route the complaint the same day, but do not give him as fact a cause your colleague is unsure of and the record contradicts.",
@@ -13342,7 +13342,7 @@ const RW_10_1 = [
   "g": "M",
   "a": "Hearing-aid user charged missed fee",
   "k": "CDH",
-  "s": "Month 9, a mixed NHS and private practice. Mrs Kemp, 70, wears hearing aids and sees the hygienist privately. Last week she sat in the waiting room for 40 minutes, then left; the hygienist recorded a missed appointment, and she was charged the £35 missed-appointment fee. Today, at her NHS check-up with you, she says she was never called: ‘The girl at the desk just said a name at the screen.’ Her record has a ‘hard of hearing’ note, but it does not show on the reception screen. The receptionist says she called her twice, clearly. Then Mrs Kemp adds that the practice manager has already written to her upholding the fee.",
+  "s": "Month 9, a mixed practice. Mrs Kemp, 70, who wears hearing aids, tells you she waited 40 minutes for her private hygiene visit without being called; the hygienist recorded a miss and she was charged £35. The receptionist says she called twice. Her ‘hard of hearing’ note does not show on the reception screen. The manager has upheld the fee.",
   "o": [
    [
     "Apologise to Mrs Kemp that she was not called in a way she could hear, and say the receptionist will be spoken to about it.",
@@ -13390,7 +13390,7 @@ const RW_10_1 = [
   "g": "R",
   "a": "Agency nurse reports lead’s restraint",
   "k": "CEADB",
-  "s": "Month 7, a community dental service clinic. At the end of the morning, Bea, an agency dental nurse in her second week, tells you she saw the clinical lead hold the wrists of Mr Tull, 30, who has a severe learning disability, while scaling his teeth. He was trying to push her hands away, and his carer had stepped out. There is no holding plan in the clinic record; his care home keeps its own care plan, which you have not seen. You were in another surgery and saw nothing. The clinical lead’s note says ‘patient cooperative, treatment completed’. Bea is shaking. She asks you not to use her name: ‘The agency will drop me.’ The clinical lead is the person you would normally report concerns to.",
+  "s": "Month 7, a community dental clinic. Bea, a new agency nurse, saw the clinical lead hold the wrists of Mr Tull, who has a severe learning disability, as he resisted scaling. The clinic has no holding plan; his care home’s plan is unseen. The lead noted ‘patient cooperative’. Bea asks not to be named: ‘The agency will drop me.’",
   "o": [
    [
     "Encourage Bea to report it herself through the trust’s incident system today, and offer to go with her when she does.",
@@ -13426,7 +13426,7 @@ const RW_10_1 = [
   "g": "R",
   "a": "Triage script books spreading swellings",
   "k": "CAEBD",
-  "s": "Month 10, an out-of-hours urgent dental care centre, 6:30pm on Sunday. Checking tomorrow’s booked list, you see two patients whose call notes say ‘swelling spreading towards the eye’ and ‘swelling under the jaw, hard to swallow’. Both were booked by call handlers as routine next-day slots and told to call 111 if things got worse. Three weeks ago you saw a similar case and emailed the clinical lead about the handlers’ triage script; you have had no reply. You have not seen the script itself. The shift lead says the script belongs to the provider’s governance team, ‘so it isn’t ours to change’. You have patients booked until 9pm.",
+  "s": "Month 10, out-of-hours dental care, Sunday 6:30pm. Two patients booked routine tomorrow, told to ring 111 if worse, have notes: ‘swelling spreading to the eye’ and ‘under the jaw, hard to swallow’. You have not seen the triage script; your email to the clinical lead about it three weeks ago is unanswered. The shift lead: ‘Governance’s script, not ours to change.’ You work until 9pm.",
   "o": [
    [
     "That more callers with spreading swelling may be booked as routine tonight and tomorrow, until someone with authority changes the script.",
@@ -13464,7 +13464,7 @@ const RW_10_2 = [
   "g": "K",
   "a": "Advance refusal before planned GA",
   "k": "ACEBD",
-  "s": "A special care dentistry clinic. Mrs Nash, 63, has advanced dementia and lacks capacity to decide about dental treatment. Her lower molar is infected and painful, and she cannot tolerate treatment awake. Last month a best-interests meeting agreed extraction under general anaesthetic, booked for next Thursday.<br>Today her husband brings a letter she signed, with a witness, six years ago after a bad reaction: ‘I refuse any general anaesthetic, for any treatment, even if I lose capacity.’ He says it was ‘a phase’, that she would want the pain gone, and asks you to keep the date. He cannot say whether she ever withdrew it. The consultant who leads the clinic is free this afternoon.",
+  "s": "A special care clinic. Mrs Nash has dementia and lacks capacity. Her painful, infected molar is due out under general anaesthetic on Thursday, agreed in her best interests.<br>Her husband brings her old witnessed letter: ‘I refuse any general anaesthetic, even if I lose capacity.’ He wants the date kept but cannot say if she withdrew it. The consultant is free this afternoon.",
   "o": [
    [
     "Ask her husband what she said or did about anaesthetics after signing the letter, and take his account to the consultant this afternoon.",
@@ -13500,7 +13500,7 @@ const RW_10_2 = [
   "g": "K",
   "a": "Change of plan mid-filling",
   "k": "AEG",
-  "s": "Month 6, an NHS practice. Mr Lowe, 48, is numb and you are removing deep decay from his lower right first molar. At the start he agreed to a filling and said he wanted to keep every tooth he could. You then expose the pulp. The options now are a dressing today and root canal treatment over further visits, or extraction today. When you explain this, he says, ‘Just take it out, I can’t face more visits.’ Your nurse then tells you quietly that at reception he mentioned his mother died last week and he has hardly slept. Your ES is in the next surgery. Choose the THREE most appropriate actions.",
+  "s": "Month 6, an NHS practice. Mid-filling, you expose Mr Lowe’s pulp; he had wanted to keep every tooth. You explain a dressing then root canal treatment, or extraction today. He says, ‘Just take it out, I can’t face more visits.’ Your nurse whispers he told reception his mother died last week. Your ES is next door. Choose the THREE most appropriate actions.",
   "o": [
    [
     "Sit him up, explain both options with their risks and benefits, and say a dressing today keeps both choices open.",
@@ -13508,7 +13508,7 @@ const RW_10_2 = [
    ],
    [
     "Extract the tooth today as he asks, since he is an adult with capacity and has given clear verbal consent.",
-    "Close, because he has capacity and the choice is his, but his decision came seconds after bad news, unexplained and possibly driven by grief and exhaustion, so consent is not yet clearly informed or voluntary (Std 3.1.3, 3.2.1)."
+    "Close, because he has capacity and the choice is his, but his decision came seconds after bad news, unexplained and possibly driven by grief and shock, so consent is not yet clearly informed or voluntary (Std 3.1.3, 3.2.1)."
    ],
    [
     "Pause, and ask your ES to come in and explain the options to him so that a senior confirms the change.",
@@ -13520,7 +13520,7 @@ const RW_10_2 = [
    ],
    [
     "Ask him what has changed since the start of the visit, and whether he would like more time before he decides.",
-    "Exploring the sudden change checks that the decision is truly his and not driven by tiredness or grief, and offering time supports a voluntary choice without overriding it (Std 3.2.1, 2.1). It does this with an open question, unlike H."
+    "Exploring the sudden change checks that the decision is truly his and not driven by shock or grief, and offering time supports a voluntary choice without overriding it (Std 3.2.1, 2.1). It does this with an open question, unlike H."
    ],
    [
     "Explain both options again, then ask him to sign a new consent form for the extraction if he still wants it.",
@@ -13547,24 +13547,24 @@ const RW_10_2 = [
   "d": "P",
   "g": "K",
   "a": "Seventeen-year-old pressured by waiting list",
-  "k": "DBACE",
-  "s": "Month 8, an oral surgery day-case list running 40 minutes late. You are due to remove the lower wisdom tooth of Theo, 17, under local anaesthetic. The registrar consented him in clinic, and you have done this procedure many times under supervision. His mother arrives and says he must not have it today: she wants a general anaesthetic and to speak to the consultant first. Theo says he wants it done. When you see him alone to confirm consent, he admits he is scared and agreed because the registrar told him the next slot would be ‘about eight months’ away. The registrar is in theatre and free between cases in 20 minutes.",
+  "k": "DABCE",
+  "s": "Month 8, an oral surgery list running late. Theo, 17, consented by the registrar, is next for wisdom tooth removal under local anaesthetic. His mother wants a general anaesthetic and the consultant first. Theo says he wants it done. Alone, he admits he is scared and agreed because the registrar quoted ‘about eight months’ for the next slot. The registrar is free in 20 minutes.",
   "o": [
    [
     "Tell him the eight-month wait may not be accurate and that delay is his choice, then go ahead today if he still wants it.",
-    "Honest that the wait is uncertain and leaves the choice with him, as a 17-year-old is presumed able to consent (DH reference guide to consent; Std 2.2.3). It ranks below B because he may still go ahead on a guess, with fear and misinformation shaping his consent."
+    "Honest that the wait is uncertain and leaves the choice, including going ahead today, with him, as a 17-year-old is presumed able to consent (DH reference guide to consent; Std 2.2.3). It ranks below D, which checks the real wait first, but above B, which takes away a choice he has not given up."
    ],
    [
     "Tell him delaying is his choice, and take him off today’s list so he can find out the real wait before deciding.",
-    "Very close: it lifts the pressure and lets him decide on real facts, but taking him off the list removes a choice he has not given up, when the answer is 20 minutes away (DH reference guide to consent; Std 3.2.1). It ranks above A, which leaves him deciding on a guess."
+    "Lifts the pressure and lets him decide on real facts, but taking him off today’s list removes a choice he has not given up, when the answer is 20 minutes away (DH reference guide to consent; Std 3.2.1). It ranks below A, which keeps the choice his, and above C, which leaves the claim uncorrected."
    ],
    [
     "Ask his mother to join you both so they can agree a plan together, then go ahead if he still consents.",
-    "Involving family can support him, but he has not asked for it, and bringing his mother in leaves the eight-month claim uncorrected while she presses for delay (DH reference guide to consent; Std 3.2.1). It ranks below A, which tackles the misinformation, and above E, as the choice stays his."
+    "Involving family can support him, but he has not asked for it, and bringing his mother in leaves the eight-month claim uncorrected while she presses for delay (DH reference guide to consent; Std 3.2.1). It ranks below B, which tackles the misinformation, and above E, as the choice stays his."
    ],
    [
     "Tell him delaying is his choice, and ask the registrar between cases what a later slot would really mean.",
-    "Both halves carry it: it removes the pressure and checks the one fact his consent rests on within 20 minutes, so his decision is informed and voluntary and today stays open (Std 3.2.1, 2.2.3). Edges out B, which makes the choice for him."
+    "Both halves carry it: it removes the pressure and checks the one fact his consent rests on within 20 minutes, so his decision is informed and voluntary and today stays open (Std 3.2.1, 2.2.3). Edges out A, which leaves him deciding on a guess."
    ],
    [
     "Postpone the extraction until his mother has met the consultant, as he is unsure and she has asked to be involved.",
@@ -13584,7 +13584,7 @@ const RW_10_2 = [
   "g": "S",
   "a": "Cancelled GA dates, swollen face",
   "k": "ADF",
-  "s": "A community dental clinic. Zac, 7, is autistic and needs eight decayed teeth treated under general anaesthetic. His mother has cancelled three anaesthetic dates in five months, each for a reason that checked out: illness, a funeral, a bus strike. Today she brings him for review. His cheek is swollen, he has a temperature, and she says he has been in pain for a week. She tells you she has no help at home and ‘can’t face another hospital day’. As you write the notes, she asks you not to put anything ‘official’ in them, because a social worker once ‘made things worse’. Choose the THREE most appropriate actions.",
+  "s": "A community dental clinic. Zac, 7, is autistic and needs eight decayed teeth treated under general anaesthetic. His mother has cancelled three dates, each for a genuine reason. Today his face is swollen and he is feverish. She has no help at home, and asks you to keep anything ‘official’ out of his notes. Choose the THREE most appropriate actions.",
   "o": [
    [
     "Arrange same-day hospital assessment of the swelling, and explain to his mother what will happen there and why it cannot wait.",
@@ -13592,7 +13592,7 @@ const RW_10_2 = [
    ],
    [
     "Start antibiotics today and ask the hospital to bring his anaesthetic date forward, so the infected teeth come out this week.",
-    "Tempting, as it treats the infection and speeds up definitive care, but a feverish child with facial swelling, whose teeth cannot be treated in the chair, needs urgent assessment today, not tablets and a date later in the week (Std 1.4.2). It also leaves the pattern unshared, unlike F."
+    "Tempting, as it treats the infection and speeds up definitive care, but a feverish child with facial swelling needs same-day hospital assessment, not tablets and a date later in the week (SDCEP; Std 1.4.2). It also leaves the pattern unshared, unlike F."
    ],
    [
     "Tell her you will discuss Zac with the safeguarding lead, and that she will hear from you before anything goes to social care.",
@@ -13632,7 +13632,7 @@ const RW_10_2 = [
   "g": "S",
   "a": "Disclosure to nurse, receptionist’s husband",
   "k": "DECAB",
-  "s": "A mixed practice, Friday 4:50pm. Your nurse, Bea, tells you that while you were out fetching a tray, Mrs Dale, 81, said her son ‘reads my post and keeps my phone when anyone visits’, and something about money that Bea did not fully catch. Bea promised to keep it ‘between us’ and now worries she has done wrong. Mrs Dale has capacity and has gone home. Bea then adds that Mrs Dale’s son is married to your receptionist, who books her visits and can open her notes. The safeguarding lead is the practice manager, on leave until Monday. How important are the following in deciding what to do?",
+  "s": "A mixed practice, Friday 4:50pm. Nurse Bea reports Mrs Dale, 81, saying her son ‘reads my post and keeps my phone’, plus something about money Bea half-heard. Bea promised secrecy. Mrs Dale, who has capacity, has left. Her son’s wife, your receptionist, can open her notes. The safeguarding lead is back Monday. How important are the following in deciding what to do?",
   "o": [
    [
     "Bea’s promise of secrecy, and the support she needs to understand why it cannot be kept.",
@@ -13668,7 +13668,7 @@ const RW_10_2 = [
   "g": "S",
   "a": "Agency carer pushes resident",
   "k": "BDEAC",
-  "s": "Month 9, a community dental service visit to a care home. You lead the visit with your nurse; four residents are left and the van collects you at 3pm. In a corridor you see a care worker push a resident with dementia firmly back into her chair and say, ‘Stay put or no tea.’ She seems unhurt but tearful. You tell the deputy manager, who thanks you and says the worker is from an agency, finishes today, and she will ‘mention it to the agency’. She does not mention the home’s safeguarding procedure. Your service’s policy is that referrals go through its safeguarding lead, who takes calls until 5pm.",
+  "s": "Month 9, a care home visit, four residents left. A care worker pushes a resident with dementia back into her chair: ‘Stay put or no tea.’ She seems unhurt but tearful. The deputy manager says the agency worker finishes today and she will ‘mention it to the agency’. Service policy routes referrals via your safeguarding lead, who takes calls until 5pm.",
   "o": [
    [
     "Ask the care worker, with the deputy manager present, what happened, so your report to the safeguarding lead is accurate.",
@@ -13704,7 +13704,7 @@ const RW_10_2 = [
   "g": "F",
   "a": "Lost unencrypted audit USB",
   "k": "DBACE",
-  "s": "Month 7, a non-clinical day at home. At 7pm on Thursday you realise the practice USB stick is missing. It holds your audit spreadsheet: 60 patients’ names, dates of birth and treatment details. You think you left it on the train home. Practice policy says all USB sticks are encrypted, but at 9pm you see a notice on the staff intranet: one batch, which includes yours, was never encrypted. The practice manager, who is the information governance lead, is on leave until Monday. The practice owner is away but has told staff to phone him about anything urgent.",
+  "s": "Month 7, Thursday 7pm. The practice USB stick holding your audit, with 60 patients’ names, dates of birth and treatment, is missing, probably on the train. At 9pm an intranet notice says your batch was never encrypted. The practice manager, the information governance lead, is on leave until Monday. The owner is away but asked to be phoned about anything urgent.",
   "o": [
    [
     "Report the loss to the train company tonight, then email the practice manager a full account to act on when she returns.",
@@ -13740,7 +13740,7 @@ const RW_10_2 = [
   "g": "F",
   "a": "Review reply discloses patient care",
   "k": "ACF",
-  "s": "A corporate-chain practice. Mrs Shaw, whom you treated last week, posts a public review: ‘Botched filling, dentist couldn’t care less.’ She did not attend two follow-ups you advised. At 2pm the area manager, who handles reviews for the group, emails you a draft reply to check: ‘Mrs Shaw missed two follow-up visits and declined the X-ray her dentist advised.’ You reply that it reveals her care and should not go out. At 4:30pm the area manager tells you head office posted it at lunchtime anyway, because Mrs Shaw ‘made it public first’. The practice has an information governance lead and a complaints lead. Choose the THREE most appropriate actions.",
+  "s": "A corporate-chain practice. Your patient Mrs Shaw posts a public review: ‘Botched filling, dentist couldn’t care less.’ The area manager drafts a reply: ‘Mrs Shaw missed two follow-ups and declined an X-ray.’ You object that it reveals her care, but head office posts it anyway, as she went public first. The practice has information governance and complaints leads. Choose the THREE most appropriate actions.",
   "o": [
    [
     "Ask the area manager to have the reply taken down today, explaining that a public review does not waive Mrs Shaw’s confidentiality.",
@@ -13789,8 +13789,8 @@ const RW_10_3 = [
   "d": "T",
   "g": "W",
   "a": "Single-use endodontic files reprocessed",
-  "k": "BDEAC",
-  "s": "Month 5, an NHS practice, 12:50pm. In the decontamination room you find Jodie, a trainee dental nurse who started last week, scrubbing used rotary endodontic files and pouching them for the autoclave. Their packets are marked single use. She says the lead nurse, who runs decontamination, told her the practice reuses them ‘two or three times’ to save money. The lead nurse is at lunch until 1:30pm.<br>As you leave, Jodie adds that the files in your 2pm root canal tray came from this morning’s batch. She cannot tell whether they are new or reprocessed, as the pouches look the same. Yours is the only root canal treatment booked this afternoon, and there are sealed new files in the stock cupboard.",
+  "k": "DBEAC",
+  "s": "Month 5, an NHS practice, 12:50pm. Jodie, a first-week trainee nurse, is pouching single-use endodontic files. She says the lead nurse, who runs decontamination and is at lunch until 1:30pm, told her the practice reuses them ‘two or three times’ to save money.<br>Your 2pm root canal tray came from her batch; new and reused files look alike. Sealed new files are in stock.",
   "o": [
    [
     "Postpone your 2pm root canal treatment until it is clear which files are new, and raise the reuse with the lead nurse at 1:30.",
@@ -13798,7 +13798,7 @@ const RW_10_3 = [
    ],
    [
     "Swap the pouched files in your 2pm tray for sealed new ones, then talk to the lead nurse about the reuse when she returns at 1:30.",
-    "Meets both duties: new sealed files make the 2pm treatment safe without delay, and the lead nurse, who owns decontamination and is back within the hour, can confirm what a week-old trainee was told and stop it (Std 1.5.1, 8.2.3)."
+    "Close second: sealed new files make the 2pm treatment safe without delay, and the lead nurse, who owns decontamination, hears of it at 1:30; but Jodie goes on reprocessing single-use files until then, so it sits just below D (Std 1.5.1, 8.2.3)."
    ],
    [
     "Ask the trainee to stop, then seek advice from the CQC today, as the reuse may come from the owner rather than one person.",
@@ -13806,14 +13806,14 @@ const RW_10_3 = [
    ],
    [
     "Ask the trainee to stop and set the reprocessed files aside, and say you will both speak to the lead nurse when she returns at 1:30.",
-    "Stops the reuse at once, supports a week-old trainee, and takes it to the lead nurse who runs decontamination; the 1:30 talk comes before the 2pm treatment, so the tray can still be sorted, though it ranks below B, which secures it now (Std 1.5.1, 6.1.6, 8.2.3)."
+    "Stops a practice-wide reuse at once, supports a week-old trainee, and takes it to the lead nurse who runs decontamination; the 1:30 talk comes before the 2pm treatment, so the tray can still be sorted, and it edges out B, which leaves the reprocessing going on (Std 1.5.1, 6.1.6, 8.2.3)."
    ],
    [
     "Swap the pouched files in your 2pm tray for sealed new ones, and email the practice manager now asking her to stop the reuse.",
-    "Makes the 2pm patient safe without delay (B), but goes to the manager on a new trainee’s second-hand account before the lead nurse, back at 1:30, has been asked, and leaves Jodie reprocessing meanwhile; below D, yet above A as nothing is cancelled (Std 8.2.3, 1.5.1)."
+    "Makes the 2pm patient safe without delay (B), but goes to the manager on a new trainee’s second-hand account before the lead nurse, back at 1:30, has been asked, and leaves Jodie reprocessing meanwhile; below B, yet above A as nothing is cancelled (Std 8.2.3, 1.5.1)."
    ]
   ],
-  "tk": "Single-use instruments must never be reprocessed (HTM 01-05): make today’s patient safe with new stock, then check a new trainee’s account with the person who owns the process before going over her head.",
+  "tk": "Single-use instruments must never be reprocessed (HTM 01-05): stop the reuse at once and take it to the person who owns the process, making sure today’s patient gets new stock before treatment.",
   "r": [
    "1.5.1",
    "8.2.3",
@@ -13826,7 +13826,7 @@ const RW_10_3 = [
   "g": "W",
   "a": "Failed waterline test, back-filled log",
   "k": "BEG",
-  "s": "Month 7, a community dental service clinic, 8:40am. Your first patient, Mrs Odell, is having chemotherapy and needs a scale and two fillings today. Setting up, you find last month’s waterline test report in the surgery folder: the bacterial count is well above the expected range, and nobody has signed it as actioned. Your nurse thinks the unit was shock-dosed afterwards but is not sure. The daily flushing log is ticked for every day, including last Monday, a bank holiday when the clinic was shut. The nurse says she fills the log in on Fridays from memory. The clinical lead is on site until 10am, and the other surgery’s last waterline test was within range.",
+  "s": "Month 7, a community dental clinic, 8:40am. Your first patient, Mrs Odell, is on chemotherapy. Your unit failed last month’s waterline test and nobody signed it off; your nurse thinks it was shock-dosed. The daily flushing log, filled in weekly from memory, is ticked for the bank holiday closure. The clinical lead leaves at 10am; the other surgery passed its test.",
   "o": [
    [
     "Treat Mrs Odell in the other surgery, then report the failed test and the log on the incident system at lunchtime.",
@@ -13874,7 +13874,7 @@ const RW_10_3 = [
   "g": "W",
   "a": "Missing instrument in prison clinic",
   "k": "BDAEC",
-  "s": "Month 8, a prison healthcare unit, 11:50am. After Mr Rook’s extraction, your nurse counts the instruments: one elevator is missing. The unit’s tool-control rules say any missing item must be reported to the escorting officer at once, and the wing may then be searched and locked down. Mr Rook has already been taken back to the wing. Your nurse thinks she may have dropped the elevator into the closed box of used instruments that is collected for decontamination at noon, but she cannot be sure, and she is upset at the thought of causing a lockdown over nothing. The officer suggests you open the box and check first, as a lockdown would cancel the rest of your list. Three patients are waiting, all for routine check-ups. How important are the following considerations in deciding what to do?",
+  "s": "Month 8, a prison healthcare unit, 11:50am. After Mr Rook’s extraction an elevator is missing; he is back on the wing. Tool-control rules require an immediate report to the officer, risking a lockdown. Your upset nurse thinks it fell into the used-instrument box collected at noon. The officer suggests checking first, as a lockdown would cancel your three routine check-ups.",
   "o": [
    [
     "That your nurse thinks she dropped the elevator into the box, so checking it first might avoid a needless lockdown.",
@@ -13910,7 +13910,7 @@ const RW_10_3 = [
   "g": "H",
   "a": "Shaken by family news mid-shift",
   "k": "BECDA",
-  "s": "Month 10, an out-of-hours dental service, Sunday 4:40pm. You are the only dentist until 8pm, working with a triage nurse, Bea. At 4pm your sister phoned: your father has had a stroke and is in hospital, ‘stable for now’. You decided to finish the shift.<br>Since then you nearly gave a local anaesthetic before checking a patient’s medical history; Bea stopped you. You feel shaky and cannot concentrate. A 9-year-old with a knocked-out front tooth, kept in milk, arrives in ten minutes. Two adults with toothache are also waiting. The on-call clinical lead, who manages cover and the standby rota, is reachable by phone; another dentist, on standby from 6pm, lives an hour away.",
+  "s": "Month 10, an out-of-hours clinic, 4:40pm. You are the only dentist until 8pm. At 4pm you learnt of your father’s stroke. Bea, your triage nurse, then stopped you injecting before checking a medical history. A girl with a knocked-out tooth is due at 4:50; two adults with toothache wait. The on-call clinical lead manages cover; the standby dentist is an hour away.",
   "o": [
    [
     "Tell the triage nurse about the near miss, and carry on with her double-checking every medical history and dose with you.",
@@ -13946,7 +13946,7 @@ const RW_10_3 = [
   "g": "H",
   "a": "Exhausted colleague, biopsy label slip",
   "k": "CFH",
-  "s": "Month 3 of your hospital OMFS rotation, 7:30am. Theo, a fellow dental core trainee, tells you privately that his baby was admitted overnight with a high fever and he has not slept. The baby is now settled, with his partner. Theo is running a minor oral surgery clinic next to yours all day. He asks you not to tell the registrar: ‘I’ll be fine with coffee.’<br>At 9:10, helping in his room, you see him stick the wrong patient’s label on a biopsy pot; he notices and swaps it before it leaves the room. He labelled and sent two specimens to the lab earlier; the clinic nurse keeps the specimen log. The registrar is in the next room.",
+  "s": "Month 3, hospital OMFS, 7:30am. Theo, a fellow trainee, confides that his baby was admitted overnight and he has not slept, and asks you not to tell the registrar.<br>At 9:10, in his clinic, you see him mislabel a biopsy pot; he notices and swaps it. He sent two specimens earlier; the nurse logs specimens. The registrar is next door.",
   "o": [
    [
     "Ask him to check both specimens he sent this morning against his clinic list, before he sees his next patient.",
@@ -13994,7 +13994,7 @@ const RW_10_3 = [
   "g": "H",
   "a": "Own bereavement, patient fears cancer",
   "k": "BDAEC",
-  "s": "Month 9, an NHS practice. Your mother died of mouth cancer three months ago; you are back at work and, you think, coping. Today Mr Fenn, 66, has a painless ulcer on the side of his tongue that has not healed in five weeks. You explain that you will refer him urgently to the hospital to find out what it is. He asks you directly: ‘Is it cancer?’ You feel your eyes fill and your voice go. He notices and asks whether you are all right. An associate is free in the next surgery, and your next patient is due in ten minutes. How important are the following considerations in deciding how to respond to Mr Fenn?",
+  "s": "Month 9, an NHS practice. Your mother died of mouth cancer three months ago. Mr Fenn, 66, has a five-week-old tongue ulcer; you are referring him urgently. He asks: ‘Is it cancer?’ Your eyes fill and your voice goes; he asks if you are all right. An associate is free next door; your next patient is due in ten minutes.",
   "o": [
    [
     "How much, if anything, you should tell Mr Fenn about why you have become upset in front of him.",
@@ -14030,7 +14030,7 @@ const RW_10_3 = [
   "g": "P",
   "a": "Widow’s remark at the door",
   "k": "CEADB",
-  "s": "Month 8, a mixed practice, 3:50pm. You are 15 minutes behind. Mrs Lake, 74, is in for a ten-minute check-up. As you finish, she starts to cry: her husband died six weeks ago. You offer a longer appointment next week to talk, and she agrees.<br>At the door she adds that she has stopped bothering with meals or her heart tablets, because she ‘can’t see the point of much now’. Your next patient, Mr Diaz, has toothache and has waited 25 minutes; two more patients follow him. Reception says Mrs Lake’s daughter is collecting her at 4:15.",
+  "s": "Month 8, a mixed practice, 3:50pm. After a check-up, Mrs Lake, 74, cries: she was widowed six weeks ago. She accepts a longer appointment next week.<br>Leaving, she says she has stopped bothering with meals or heart tablets: she ‘can’t see the point of much now’. Mr Diaz, with toothache, has waited 25 minutes. Her daughter collects her at 4:15.",
   "o": [
    [
     "See Mr Diaz first, and ask a nurse to sit with Mrs Lake in a quiet room until you can talk to her properly.",
@@ -14066,7 +14066,7 @@ const RW_10_3 = [
   "g": "P",
   "a": "Queue-jump request, conflicting triage",
   "k": "CAEBD",
-  "s": "Month 7, a community dental service clinic, Thursday. The senior dental officer has asked you to re-sort the children’s general anaesthetic waiting list by clinical need; it is finalised tomorrow, and she is on leave until Monday. The clinic administrator, a family friend of Ava, 5, asks you to move Ava up the list because her mother is ‘at her wits’ end’. You explain that places go by need.<br>Checking Ava’s file anyway, you find that her GP’s referral letter mentions a facial swelling treated with antibiotics last month, but the clinic’s phone triage form says ‘no swelling’. Ava is 40th of 60.",
+  "s": "Month 7, a community dental service clinic. You are re-sorting the children’s general anaesthetic list by clinical need, due tomorrow; the senior dental officer is away until Monday. The administrator, a family friend, asks you to move Ava, 5, up; you decline. Ava’s GP letter mentions a facial swelling treated with antibiotics last month; the triage form says ‘no swelling’.",
   "o": [
    [
     "Ask Ava’s mother by phone today about the swelling, and tell her Ava will move up the list if it is confirmed.",
@@ -14104,7 +14104,7 @@ const RW_10_4 = [
   "g": "T",
   "a": "Nurse checks your work unexplained",
   "k": "ABECD",
-  "s": "Month 5, a DFT post in an oral surgery department. For two weeks the clinic nurse, Gail, has asked the registrar to check every socket you finish before the patient leaves, sometimes saying so in front of the patient. Two patients have asked you whether you are fully qualified. You find it undermining and plan to raise it with her this afternoon. At lunch, another trainee mentions that after one of your patients bled heavily on the ward a fortnight ago, the registrar asked the nurses to ‘keep an eye’ on your lists. Nobody has told you about a bleed, and you do not know which patient it was.",
+  "s": "Month 5, oral surgery. For two weeks nurse Gail has had the registrar check your sockets, sometimes in front of patients; two asked if you are qualified. You plan to tackle her today. A trainee says that since your patient bled heavily on the ward a fortnight ago, the registrar asked nurses to watch you. Nobody told you, and you do not know which patient.",
   "o": [
    [
     "Ask the registrar privately about the patient who bled and the concern behind the checks, and agree how you will get feedback directly.",
@@ -14140,7 +14140,7 @@ const RW_10_4 = [
   "g": "T",
   "a": "Late shifts and missing autoclave record",
   "k": "BDG",
-  "s": "Month 8, an NHS practice. Ola, a newly qualified nurse on probation, tells you that the senior nurse who writes the rota has given her every late shift for six weeks, and she is exhausted. She adds that on Tuesday evening she did not check or keep the autoclave printout for the last load, and those instruments were used the next morning. She has told nobody and asks you to keep all of this between you. An hour later the senior nurse mentions, in passing, that Ola asked for late shifts to fit round her college course.",
+  "s": "Month 8, an NHS practice. Newly qualified nurse Ola says the senior nurse’s rota has given her every late shift for six weeks; she is exhausted. On Tuesday she did not check or keep the last autoclave printout; those instruments were used next morning. She asks you to keep this secret. Later the senior nurse says Ola requested lates for her college course.",
   "o": [
    [
     "Encourage Ola to tell the decontamination lead about the missing printout herself, and check with the lead tomorrow morning that she has.",
@@ -14188,7 +14188,7 @@ const RW_10_4 = [
   "g": "T",
   "a": "Overrunning extraction, nurse must leave",
   "k": "ABECD",
-  "s": "Month 6, a corporate-chain practice. Your nurse, Bea, agreed weeks ago with the branch manager that she would leave at 5:30pm today to collect her son. At 4:55 your last patient arrives in pain, and you start a simple extraction of a broken-down lower molar. At 5:15 the crown fractures, leaving the roots in place; you need to section them and expect it to take 30 more minutes. The patient is numb and coping well. Bea says she can ‘probably’ ask her mother to collect her son, but she looks anxious. Reception tells you another nurse is in the decontamination room, processing the day’s instruments before she leaves at 6pm.",
+  "s": "Month 6, a corporate practice. Bea, your nurse, agreed with the branch manager to leave at 5:30pm to collect her son. At 5:15 your last patient’s molar fractures during extraction; sectioning the roots needs 30 more minutes. He is numb and coping. Bea, anxious, says she could ‘probably’ ask her mother instead. Reception says another nurse is decontaminating until 6pm.",
   "o": [
    [
     "Ask the nurse in the decontamination room to take over chairside at 5:30 after a short handover, and let Bea leave as agreed.",
@@ -14224,7 +14224,7 @@ const RW_10_4 = [
   "g": "N",
   "a": "Private whitening agreed through daughter",
   "k": "ACF",
-  "s": "Month 7, a mixed practice. Last month Mrs Tran, who speaks limited English, was given a treatment plan for two NHS fillings and private tooth whitening. Her adult daughter interpreted, and Mrs Tran signed. Today she is booked for the first filling, but at reception she is upset to be asked for a £250 whitening deposit. Through a telephone interpreter she tells you she thought the whitening was part of the NHS treatment and only said yes because her daughter wanted it. While you are talking, her daughter rings reception to say her mother definitely agreed and that she will pay the deposit herself.",
+  "s": "Month 7, a mixed practice. Mrs Tran, who has limited English, signed a plan for two NHS fillings and private whitening, her daughter interpreting. Today, before a filling, she is upset at a £250 whitening deposit. Through a phone interpreter she says she thought whitening was NHS and agreed because her daughter wanted it. Her daughter phones: her mother agreed; she will pay.",
   "o": [
    [
     "Through the telephone interpreter, explain which items are NHS and which private, and that the whitening is optional and her choice.",
@@ -14272,7 +14272,7 @@ const RW_10_4 = [
   "g": "N",
   "a": "Second opinion on private crowns",
   "k": "ACBED",
-  "s": "Month 8, an NHS practice. Mr Brook, 52, a new patient, shows you a written plan from the private-only practice he used to attend: six crowns costing £4,800, ‘to prevent future fractures’. He has taken out a loan, paid a £1,000 deposit, and his first appointment there is next week. On your examination one of the teeth has a visible crack; the other five have modest fillings and look sound. You have not seen the other practice’s radiographs or notes. As you finish, he adds that the other dentist said X-rays showed decay under two of the fillings. He looks worried and asks you, ‘Should I cancel? Have they ripped me off?’",
+  "s": "Month 8, an NHS practice. New patient Mr Brook shows you a private plan: six crowns, £4,800. He has taken a loan, paid a £1,000 deposit and starts next week. You find one cracked tooth; the other five fillings look sound. He says radiographs you have not seen showed decay under two. He asks, ‘Should I cancel? Have they ripped me off?’",
   "o": [
    [
     "What your own examination shows and what his options are, including NHS care, before his appointment next week.",
@@ -14308,7 +14308,7 @@ const RW_10_4 = [
   "g": "N",
   "a": "Open NHS course switched private",
   "k": "ABECD",
-  "s": "Month 7, March, an NHS practice. At 8:45 the practice manager tells clinicians that the practice has used up this year’s NHS contract activity. Until April, patients part-way through an NHS course should be offered private fees to finish, or wait. Your 9:00 patient, Mr Rao, needs two fillings to complete an NHS course you began in February; one tooth has a temporary dressing that is starting to leak. As you begin to explain, Mr Rao says reception rang him yesterday, and he agreed to pay £180 privately because he did not want to wait. His February NHS plan is still the only plan in his record.",
+  "s": "Month 7, March, an NHS practice. At 8:45 the manager says NHS activity is used up: until April, mid-course patients should be offered private fees or wait. Your 9:00, Mr Rao, needs two fillings to finish his February NHS course; one dressing is starting to leak. Reception rang him yesterday; he agreed to pay £180 privately to avoid waiting. His record holds only the NHS plan.",
   "o": [
    [
     "Tell Mr Rao his NHS course is still open and paying privately is his choice, then let him choose with both costs in writing.",
@@ -14343,8 +14343,8 @@ const RW_10_4 = [
   "d": "I",
   "g": "I",
   "a": "Full-day register after late arrival",
-  "k": "CGH",
-  "s": "Month 5, a scheme study day. Your train is cancelled and you arrive at 10:40. The first session, 9:00 to 10:30, was the scheme’s annual hands-on basic life support update. At the door, the administrator hands you the register, printed ‘attended 9:00–4:30’, and says, ‘Just sign; lots of people were late and the TPD knows.’ At coffee, a fellow FD, Nia, tells you she arrived at 10:15 and signed the same register. Certificates for the full day will be emailed tonight, and the TPD is in the room until lunch.",
+  "k": "EGH",
+  "s": "Month 5, a scheme study day. After a cancelled train you arrive at 10:40, missing the 9:00–10:30 annual basic life support update. At the door the administrator hands you the register, printed ‘attended 9:00–4:30’: ‘Just sign; lots were late and the TPD knows.’ At coffee, fellow FD Nia says she arrived at 10:15 and signed. Full-day certificates go out tonight; the TPD is here until lunch.",
   "o": [
    [
     "Sign as the administrator asked, then tell the TPD at the break that you missed the life support session.",
@@ -14356,7 +14356,7 @@ const RW_10_4 = [
    ],
    [
     "Sign the register and write your actual arrival time beside your name, so the record shows what you attended.",
-    "It deals with the immediate record honestly without refusing to take part, and it does not assume the administrator’s claim about the TPD settles anything (Std 1.3.1, 7.3.1)."
+    "Honest about your own arrival, so a close fourth, but once the administrator corrects your entry and certificate (H) annotating the register adds little, and Nia’s full-day entry stays uncorrected; below E (Std 1.3.1, 7.3.1)."
    ],
    [
     "Tell the TPD before lunch that Nia signed the full-day register although she arrived at 10:15, so it can be corrected.",
@@ -14364,7 +14364,7 @@ const RW_10_4 = [
    ],
    [
     "Tell Nia you are adding your real arrival time, and suggest she does the same before the certificates are sent.",
-    "Prompting Nia to correct her own record is fair and avoids reporting her, but it is her entry, not yours; with certificates going out tonight, fixing your own certificate (H) and the missed training (G) matters more (Std 1.3.1, 6.1.2)."
+    "Prompting Nia to correct her own entry before tonight’s certificates is fair to her and avoids reporting her, and alongside fixing your own record (H) it deals with the false full-day entries in the room; edges out C (Std 1.3.1, 6.1.2)."
    ],
    [
     "Book a basic life support course in your own time, and accept the full-day certificate as the TPD apparently knows.",
@@ -14376,7 +14376,7 @@ const RW_10_4 = [
    ],
    [
     "Tell the administrator you arrived at 10:40, and ask her to correct your entry and certificate before they are sent tonight.",
-    "Telling the administrator your real arrival time and asking her to correct the entry and certificate before tonight stops a full-day certificate going out in your name, which signing with your time (C) alone does not, so the two work together (Std 1.3.1, 7.3.1)."
+    "Telling the administrator your real arrival time and asking her to correct your entry and certificate before tonight fixes the record at source and stops a full-day certificate going out in your name, more fully than annotating the register (C) (Std 1.3.1, 7.3.1)."
    ]
   ],
   "tk": "Records of training must show what you actually attended: correct your own entry and certificate rather than relying on others, and make up any missed safety training through the person in charge.",
@@ -14392,7 +14392,7 @@ const RW_10_4 = [
   "g": "I",
   "a": "Removed from register on Monday",
   "k": "ADBCE",
-  "s": "Month 5, early January, an NHS practice. At 8:35 on Monday you read a GDC email sent on Saturday: your direct debit for the annual fee failed, so your name was removed from the register on 1 January. You check the online register and cannot find yourself. Your 9:00 patient has a painful facial swelling; the rest of your list is routine. Your ES is on leave, and the only other dentist, an associate, starts at 2pm. The practice manager says restoration is ‘just paperwork’ and suggests you see the swelling now and pay the fee at lunch.",
+  "s": "Month 5, January, an NHS practice. At 8:35 a GDC email says your direct debit failed and you were removed from the register on 1 January. Your 9:00 patient has a painful facial swelling. Your ES is on leave; the only other dentist, an associate, starts at 2pm. The practice manager calls it ‘just paperwork’: see the swelling now, pay at lunch.",
   "o": [
    [
     "Tell the practice manager you cannot see patients until you are restored, and ask her to book the swelling with the associate at 2pm or urgent care.",
