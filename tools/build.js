@@ -38,17 +38,17 @@ else Q.forEach((q, i) => {
   else if (tagData.sig[i] !== sigOf(q)) errors.push(`Q${i + 1}: options changed since they were tagged; re-tag it in tools/tags.json (new signature ${sigOf(q)})`);
 });
 // mockOnly:start (tools/test-newmock.mjs runs this function on its own)
-// Mock-only questions (mk: 1 = Mock 1, mk: 2 = Mock 2) make up the brand-new mocks and nothing else. Each mock's block must be
+// Mock-only questions (mk: 1 = Mock 1, mk: 2 = Mock 2, mk: 3 = Mock 3) make up the brand-new mocks and nothing else. Each mock's block must be
 // exactly 56 (37 ranking-type and 19 best-three, like the live test), one unbroken block after a whole number of practice
-// papers (the papers are counted over the practice questions only), with Mock 1's block (Q289-344) before Mock 2's (Q377-432).
+// papers (the papers are counted over the practice questions only), with Mock 1's block (Q289-344) before Mock 2's (Q377-432) before Mock 3's (Q433-488).
 // Practice papers (Paper 10 on) are appended between and after the blocks, so no question number ever changes.
 function checkMockOnly(Q){
   const out = [];
-  Q.forEach((q, i) => { if ("mk" in q && q.mk !== 1 && q.mk !== 2) out.push(`Q${i + 1}: mk must be 1 or 2 (mock-only, Mock 1 or Mock 2) or left out, not ${JSON.stringify(q.mk)}`); });
+  Q.forEach((q, i) => { if ("mk" in q && q.mk !== 1 && q.mk !== 2 && q.mk !== 3) out.push(`Q${i + 1}: mk must be 1, 2 or 3 (mock-only, Mock 1, 2 or 3) or left out, not ${JSON.stringify(q.mk)}`); });
   let total = 0, prevEnd = -1;
-  for (const m of [1, 2]) {
+  for (const m of [1, 2, 3]) {
     const mk = Q.map((q, i) => i).filter(i => Q[i].mk === m); total += mk.length;
-    if (!mk.length) { if (m === 1 && Q.some(q => q.mk === 2)) out.push("Mock 2's questions (mk: 2) need Mock 1's (mk: 1) first"); continue; }
+    if (!mk.length) { if (Q.some(q => q.mk > m)) out.push(`Mock ${Q.find(q => q.mk > m).mk}'s questions (mk: ${Q.find(q => q.mk > m).mk}) need Mock ${m}'s (mk: ${m}) first`); continue; }
     const rank = mk.filter(i => Q[i].t !== "best3").length, best = mk.length - rank;
     if (mk.length !== 56 || rank !== 37 || best !== 19) out.push(`Mock ${m}'s mock-only questions (mk: ${m}): found ${mk.length} (${rank} ranking-type, ${best} best-three); each brand-new mock needs exactly 56: 37 ranking-type (rank or consider) and 19 best-three`);
     const firstMk = mk[0], lastMk = mk[mk.length - 1], practiceBefore = Q.slice(0, firstMk).filter(q => !q.mk).length;
@@ -57,7 +57,7 @@ function checkMockOnly(Q){
     if (firstMk < prevEnd) out.push(`Mock ${m}'s questions must come after Mock ${m - 1}'s`);
     prevEnd = lastMk;
   }
-  if (total && total !== 112) out.push(`Mock-only questions: found ${total}; expected 112 (56 for Mock 1 and 56 for Mock 2)`);
+  if (total && total % 56) out.push(`Mock-only questions: found ${total}; expected a multiple of 56 (56 per brand-new mock)`);
   return out;
 }
 // mockOnly:end

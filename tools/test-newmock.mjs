@@ -18,7 +18,10 @@ const realBankSrc = read("docs/questions.js");
 // These tests build their own synthetic mock-only questions, so work from Papers 1-9 alone: without the real RW_M1 and RW_M2
 // blocks and without Paper 10 (the blocks sit just before "const Q = ["; Mock 1, Paper 10 and Mock 2 are checked on the real bank below).
 const stripM2 = t => t.replace(/\/\/ ---- Mock 2: brand-new questions[^\n]*\nconst RW_M2 = [\s\S]*?;\n(?=const Q = \[)/, "").replace(", ...RW_M2]", "]");
-const realNoM2Src = stripM2(realBankSrc); // the real bank as it was before Mock 2 (Papers 1-10 and Mock 1)
+const stripM3 = t => t.replace(/\/\/ ---- Mock 3: brand-new questions[^\n]*\nconst RW_M3 = [\s\S]*?;\n(?=const Q = \[)/, "").replace(", ...RW_M3]", "]");
+const realNoM3Src = stripM3(realBankSrc); // the real bank as it was before Mock 3 (Papers 1-10, Mock 1 and Mock 2)
+const realNoM2Src = stripM2(realNoM3Src); // ...and before Mock 2 (Papers 1-10 and Mock 1)
+if (/RW_M3/.test(realNoM3Src)) throw new Error("could not strip the Mock 3 block from docs/questions.js");
 if (/RW_M2/.test(realNoM2Src)) throw new Error("could not strip the Mock 2 block from docs/questions.js");
 const bankSrc = realNoM2Src.replace(/\/\/ ---- Mock 1: brand-new questions[\s\S]*?\nconst RW_M1 = [\s\S]*?;\n(?=\/\/ ---- Paper 10)/, "").replace(/\/\/ ---- Paper 10[^\n]*\n(const RW_10_\d = [\s\S]*?;\n){4}(?=const Q = \[)/, "").replace(", ...RW_M1, ...RW_10_1, ...RW_10_2, ...RW_10_3, ...RW_10_4]", "]");
 if (/RW_M1|RW_10_/.test(bankSrc)) throw new Error("could not strip the Mock 1 and Paper 10 blocks from docs/questions.js");
@@ -54,7 +57,7 @@ function app(bankText){
     var ui = {rdet: {}, warned: {}, summary: false}, timerOn = false, autoPausedSet = null, saved = 0, PLAYBOOKS = {};
     function save(){ saved++; } function render(){} function scrollToCard(){} function markSet(){} function focusCard(){} function announce(){}
     function addAttemptFor(qi, g, m, t){ (S.att[qi] = S.att[qi] || []).push({g, m, t: t || Date.now()}); }
-    globalThis.T = {Q, DOMAINS, THEMES, PAPER_IDS, PAPERS, mockPapers, newMockPaper, NEW_LIST, NEW_MOCK, NEW_LIST2, NEW_MOCK2, NEWEST_MOCK, MOCK_ORDER, mockLabel, mockNoOf, mockCountWord, PRACTICE, forPractice, flagList,
+    globalThis.T = {Q, DOMAINS, THEMES, PAPER_IDS, PAPERS, mockPapers, newMockPaper, NEW_LIST, NEW_MOCK, NEW_LIST2, NEW_MOCK2, NEW_LIST3, NEW_MOCK3, NEWEST_MOCK, MOCK_ORDER, mockLabel, mockNoOf, mockCountWord, PRACTICE, forPractice, flagList,
       mockPaperList, nextMock, buildQuiz, builderHtml, renderResults, renderMocks, mockCardsHtml, peersHtml, mockSummaryHtml, quizName, setName, histName, weakList, mistakesList,
       normalise, mergeState, fresh, newSet, packMock, unpackMock, addMocks, addAttemptFor, get S(){ return S; }, set S(v){ S = v; }};`, ctx);
   ctx.T.els = els; return ctx.T;
@@ -228,7 +231,7 @@ const practice = R.Q.map(q => ({t: q.t})), M1 = synthetic(), M2 = synthetic(56, 
 check("build: no mock-only questions is fine", checkMockOnly(practice).length === 0);
 check("build: Mock 1 + Mock 2 (56 + 56, each 37 ranking-type + 19 best-three) at the end is fine", checkMockOnly(practice.concat(M1, M2)).length === 0);
 check("build: ...and with a practice paper between them and after (Paper 10 sits between Mock 1 and Mock 2)", checkMockOnly(practice.concat(M1, practice.slice(0, 32), M2, practice.slice(0, 32))).length === 0);
-check("build: Mock 1 alone (56) is now refused: 112 are needed", /found 56; expected 112/.test(checkMockOnly(practice.concat(M1)).join()));
+check("build: a total that is not a multiple of 56 is refused", /expected a multiple of 56/.test(checkMockOnly(practice.concat(M1, M1.slice(0, 20))).join()));
 check("build: 55 in Mock 1 is refused with a clear message", /Mock 1's mock-only questions \(mk: 1\): found 55 \(37 ranking-type, 18 best-three\).*exactly 56: 37 ranking-type/.test(checkMockOnly(practice.concat(synthetic(55), M2)).join()));
 check("build: 57 in Mock 2 is refused", /Mock 2's mock-only questions \(mk: 2\): found 57/.test(checkMockOnly(practice.concat(M1, synthetic(57, 38, {mk: 2}))).join()));
 check("build: Mock 2 with the wrong split (38 + 18) is refused", /Mock 2's .*found 56 \(38 ranking-type, 18 best-three\)/.test(checkMockOnly(practice.concat(M1, synthetic(56, 38, {mk: 2}))).join()));
@@ -237,7 +240,7 @@ check("build: Mock 2's block broken by Mock 1 questions is refused", /Mock 2's q
 check("build: a block starting part-way through a paper is refused", /Mock 2's questions must start after a whole practice paper/.test(checkMockOnly(practice.concat(M1, practice.slice(0, 8), M2)).join()));
 check("build: Mock 2 before Mock 1 is refused", /must come after Mock 1's/.test(checkMockOnly(practice.concat(M2, M1)).join()));
 check("build: Mock 2 without Mock 1 is refused", /need Mock 1's/.test(checkMockOnly(practice.concat(M2, M2)).join()));
-check("build: mk must be 1 or 2", /mk must be 1 or 2/.test(checkMockOnly(practice.concat(M1, synthetic(56, 37, {mk: 3}))).join()));
+check("build: mk must be 1, 2 or 3", /mk must be 1, 2 or 3/.test(checkMockOnly(practice.concat(M1, synthetic(56, 37, {mk: 4}))).join()));
 check("build: the real file passes", checkMockOnly(app(realBankSrc).Q).length === 0);
 
 // ---------- docs/admin.js labels ----------
@@ -246,16 +249,17 @@ check("admin: a practice question is 'Paper N, Qn'; mock-only ones 'Mock 1, Qn' 
 check("admin: by-paper tables group each mock on its own", adm.groupOf(N2.Q[300]) === "m1" && adm.groupOf(N2.Q[350]) === "m2" && adm.groupName("m1") === "Mock 1" && adm.groupName("m2") === "Mock 2" && adm.groupName("3") === "Paper 3");
 
 // ---------- the REAL bank (the published brand-new questions) ----------
-const RL = app(realBankSrc), RL1 = app(realNoM2Src), rmk = RL.Q.map((q, i) => i).filter(i => RL.Q[i].mk === 1), rmk2 = RL.Q.map((q, i) => i).filter(i => RL.Q[i].mk === 2);
-check("real bank: 432 questions; Q289-Q344 are Mock 1's 56 and Q377-Q432 Mock 2's 56 mock-only ones, all paper 0", RL.Q.length === 432 && rmk.length === 56 && rmk[0] === 288 && rmk[55] === 343 && rmk2.length === 56 && rmk2[0] === 376 && rmk2[55] === 431 && rmk.concat(rmk2).every(i => RL.Q[i].p === 0 && RL.Q[i].n === i + 1));
-check("real bank: 37 ranking-type then 19 best-three in each new mock, all with a theme", [[RL.NEW_LIST, rmk], [RL.NEW_LIST2, rmk2]].every(([l, m]) => l.length === 56 && l.slice(0, 37).every(i => RL.Q[i].t !== "best3") && l.slice(37).every(i => RL.Q[i].t === "best3") && m.every(i => RL.Q[i].g)));
+const RL = app(realBankSrc), RL1 = app(realNoM2Src), RL2 = app(realNoM3Src), rmk = RL.Q.map((q, i) => i).filter(i => RL.Q[i].mk === 1), rmk2 = RL.Q.map((q, i) => i).filter(i => RL.Q[i].mk === 2), rmk3 = RL.Q.map((q, i) => i).filter(i => RL.Q[i].mk === 3);
+check("real bank: 488 questions; Q289-Q344 are Mock 1's 56, Q377-Q432 Mock 2's 56 and Q433-Q488 Mock 3's 56 mock-only ones, all paper 0", RL.Q.length === 488 && rmk.length === 56 && rmk[0] === 288 && rmk[55] === 343 && rmk2.length === 56 && rmk2[0] === 376 && rmk2[55] === 431 && rmk3.length === 56 && rmk3[0] === 432 && rmk3[55] === 487 && rmk.concat(rmk2, rmk3).every(i => RL.Q[i].p === 0 && RL.Q[i].n === i + 1));
+check("real bank: 37 ranking-type then 19 best-three in each new mock, all with a theme", [[RL.NEW_LIST, rmk], [RL.NEW_LIST2, rmk2], [RL.NEW_LIST3, rmk3]].every(([l, m]) => l.length === 56 && l.slice(0, 37).every(i => RL.Q[i].t !== "best3") && l.slice(37).every(i => RL.Q[i].t === "best3") && m.every(i => RL.Q[i].g)));
 const fixedReal = RL.mockPapers(RL.Q);
-check("real bank: the new mocks share no question with each other or the five fixed mocks (which are unchanged)", RL.NEW_LIST.concat(RL.NEW_LIST2).every(i => !fixedReal.flat().includes(i)) && RL.NEW_LIST.every(i => !RL.NEW_LIST2.includes(i)) && J(fixedReal) === J(R.mockPapers(R.Q)));
+check("real bank: the new mocks share no question with each other or the five fixed mocks (which are unchanged)", RL.NEW_LIST.concat(RL.NEW_LIST2, RL.NEW_LIST3).every(i => !fixedReal.flat().includes(i)) && RL.NEW_LIST.every(i => !RL.NEW_LIST2.includes(i) && !RL.NEW_LIST3.includes(i)) && RL.NEW_LIST2.every(i => !RL.NEW_LIST3.includes(i)) && J(fixedReal) === J(R.mockPapers(R.Q)));
 check("real bank: adding Mock 2 leaves Mock 1 exactly as it was (same 56 questions, same order, same keys)", J(RL.NEW_LIST) === J(RL1.NEW_LIST) && RL1.Q.every((q, i) => RL.Q[i].k === q.k && RL.Q[i].s === q.s && RL.Q[i].p === q.p && RL.Q[i].n === q.n) && RL1.Q.length === 376);
-check("real bank: Mock 1 and Mock 2 are the brand-new papers and the old five are Mock 3-7", J(RL.MOCK_ORDER) === J([6, 7, 1, 2, 3, 4, 5]) && RL.mockLabel(6) === "Mock 1" && RL.mockLabel(7) === "Mock 2" && RL.mockLabel(1) === "Mock 3" && RL.mockLabel(5) === "Mock 7");
+check("real bank: Mocks 1-3 are the brand-new papers and the old five are Mock 4-8", J(RL.MOCK_ORDER) === J([6, 7, 8, 1, 2, 3, 4, 5]) && RL.mockLabel(6) === "Mock 1" && RL.mockLabel(7) === "Mock 2" && RL.mockLabel(8) === "Mock 3" && RL.mockLabel(1) === "Mock 4" && RL.mockLabel(5) === "Mock 8");
+check("real bank: adding Mock 3 leaves Mock 1 and Mock 2 exactly as they were (same questions, order, keys) and the saved numbers unchanged", J(RL.NEW_LIST) === J(RL2.NEW_LIST) && J(RL.NEW_LIST2) === J(RL2.NEW_LIST2) && RL2.Q.every((q, i) => RL.Q[i].k === q.k && RL.Q[i].s === q.s && RL.Q[i].p === q.p && RL.Q[i].n === q.n) && RL2.Q.length === 432 && J(RL2.MOCK_ORDER) === J([6, 7, 1, 2, 3, 4, 5]) && RL.NEWEST_MOCK === 8 && RL2.NEWEST_MOCK === 7);
 check("real bank: before Mock 2 (Papers 1-10 and Mock 1) the numbering was Mock 1, Mock 2-6", J(RL1.MOCK_ORDER) === J([6, 1, 2, 3, 4, 5]) && RL1.NEW_LIST2.length === 0);
 check("real bank: the practice pool is the 320 practice questions (Papers 1-10)", RL.PRACTICE.length === 320 && RL.PRACTICE.every(i => !RL.Q[i].mk));
-check("real bank: Mock 2's questions are never in practice quizzes until answered", (RL.S = RL.fresh(), rmk2.every(i => !RL.forPractice(i))));
+check("real bank: Mock 2's and Mock 3's questions are never in practice quizzes until answered", (RL.S = RL.fresh(), rmk2.concat(rmk3).every(i => !RL.forPractice(i))));
 // ---------- Paper 10 (Q345-Q376), appended after the mock-only block ----------
 const p10 = range0(344, 376);
 function range0(a, b){ return Array.from({length: b - a}, (_, i) => a + i); }
@@ -269,8 +273,8 @@ check("Paper 10: a fresh progress copy has a p10 set, and a copy saved before Pa
 RL.S.att = {}; for (const i of p10) RL.S.att[i] = [{g: 15, m: 20, t: T0 + i}]; RL.renderResults(); const r10 = RL.els["view-results"].innerHTML;
 check("Paper 10: Results lists ten papers By paper, Paper 10 with 32/32 answered and 32 / 320 practice questions", (r10.match(/Paper \d+[^<]*<small class="muted">\d+\/32/g) || []).length === 10 && /Paper 10[^<]*<small class="muted">32\/32/.test(r10) && /32<small> \/ 320<\/small>/.test(r10));
 const admR = new Function("Q", cutOf(adminSrc)("const MK0 =", "const rate =") + "\nreturn {qLabel};")(RL.Q);
-check("Paper 10: admin labels Q345 'Paper 10, Q1' and Q376 'Paper 10, Q32'; Q289 is 'Mock 1, Q1' and Q377-Q432 'Mock 2, Q1-Q56'", admR.qLabel(RL.Q[344]) === "Paper 10, Q1" && admR.qLabel(RL.Q[375]) === "Paper 10, Q32" && admR.qLabel(RL.Q[288]) === "Mock 1, Q1" && admR.qLabel(RL.Q[287]) === "Paper 9, Q32" && admR.qLabel(RL.Q[376]) === "Mock 2, Q1" && admR.qLabel(RL.Q[431]) === "Mock 2, Q56");
-check("real bank: every new question has 5 options (ranking-type) or 8 (best-three), a key in range, and no pre-shuffled order problems", rmk.concat(rmk2).every(i => { const q = RL.Q[i]; return q.o.length === (q.t === "best3" ? 8 : 5) && (q.t === "best3" ? q.k.length === 3 : q.k.length === 5); }));
+check("Paper 10: admin labels Q345 'Paper 10, Q1' and Q376 'Paper 10, Q32'; Q289 is 'Mock 1, Q1' and Q377-Q432 'Mock 2, Q1-Q56'", admR.qLabel(RL.Q[344]) === "Paper 10, Q1" && admR.qLabel(RL.Q[375]) === "Paper 10, Q32" && admR.qLabel(RL.Q[288]) === "Mock 1, Q1" && admR.qLabel(RL.Q[287]) === "Paper 9, Q32" && admR.qLabel(RL.Q[376]) === "Mock 2, Q1" && admR.qLabel(RL.Q[431]) === "Mock 2, Q56" && admR.qLabel(RL.Q[432]) === "Mock 3, Q1" && admR.qLabel(RL.Q[487]) === "Mock 3, Q56");
+check("real bank: every new question has 5 options (ranking-type) or 8 (best-three), a key in range, and no pre-shuffled order problems", rmk.concat(rmk2, rmk3).every(i => { const q = RL.Q[i]; return q.o.length === (q.t === "best3" ? 8 : 5) && (q.t === "best3" ? q.k.length === 3 : q.k.length === 5); }));
 
 console.log(`${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

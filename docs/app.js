@@ -723,7 +723,7 @@ function mockBarHtml(set){
 function mockIntroHtml(set){
   const n = curList().length, r = curList().filter(i => isRank(Q[i])).length;
   return `<h2 class="bh" tabindex="-1">${esc(quizName(set))}</h2><p class="lead">${n} questions in ${fmt(set.limit)}, the same length and timing as the live test.</p>` +
-    `<ul class="mocklist"><li><b>${r}</b> ranking questions, then <b>${n - r}</b> best-three questions${set.mockNo ? ", the same for everyone taking this mock" : ", in random order"}.</li>${set.mockNo === NEW_MOCK || set.mockNo === NEW_MOCK2 ? "<li>Every question is brand new: none of them is in any practice paper.</li>" : ""}<li>The countdown stays at the top of the question. You get warnings at 15 and 5 minutes left.</li>` +
+    `<ul class="mocklist"><li><b>${r}</b> ranking questions, then <b>${n - r}</b> best-three questions${set.mockNo ? ", the same for everyone taking this mock" : ", in random order"}.</li>${set.mockNo === NEW_MOCK || set.mockNo === NEW_MOCK2 || set.mockNo === NEW_MOCK3 ? "<li>Every question is brand new: none of them is in any practice paper.</li>" : ""}<li>The countdown stays at the top of the question. You get warnings at 15 and 5 minutes left.</li>` +
     `<li>There’s no feedback until the end. Flag anything you want to come back to, and move freely between questions.</li><li>When time runs out, the mock is marked automatically. You can also finish early.</li><li>Leaving the site pauses the clock; Pause is there if you need it, but the real test has no pause.</li></ul>` +
     `<div class="actions"><button type="button" class="btn" data-act="new">Choose a different quiz</button><button type="button" class="btn primary" data-act="mock-start">Start the clock</button></div>`;
 }
@@ -943,7 +943,7 @@ function mockPapers(bank){
 }
 // ---------- the brand-new mocks ----------
 // Mock-only questions (mk in docs/questions.js, q.p = 0) are written for one mock and are in no practice paper: mk: 1 is
-// Mock 1's block (Q289-344, after Papers 1-9), mk: 2 is Mock 2's (Q377-432, after Paper 10). Until you have answered one
+// Mock 1's block (Q289-344, after Papers 1-9), mk: 2 is Mock 2's (Q377-432, after Paper 10), mk: 3 is Mock 3's (Q433-488). Until you have answered one
 // there, it is never picked or counted for practice: not in Quick 10, area or theme quizzes, flagged questions, the paper
 // tabs or any practice total. Once answered, it is like any other question for review, Weak spots and My mistakes, which
 // work from your attempts.
@@ -951,7 +951,7 @@ const mockOnly = i => !!Q[i] && !!Q[i].mk;
 const PRACTICE = Q.map((_, i) => i).filter(i => !mockOnly(i) && !heldQ(i)); // the practice bank: the papers with a tab (PAPER_IDS)
 const forPractice = i => !heldQ(i) && (!mockOnly(i) || !!S.att[i]); // a practice question, or a mock-only one you have already answered
 const flagList = () => Object.keys(S.flags).map(Number).filter(i => isQi(i) && forPractice(i)).sort((x, y) => x - y); // the Flagged questions quiz
-// A brand-new mock: all MOCK_RANK + MOCK_BEST questions marked mk (1 or 2) in a fixed order. Part One is the ranking-type
+// A brand-new mock: all MOCK_RANK + MOCK_BEST questions marked mk (1, 2 or 3) in a fixed order. Part One is the ranking-type
 // ones in a fixed shuffled order (each mock its own seed), Part Two the best-three in the order written. Empty unless there
 // are exactly that many of each (tools/build.js refuses anything else). Pure: bank is Q. Tested by tools/test-newmock.mjs.
 function newMockPaper(bank, mk = 1){
@@ -961,21 +961,23 @@ function newMockPaper(bank, mk = 1){
   for (let j = one.length - 1; j > 0; j--) { const r = Math.floor(rnd() * (j + 1)); [one[j], one[r]] = [one[r], one[j]]; }
   return one.concat(two);
 }
-// Numbers in saved attempts (mockNo) never change: 1 to 5 are the five fixed papers, 6 is Mock 1 (mk: 1), 7 is Mock 2 (mk: 2).
-const NEW_MOCK = 6, NEW_MOCK2 = 7;
-const NEW_LIST = newMockPaper(Q), NEW_LIST2 = newMockPaper(Q, 2);
-const newMockOf = q => q.mk === 2 ? NEW_MOCK2 : NEW_MOCK; // the mock a mock-only question belongs to
-const NEWEST_MOCK = NEW_LIST2.length ? NEW_MOCK2 : NEW_MOCK; // the card with the "Brand new questions" badge
+// Numbers in saved attempts (mockNo) never change: 1 to 5 are the five fixed papers, 6 is Mock 1 (mk: 1), 7 is Mock 2 (mk: 2), 8 is Mock 3 (mk: 3).
+const NEW_MOCK = 6, NEW_MOCK2 = 7, NEW_MOCK3 = 8;
+const NEW_LIST = newMockPaper(Q), NEW_LIST2 = newMockPaper(Q, 2), NEW_LIST3 = newMockPaper(Q, 3);
+const newMockOf = q => q.mk === 3 ? NEW_MOCK3 : q.mk === 2 ? NEW_MOCK2 : NEW_MOCK; // the mock a mock-only question belongs to
+const NEWEST_MOCK = NEW_LIST3.length ? NEW_MOCK3 : NEW_LIST2.length ? NEW_MOCK2 : NEW_MOCK; // the card with the "Brand new questions" badge
+const NEW_MOCKS_ON = [[NEW_MOCK, NEW_LIST], [NEW_MOCK2, NEW_LIST2], [NEW_MOCK3, NEW_LIST3]].filter(x => x[1].length).map(x => x[0]); // the brand-new mocks present, in order
+const newMockNames = () => { const n = NEW_MOCKS_ON.map(x => mockLabel(x)); return n.length > 1 ? n.slice(0, -1).join(", ") + " and " + n[n.length - 1] : n.join(""); };
 // THE NUMBERING SWITCH. With the brand-new questions present, the Mock exams tab lists the brand-new mocks first, as Mock 1
-// (mockNo 6) and Mock 2 (mockNo 7), and the five fixed papers as Mock 3 to Mock 7; without them, Mock 1 to Mock 5 as before.
+// (mockNo 6), Mock 2 (mockNo 7) and Mock 3 (mockNo 8), and the five fixed papers as Mock 4 to Mock 8; without them, Mock 1 to Mock 5 as before.
 // Saved attempts keep their own number (mockNo) and a name that may be out of date, so every mock name on screen comes from
 // mockLabel(), never the saved name.
-const MOCK_ORDER = (NEW_LIST.length ? [NEW_MOCK] : []).concat(NEW_LIST2.length ? [NEW_MOCK2] : [], range(1, MOCK_COUNT + 1)); // in display order: Mock 1, Mock 2, ...
+const MOCK_ORDER = (NEW_LIST.length ? [NEW_MOCK] : []).concat(NEW_LIST2.length ? [NEW_MOCK2] : [], NEW_LIST3.length ? [NEW_MOCK3] : [], range(1, MOCK_COUNT + 1)); // in display order: Mock 1, Mock 2, Mock 3, ...
 function mockLabel(no, order = MOCK_ORDER){ const k = order.indexOf(no); return k >= 0 ? "Mock " + (k + 1) : no ? "Mock " + no : "Earlier random mock"; }
 const mockNoOf = (shown, order = MOCK_ORDER) => order[shown - 1] || 0; // the other way: the mock shown as "Mock 3" is mockNo 1
 const mockCountWord = () => ["no", "one", "two", "three", "four", "five", "six", "seven", "eight"][MOCK_ORDER.length] || String(MOCK_ORDER.length);
 let mockCache = null;
-function mockPaperList(n){ if (n === NEW_MOCK) return NEW_LIST.slice(); if (n === NEW_MOCK2) return NEW_LIST2.slice(); if (!mockCache) mockCache = mockPapers(Q); return (mockCache[n - 1] || []).slice(); }
+function mockPaperList(n){ if (n === NEW_MOCK) return NEW_LIST.slice(); if (n === NEW_MOCK2) return NEW_LIST2.slice(); if (n === NEW_MOCK3) return NEW_LIST3.slice(); if (!mockCache) mockCache = mockPapers(Q); return (mockCache[n - 1] || []).slice(); }
 // Every finished attempt at Mock n (0: the earlier random mocks), oldest first, with its score.
 const scoreCache = new Map();
 function attemptScore(r){
@@ -1300,7 +1302,7 @@ function renderMocks(){
   const el = document.getElementById("view-mocks"); if (!el) return;
   const c = S.sets.custom, all = (S.mocks || []).map(r => Object.assign({r}, attemptScore(r))), best = {}, nth = {}, count = {};
   all.forEach(a => { const n = a.r.mockNo || 0; count[n] = (count[n] || 0) + 1; nth[a.r.created] = count[n]; if (n && (!best[n] || a.p > best[n].p)) best[n] = a; });
-  let h = `<div class="card"><h2 class="bh" tabindex="-1">Mock exams</h2><p class="muted">${mockCountWord().replace(/^./, ch => ch.toUpperCase())} fixed papers of ${MOCK_RANK + MOCK_BEST} questions in ${MOCK_SECS / 60} minutes, timed and marked like the live test: Part One has ${MOCK_RANK} ranking questions, Part Two ${MOCK_BEST} best-three. No question appears in more than one mock${NEW_LIST.length ? `. ${mockLabel(NEW_MOCK)}${NEW_LIST2.length ? ` and ${mockLabel(NEW_MOCK2)} are` : " is"} made entirely of brand-new questions that are not in any practice paper; ${mockLabel(1)} to ${mockLabel(MOCK_COUNT)} each have the same spread of areas, themes and papers, so they are about equally hard.` : ", and each mock has the same spread of areas, themes and papers, so they are about equally hard."} Retake any mock as often as you like; every attempt is kept below.</p>`;
+  let h = `<div class="card"><h2 class="bh" tabindex="-1">Mock exams</h2><p class="muted">${mockCountWord().replace(/^./, ch => ch.toUpperCase())} fixed papers of ${MOCK_RANK + MOCK_BEST} questions in ${MOCK_SECS / 60} minutes, timed and marked like the live test: Part One has ${MOCK_RANK} ranking questions, Part Two ${MOCK_BEST} best-three. No question appears in more than one mock${NEW_LIST.length ? `. ${newMockNames()} ${NEW_MOCKS_ON.length > 1 ? "are" : "is"} made entirely of brand-new questions that are not in any practice paper; ${mockLabel(1)} to ${mockLabel(MOCK_COUNT)} each have the same spread of areas, themes and papers, so they are about equally hard.` : ", and each mock has the same spread of areas, themes and papers, so they are about equally hard."} Retake any mock as often as you like; every attempt is kept below.</p>`;
   if (c && isMock(c) && !c.marked && !c.mockNo) h += `<div class="callout"><div class="wrow"><span>You have an unfinished earlier random mock (${c.list.filter(i => complete(c, i)).length} of ${c.list.length} answered).</span><button type="button" class="btn small primary" data-act="mock-quick">Resume it</button></div></div>`;
   h += `<div class="bgrid mgrid">${mockCardsHtml()}</div>`;
   h += `<h3 class="bsub" id="prev-mocks">Previous mocks${all.length ? ` · ${all.length}` : ""}</h3>`;
@@ -1455,7 +1457,7 @@ function renderSettingsRaw(){
   h += `<section class="sset"><h3>Clear everything</h3><p class="muted">Removes all answers, results and history from this browser.${SY ? " This device is also unlinked from Sync first, so the progress saved under your username (and on your other devices) isn’t touched." : ""}</p>`;
   if (ui.confirmWipe) h += `<div class="confirm"><span>This can’t be undone. Clear everything?</span><div class="row"><button type="button" class="btn small danger" data-act="wipe-yes">Clear everything</button><button type="button" class="btn small" data-act="wipe-no">Cancel</button></div></div>`;
   else h += `<button type="button" class="btn small danger" data-act="wipe">Clear everything</button>`;
-  h += `</section><section class="sset"><h3>About</h3><p class="muted">${PRACTICE.length} original practice questions${NEW_LIST.length ? `, plus ${NEW_LIST.length + NEW_LIST2.length} brand-new questions in ${mockLabel(NEW_MOCK)}${NEW_LIST2.length ? ` and ${mockLabel(NEW_MOCK2)}` : ""},` : ""} written for this site, modelled on the official 2016 and 2021 DFT practice papers and on GDC and defence organisation guidance. Unofficial, and not affiliated with NHS England, COPDEND, HEIW or NIMDTA. <a href="https://github.com/sajeev2112/dft-sjt-mock" target="_blank" rel="noopener">Source on GitHub</a>.</p></section>`;
+  h += `</section><section class="sset"><h3>About</h3><p class="muted">${PRACTICE.length} original practice questions${NEW_LIST.length ? `, plus ${NEW_LIST.length + NEW_LIST2.length + NEW_LIST3.length} brand-new questions in ${newMockNames()},` : ""} written for this site, modelled on the official 2016 and 2021 DFT practice papers and on GDC and defence organisation guidance. Unofficial, and not affiliated with NHS England, COPDEND, HEIW or NIMDTA. <a href="https://github.com/sajeev2112/dft-sjt-mock" target="_blank" rel="noopener">Source on GitHub</a>.</p></section>`;
   h += `<section class="sset"><h3>Community stats</h3><label class="toggle"><input type="checkbox" id="share" ${S.share ? "checked" : ""}> <span>Share anonymous answers and usage</span></label><p class="muted">On by default. The site sends your first attempt at each question, a count of your visits, and a report when something goes wrong. An error report holds technical details only: the site version, which screen was open, your browser type (such as “Chrome 130 / Android”) and screen size, and codes for the last few buttons you pressed. It never includes your answers, the question, anything you type, or your Sync username or PIN. None of it includes your name, email or IP address; answers are linked only to a random code stored in this browser. Answers power the community stats. Visit counts and error reports are only seen by the site owner, to keep the site running. Turning this off stops all sending; data already sent stays in the totals.</p></section></div>`;
   el.innerHTML = h;
 }
@@ -2207,7 +2209,7 @@ window.addEventListener("online", flushMockEvents);
 // always open there, answered or not), the exam screen or a running mock, and never with a clock running, a form, a
 // confirmation, a drag, the Sync panel or a study plan being written. Takes plain facts so tools/test-update.mjs can check it.
 function updateMayReload(f){ return ["mocks", "results", "guide", "settings"].includes(f.view) && !f.exam && !f.mock && !f.timer && !f.building && !f.typing && !f.feedback && !f.dialog; }
-const BUILD = "50f8674fe3"; // this page's build version, set by tools/build.js
+const BUILD = "d21b90b010"; // this page's build version, set by tools/build.js
 // What's on screen right now, for updateMayReload and the welcome tour (an open tour counts as a dialog).
 const quietFacts = () => { const c = S.sets.custom; return {view: S.view, exam: !!(window.Exam && Exam.isOpen()), mock: !!c && mockLive(c) && !c.left, timer: timerOn, building: ui.building,
   typing: busyTyping() || !!(document.getElementById("code-in") || {}).value || !!ui.code, feedback: ui.fbOpen != null, dialog: !!syncUi.conflict || !!document.querySelector(".dragging, .confirm, .sp-go:disabled, .tour")}; };
