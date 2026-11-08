@@ -11,6 +11,13 @@
   ],
   "why": "reviewed Nov 2026: word restates or follows from the stem, no unsupported reference"
  },
+ "119": {
+  "words": [
+   "pain-",
+   "won't"
+  ],
+  "why": "reviewed Nov 2026: word restates or follows from the stem, or is an ordinary label for it; no unsupported reference"
+ },
  "121": {
   "words": [
    "glove"
@@ -79,6 +86,13 @@
   ],
   "why": "reviewed Nov 2026: word restates or follows from the stem, no unsupported reference"
  },
+ "221": {
+  "words": [
+   "lockd",
+   "secon"
+  ],
+  "why": "reviewed Nov 2026: word restates or follows from the stem, or is an ordinary label for it; no unsupported reference"
+ },
  "234": {
   "words": [
    "frida",
@@ -98,6 +112,14 @@
    "run-o"
   ],
   "why": "reviewed Nov 2026: word restates or follows from the stem, no unsupported reference"
+ },
+ "268": {
+  "words": [
+   "tasks",
+   "secon",
+   "perso"
+  ],
+  "why": "reviewed Nov 2026: word restates or follows from the stem, or is an ordinary label for it; no unsupported reference"
  },
  "271": {
   "words": [
@@ -165,14 +187,6 @@
   ],
   "why": "reviewed Nov 2026: minor only, the option states the fact itself or it is an ordinary inference"
  },
- "_about": "Accepted stem-support findings (tools/stem-support.js). Key = question number; words = 5-letter prefixes accepted for that question; why = reviewer verdict (Nov 2026 audit, two Opus readers; see ~/Documents/sjt/paper9b/stem-support-audit.md). A new or edited question that triggers the check needs a stem fix or a reviewed entry here.",
- "119": {
-  "words": [
-   "pain-",
-   "won't"
-  ],
-  "why": "reviewed Nov 2026: word restates or follows from the stem, or is an ordinary label for it; no unsupported reference"
- },
  "346": {
   "words": [
    "entry",
@@ -199,51 +213,10 @@
   ],
   "why": "reviewed Nov 2026: word restates or follows from the stem, or is an ordinary label for it; no unsupported reference"
  },
- "221": {
-  "words": [
-   "lockd",
-   "secon"
-  ],
-  "why": "reviewed Nov 2026: word restates or follows from the stem, or is an ordinary label for it; no unsupported reference"
- },
- "268": {
-  "words": [
-   "tasks",
-   "secon"
-  ],
-  "why": "reviewed Nov 2026: word restates or follows from the stem, or is an ordinary label for it; no unsupported reference"
- },
- "440": {
-  "words": [
-   "remak",
-   "choos"
-  ],
-  "why": "reviewed Nov 2026: word restates or follows from the stem, or is an ordinary label for it; no unsupported reference"
- },
- "447": {
-  "words": [
-   "error"
-  ],
-  "why": "reviewed Nov 2026: word restates or follows from the stem, or is an ordinary label for it; no unsupported reference"
- },
  "453": {
   "words": [
    "night",
    "whole"
-  ],
-  "why": "reviewed Nov 2026: word restates or follows from the stem, or is an ordinary label for it; no unsupported reference"
- },
- "474": {
-  "words": [
-   "insid",
-   "young"
-  ],
-  "why": "reviewed Nov 2026: word restates or follows from the stem, or is an ordinary label for it; no unsupported reference"
- },
- "477": {
-  "words": [
-   "blood",
-   "gluco"
   ],
   "why": "reviewed Nov 2026: word restates or follows from the stem, or is an ordinary label for it; no unsupported reference"
  },
@@ -253,11 +226,5 @@
   ],
   "why": "reviewed Nov 2026: word restates or follows from the stem, or is an ordinary label for it; no unsupported reference"
  },
- "485": {
-  "words": [
-   "poste",
-   "delet"
-  ],
-  "why": "reviewed Nov 2026: word restates or follows from the stem, or is an ordinary label for it; no unsupported reference"
- }
+ "_about": "Accepted stem-support findings (tools/stem-support.js). Key = question number; words = 5-letter prefixes accepted for that question; why = reviewer verdict (Nov 2026 audit, two Opus readers; see ~/Documents/sjt/paper9b/stem-support-audit.md). A new or edited question that triggers the check needs a stem fix or a reviewed entry here."
 }
